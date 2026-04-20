@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life OS</title>
+<!-- Supabase JS via CDN — sincronização em tempo real -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ===== RESET ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#191919;--sidebar:#111111;--accent:#7C3AED;--accent-l:#8B5CF6;
+  --text:#FFFFFF;--text2:#9B9B9B;--text3:#6B6B6B;
+  --border:#2D2D2D;--card:#222222;--card2:#2A2A2A;--input:#252525;
+  --green:#10B981;--yellow:#F59E0B;--red:#EF4444;--blue:#3B82F6;
+  --font:Inter,system-ui,-apple-system,sans-serif
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);display:flex;height:100vh;overflow:hidden}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:220px;min-width:220px;background:var(--sidebar);display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto}
+.sb-logo{padding:22px 20px 14px;font-size:17px;font-weight:700;color:var(--accent-l);display:flex;align-items:center;gap:8px}
+.sb-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:8px 20px 4px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin:1px 8px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:14px;transition:all .15s;user-select:none}
+.sb-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.sb-item.active{background:rgba(124,58,237,.15);color:var(--accent-l)}
+.sb-item .ico{font-size:15px;width:20px;text-align:center}
+/* Status de sincronização no rodapé da sidebar */
+.sb-footer{margin-top:auto;padding:12px 8px;border-top:1px solid var(--border)}
+.sync-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text3);transition:all .15s}
+.sync-status:hover{background:rgba(255,255,255,.05);color:var(--text2)}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.dot-off{background:var(--text3)}
+.dot-ok{background:var(--green)}
+.dot-err{background:var(--red)}
+.dot-busy{background:var(--yellow);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e1e1e;border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--text2);z-index:999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ===== MAIN ===== */
+.main{flex:1;overflow-y:auto;padding:32px 40px}
+.page{display:none;animation:fi .2s ease}
+.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.ph{margin-bottom:28px}
+.ph h1{font-size:24px;font-weight:700;margin-bottom:3px}
+.ph p{color:var(--text2);font-size:14px}
+
+/* ===== CARDS GRID ===== */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px}
+.card-ico{font-size:22px;margin-bottom:10px}
+.card-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.card-val{font-size:28px;font-weight:700;margin-bottom:3px}
+.card-sub{font-size:12px;color:var(--text2)}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-family:var(--font);font-weight:500;transition:all .15s}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:var(--accent-l)}
+.btn-g{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-g:hover{background:var(--card);color:var(--text)}
+.btn-d{background:transparent;color:var(--red);border:none;padding:4px 8px}.btn-d:hover{background:rgba(239,68,68,.1)}
+.btn-s{background:var(--green);color:#fff}.btn-s:hover{filter:brightness(1.1)}
+
+/* ===== TABLE ===== */
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#1a1a1a;color:var(--text2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--card2)}
+tbody td{padding:9px 14px;vertical-align:middle}
+
+/* ===== INPUTS ===== */
+input,select,textarea{background:var(--input);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:13px;padding:6px 10px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select option{background:#1e1e1e}
+.ii{background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:2px 4px}
+.ii:focus{border-bottom-color:var(--accent);background:rgba(124,58,237,.05)}
+
+/* ===== PROGRESS ===== */
+.pw{background:var(--border);border-radius:100px;height:6px;overflow:hidden;margin-top:4px}
+.pb{height:100%;border-radius:100px;background:var(--accent);transition:width .3s}
+
+/* ===== BADGES ===== */
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600}
+.b-todo{background:rgba(107,114,128,.2);color:#9CA3AF}
+.b-prog{background:rgba(59,130,246,.2);color:#60A5FA}
+.b-done{background:rgba(16,185,129,.2);color:#34D399}
+.b-low{background:rgba(107,114,128,.2);color:#9CA3AF}
+.b-med{background:rgba(245,158,11,.2);color:#FCD34D}
+.b-high{background:rgba(239,68,68,.2);color:#F87171}
+
+/* ===== TABS ===== */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent-l);border-bottom-color:var(--accent)}
+.tab.tdone{color:var(--green)}
+
+/* ===== MODAL ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:#1e1e1e;border:1px solid var(--border);border-radius:12px;padding:26px;width:420px;max-width:94vw;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:16px}
+.fg{margin-bottom:11px}
+.fg label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+/* Modal de setup do Supabase — maior e com passos */
+.modal-wide{width:520px}
+.setup-step{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
+.setup-step-num{font-size:11px;font-weight:700;color:var(--accent-l);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.setup-step p{font-size:13px;color:var(--text2);line-height:1.6}
+.code-block{background:#111;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:monospace;font-size:12px;color:#a5f3fc;margin-top:6px;white-space:pre;overflow-x:auto;cursor:text;user-select:all}
+
+/* ===== KANBAN ===== */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+.kcol{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:180px;transition:border-color .15s}
+.kcol.drag-over{border-color:var(--accent);background:rgba(124,58,237,.04)}
+.kcol-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.kcol-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.kcol-cnt{font-size:11px;background:var(--border);padding:2px 7px;border-radius:100px;color:var(--text3)}
+.kcard{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:grab;transition:all .15s;user-select:none}
+.kcard:hover{border-color:var(--accent);transform:translateY(-1px)}
+.kcard.dragging{opacity:.35}
+.kcard-title{font-size:13px;font-weight:500;margin-bottom:7px}
+.kcard-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.kcard-actions{display:flex;gap:4px;justify-content:flex-end;margin-top:8px}
+
+/* ===== DIET ===== */
+.dt td{text-align:center;cursor:pointer;min-width:110px}
+.dt th.dc{text-align:center}
+.dc-food{font-size:12px;display:flex;flex-direction:column;gap:2px;align-items:center}
+.dc-food .fn{font-weight:500;color:var(--text);font-size:12px}
+.dc-food .fc{color:var(--accent-l);font-size:11px}
+.dc-food .fm{color:var(--text3);font-size:10px}
+.dc-empty{color:var(--text3);font-size:12px}
+.dt tfoot td{background:#1a1a1a;font-size:12px;font-weight:600;color:var(--text2);border-top:2px solid var(--border)}
+
+/* ===== TREINO ===== */
+.exc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
+.exc-info{flex:1}
+.exc-name{font-weight:600;font-size:14px;margin-bottom:3px}
+.exc-det{font-size:12px;color:var(--text2);display:flex;gap:10px}
+.exc-type{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.t-musc{background:rgba(124,58,237,.2);color:var(--accent-l)}
+.t-card{background:rgba(16,185,129,.2);color:var(--green)}
+.hist-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:11px 15px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+
+/* ===== UTILS ===== */
+.flex{display:flex}.ai{align-items:center}.g8{gap:8px}.g12{gap:12px}
+.mb16{margin-bottom:16px}.mb24{margin-bottom:24px}
+.sec-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+hr.div{border:none;border-top:1px solid var(--border);margin:24px 0}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">⚡ Life OS</div>
+  <div class="sb-label">Menu</div>
+  <div class="sb-item active" data-p="dashboard"><span class="ico">🏠</span>Dashboard</div>
+  <div class="sb-item" data-p="goals"><span class="ico">🎯</span>Goals</div>
+  <div class="sb-item" data-p="dieta"><span class="ico">🥗</span>Dieta</div>
+  <div class="sb-item" data-p="treino"><span class="ico">💪</span>Treino</div>
+  <div class="sb-item" data-p="tasks"><span class="ico">📋</span>Projetos & Tasks</div>
+
+  <!-- Rodapé: status de sync e botão de configuração -->
+  <div class="sb-footer">
+    <div class="sync-status" onclick="openSyncConfig()" title="Configurar sincronização">
+      <div class="sync-dot dot-off" id="sync-dot"></div>
+      <span id="sync-label">Sem sincronização</span>
+    </div>
+  </div>
+</aside>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="ph"><h1>Dashboard</h1><p>Visão geral do seu progresso</p></div>
+    <div class="cards" id="db-cards"></div>
+    <div id="db-detail"></div>
+  </div>
+
+  <!-- GOALS -->
+  <div class="page" id="page-goals">
+    <div class="ph"><h1>Goals</h1><p>Acompanhe suas metas e objetivos</p></div>
+    <div class="flex ai g8 mb16">
+      <button class="btn btn-p" onclick="addGoal()">+ Nova Meta</button>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>Nome da Meta</th><th>Categoria</th><th>Prazo</th>
+          <th>Status</th><th>Progresso</th><th>Notas</th><th></th>
+        </tr></thead>
+        <tbody id="goals-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DIETA -->
+  <div class="page" id="page-dieta">
+    <div class="ph"><h1>Dieta</h1><p>Acompanhamento nutricional semanal</p></div>
+    <div class="flex ai g12 mb24" style="flex-wrap:wrap">
+      <div class="flex ai g8">
+        <label style="font-size:13px;color:var(--text2);white-space:nowrap">Meta diária (kcal):</label>
+        <input type="number" id="cal-goal" style="width:90px" placeholder="2000" oninput="saveCalGoal()">
+      </div>
+      <div class="flex ai g8">
+        <button class="btn btn-g" onclick="changeWeek(-1)">← Anterior</button>
+        <span id="week-lbl" style="font-size:13px;color:var(--text2);white-space:nowrap"></span>
+        <button class="btn btn-g" onclick="changeWeek(1)">Próxima →</button>
+      </div>
+    </div>
+    <div class="tw">
+      <table class="dt">
+        <thead id="diet-thead"></thead>
+        <tbody id="diet-body"></tbody>
+        <tfoot id="diet-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- TREINO -->
+  <div class="page" id="page-treino">
+    <div class="ph"><h1>Treino</h1><p>Plano semanal de exercícios</p></div>
+    <div class="tabs" id="treino-tabs"></div>
+    <div id="treino-day"></div>
+    <hr class="div">
+    <div class="sec-title">Histórico — últimos 7 dias</div>
+    <div id="treino-hist"></div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="page" id="page-tasks">
+    <div class="ph"><h1>Projetos & Tasks</h1><p>Gerencie suas tarefas</p></div>
+    <div class="flex ai g8 mb16" style="flex-wrap:wrap">
+      <button class="btn btn-p" onclick="openTaskModal()">+ Nova Task</button>
+      <button class="btn btn-g" id="view-btn" onclick="toggleView()">📋 Modo Tabela</button>
+    </div>
+    <div id="tasks-kanban"></div>
+    <div id="tasks-table" style="display:none"></div>
+  </div>
+
+</main>
+
+<!-- Container de modais -->
+<div id="mc"></div>
+<!-- Toast de notificação -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =============================================
+   LIFE OS — Aplicativo de produtividade pessoal
+   Sincronização em tempo real via Supabase
+   ============================================= */
+
+// ===== CONSTANTES =====
+const DAYS  = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const MEALS = ['Café da Manhã','Almoço','Lanche','Jantar','Ceia'];
+
+// ===== ESTADO =====
+let curPage   = 'dashboard';
+let treinoDay = 0;
+let weekOff   = 0;
+let taskView  = 'kanban';
+let dragId    = null;
+
+// ===== SUPABASE — camada de sincronização =====
+let supa     = null;   // cliente Supabase (null = não configurado)
+let lastPush = 0;      // timestamp da última gravação feita por ESTA aba
+
+// Inicializa o cliente Supabase com as credenciais salvas
+function initSupa(url, key) {
+  try {
+    const { createClient } = window.supabase;
+    supa = createClient(url, key);
+    setSyncStatus('busy', 'Conectando...');
+    pullAll().then(() => {
+      setSyncStatus('ok', 'Sincronizado');
+      subscribeRealtime();
+    }).catch(() => {
+      setSyncStatus('err', 'Erro na conexão');
+    });
+  } catch(e) {
+    setSyncStatus('err', 'Erro ao iniciar');
+  }
+}
+
+// Puxa todos os dados do Supabase e atualiza localStorage
+async function pullAll() {
+  const { data, error } = await supa.from('lifeos_data').select('key, value');
+  if (error) throw error;
+  data.forEach(row => {
+    localStorage.setItem('lo_' + row.key, JSON.stringify(row.value));
+  });
+  refreshPage(); // re-renderiza a página atual com os dados novos
+}
+
+// Envia um módulo específico ao Supabase
+async function pushSupa(key, value) {
+  if (!supa) return;
+  lastPush = Date.now();
+  setSyncStatus('busy', 'Salvando...');
+  try {
+    const { error } = await supa.from('lifeos_data').upsert({ key, value });
+    if (error) throw error;
+    setSyncStatus('ok', 'Sincronizado');
+  } catch(e) {
+    setSyncStatus('err', 'Erro ao salvar');
+    toast('⚠️ Falha ao sincronizar — dados salvos localmente');
+  }
+}
+
+// Assina mudanças em tempo real do Supabase
+function subscribeRealtime() {
+  supa.channel('lifeos-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lifeos_data' }, payload => {
+      // Ignora mudanças que vieram desta própria aba (evita loop)
+      if (Date.now() - lastPush < 2000) return;
+      const { key, value } = payload.new || {};
+      if (!key) return;
+      // Atualiza localStorage com o valor recebido
+      localStorage.setItem('lo_' + key, JSON.stringify(value));
+      setSyncStatus('ok', 'Sincronizado');
+      toast('🔄 Dados atualizados de outro dispositivo');
+      refreshPage(); // re-renderiza sem perder estado de navegação
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') setSyncStatus('ok', 'Sincronizado');
+      if (status === 'CHANNEL_ERROR') setSyncStatus('err', 'Erro de conexão');
+    });
+}
+
+// Re-renderiza a página ativa atual
+function refreshPage() {
+  const fn = { dashboard:renderDash, goals:renderGoals, dieta:renderDieta, treino:renderTreino, tasks:renderTasks };
+  fn[curPage]?.();
+}
+
+// Atualiza o indicador visual de status na sidebar
+function setSyncStatus(state, label) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + { ok:'dot-ok', err:'dot-err', busy:'dot-busy', off:'dot-off' }[state];
+  lbl.textContent = label;
+}
+
+// Exibe um toast temporário
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===== LOCALSTORAGE + SUPABASE =====
+// Cada setter salva localmente E empurra ao Supabase de forma assíncrona
+const LS = {
+  goals:  {
+    get: () => JSON.parse(localStorage.getItem('lo_goals')  || '[]'),
+    set(v) { localStorage.setItem('lo_goals',  JSON.stringify(v)); pushSupa('goals',  v); }
+  },
+  diet:   {
+    get: () => JSON.parse(localStorage.getItem('lo_diet')   || '{}'),
+    set(v) { localStorage.setItem('lo_diet',   JSON.stringify(v)); pushSupa('diet',   v); }
+  },
+  treino: {
+    get: () => JSON.parse(localStorage.getItem('lo_treino') || '{}'),
+    set(v) { localStorage.setItem('lo_treino', JSON.stringify(v)); pushSupa('treino', v); }
+  },
+  tasks:  {
+    get: () => JSON.parse(localStorage.getItem('lo_tasks')  || '[]'),
+    set(v) { localStorage.setItem('lo_tasks',  JSON.stringify(v)); pushSupa('tasks',  v); }
+  },
+  calGoal:{
+    get: () => parseInt(localStorage.getItem('lo_calgoal') || '2000'),
+    set(v) { localStorage.setItem('lo_calgoal', v);               pushSupa('calgoal', v); }
+  },
+};
+
+// ===== MODAL DE CONFIGURAÇÃO DO SUPABASE =====
+function openSyncConfig() {
+  const savedUrl = localStorage.getItem('lo_supa_url') || '';
+  const savedKey = localStorage.getItem('lo_supa_key') || '';
+  const isConfigured = !!(savedUrl && savedKey);
+
+  document.getElementById('mc').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeMC()">
+      <div class="modal modal-wide">
+        <h3>☁️ Sincronização em Tempo Real — Supabase</h3>
+
+        ${!isConfigured ? `
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+          Para sincronizar entre computadores, siga os passos abaixo uma única vez.
+          Depois, qualquer alteração feita em qualquer PC aparecerá automaticamente nos outros.
+        </p>
+
+        <div class="setup-step">
+          <div class="setup-step-num">Passo 1 — Criar conta gratuita</div>
+          <p>Acesse <strong style="color:var(--accent-l)">supabase.com</strong> → clique em <em>Start your project</em> → crie uma conta gratuita com GitHub ou e-mail.</p>
+        </div>
+
+        <div class="setup-step">
+          <div class="setup-step-num">Passo 2 — Criar um projeto</div>
+          <p>Clique em <em>New Project</em>, escolha um nome (ex: <em>life-os</em>), defina uma senha de banco de dados e selecione a região mais próxima. Aguarde ~1 min para o projeto inicializar.</p>
+        </div>
+
+        <div class="setup-step">
+          <div class="setup-step-num">Passo 3 — Criar a tabela (SQL Editor)</div>
+          <p>No menu lateral do projeto, clique em <strong>SQL Editor</strong> → <em>New query</em> → cole e execute o SQL abaixo:</p>
+          <div class="code-block">-- Cria a tabela de dados do Life OS
+create table if not exists lifeos_data (
+  key        text primary key,
+  value      jsonb not null default '{}',
+  updated_at timestamptz default now()
+);
+
+-- Libera acesso público (app pessoal sem login)
+alter table lifeos_data enable row level security;
+
+create policy "acesso_publico" on lifeos_data
+  for all using (true) with check (true);
+
+-- Habilita sincronização em tempo real
+alter publication supabase_realtime add table lifeos_data;</div>
+        </div>
+
+        <div class="setup-step">
+          <div class="setup-step-num">Passo 4 — Copiar as credenciais</div>
+          <p>Vá em <strong>Project Settings → API</strong>. Copie:<br>
+          • <em>Project URL</em> (ex: https://abcxyz.supabase.co)<br>
+          • <em>anon / public</em> key (começa com eyJ...)</p>
+        </div>
+        ` : `
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px">✅ Supabase configurado. Edite as credenciais abaixo se necessário.</p>
+        `}
+
+        <div class="fg" style="margin-top:${isConfigured?'0':'8px'}">
+          <label>Project URL</label>
+          <input id="supa-url" type="url" value="${esc(savedUrl)}" placeholder="https://xxxxxxxx.supabase.co">
+        </div>
+        <div class="fg">
+          <label>Anon Key (chave pública)</label>
+          <input id="supa-key" type="text" value="${esc(savedKey)}" placeholder="eyJhbGciOiJIUzI1NiIs...">
+        </div>
+
+        <div class="mf">
+          ${isConfigured ? `<button class="btn btn-d" onclick="disconnectSupa()">Desconectar</button>` : ''}
+          <button class="btn btn-g" onclick="closeMC()">Cancelar</button>
+          <button class="btn btn-p" onclick="connectSupa()">Conectar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function connectSupa() {
+  const url = document.getElementById('supa-url').value.trim();
+  const key = document.getElementById('supa-key').value.trim();
+  if (!url || !key) { toast('⚠️ Preencha URL e Key'); return; }
+  localStorage.setItem('lo_supa_url', url);
+  localStorage.setItem('lo_supa_key', key);
+  closeMC();
+  initSupa(url, key);
+  toast('🔄 Conectando ao Supabase...');
+}
+
+function disconnectSupa() {
+  localStorage.removeItem('lo_supa_url');
+  localStorage.removeItem('lo_supa_key');
+  supa = null;
+  setSyncStatus('off', 'Sem sincronização');
+  closeMC();
+  toast('🔌 Sincronização desativada — dados mantidos localmente');
+}
+
+// ===== NAVEGAÇÃO =====
+document.querySelectorAll('.sb-item').forEach(el => {
+  el.addEventListener('click', () => goto(el.dataset.p));
+});
+
+function goto(page) {
+  document.querySelectorAll('.sb-item').forEach(e => e.classList.toggle('active', e.dataset.p === page));
+  document.querySelectorAll('.page').forEach(e => e.classList.toggle('active', e.id === 'page-' + page));
+  curPage = page;
+  refreshPage();
+}
+
+// ===== UTILITÁRIOS =====
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function weekStart(offset = 0) {
+  const t = new Date();
+  const diff = (t.getDay() === 0 ? -6 : 1 - t.getDay());
+  const m = new Date(t);
+  m.setDate(t.getDate() + diff + offset * 7);
+  m.setHours(0,0,0,0);
+  return m;
+}
+
+function dk(date) { return date.toISOString().split('T')[0]; }
+
+function fmtD(s) {
+  if (!s) return '—';
+  return new Date(s + 'T00:00:00').toLocaleDateString('pt-BR');
+}
+
+function wk(offset = 0) { return dk(weekStart(offset)); }
+
+function closeMC() { document.getElementById('mc').innerHTML = ''; }
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMC(); });
+
+/* =========================================
+   MÓDULO 1 — DASHBOARD
+   ========================================= */
+function renderDash() {
+  const goals  = LS.goals.get();
+  const tasks  = LS.tasks.get();
+  const diet   = LS.diet.get();
+  const treino = LS.treino.get();
+  const cg     = LS.calGoal.get();
+
+  const active  = goals.filter(g => g.status !== 'Done');
+  const avgProg = active.length
+    ? Math.round(active.reduce((s,g) => s + (parseInt(g.progress)||0), 0) / active.length)
+    : 0;
+
+  const todayIdx = (() => { const d=new Date().getDay(); return d===0?6:d-1; })();
+  const todayWk  = wk(0);
+  let todayCal = 0;
+  MEALS.forEach((_,mi) => {
+    const c = diet[todayWk]?.[mi]?.[todayIdx];
+    if (c) todayCal += parseInt(c.cal)||0;
+  });
+
+  const ws = weekStart(0);
+  let weekW = 0;
+  for (let i=0;i<7;i++) {
+    const d = new Date(ws); d.setDate(ws.getDate()+i);
+    if (treino[dk(d)]?.done) weekW++;
+  }
+
+  const openT = tasks.filter(t => t.status !== 'Done').length;
+
+  document.getElementById('db-cards').innerHTML = `
+    <div class="card">
+      <div class="card-ico">🎯</div>
+      <div class="card-lbl">Progresso Médio (Goals Ativos)</div>
+      <div class="card-val" style="color:var(--accent-l)">${avgProg}%</div>
+      <div class="pw"><div class="pb" style="width:${avgProg}%"></div></div>
+      <div class="card-sub" style="margin-top:6px">${active.length} meta(s) ativa(s)</div>
+    </div>
+    <div class="card">
+      <div class="card-ico">🥗</div>
+      <div class="card-lbl">Calorias Hoje</div>
+      <div class="card-val" style="color:${todayCal>=cg?'var(--yellow)':'var(--green)'}">${todayCal}</div>
+      <div class="card-sub">Meta: ${cg} kcal · Saldo: ${cg - todayCal} kcal</div>
+    </div>
+    <div class="card">
+      <div class="card-ico">💪</div>
+      <div class="card-lbl">Treinos Esta Semana</div>
+      <div class="card-val" style="color:var(--blue)">${weekW}</div>
+      <div class="card-sub">de 7 dias possíveis</div>
+    </div>
+    <div class="card">
+      <div class="card-ico">📋</div>
+      <div class="card-lbl">Tasks Abertas</div>
+      <div class="card-val" style="color:${openT>5?'var(--red)':'var(--text)'}">${openT}</div>
+      <div class="card-sub">${tasks.length} tasks no total</div>
+    </div>
+  `;
+
+  let det = '';
+  if (goals.length) {
+    det += `<div class="sec-title" style="margin-bottom:12px">Goals Recentes</div>`;
+    goals.slice(0,4).forEach(g => {
+      const pct = Math.max(0, Math.min(100, parseInt(g.progress)||0));
+      const sc  = g.status==='Done'?'b-done':g.status==='In Progress'?'b-prog':'b-todo';
+      det += `
+        <div class="card mb16">
+          <div class="flex ai" style="justify-content:space-between;margin-bottom:6px">
+            <span style="font-weight:600;font-size:14px">${esc(g.name)||'(sem nome)'}</span>
+            <span class="badge ${sc}">${g.status}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${esc(g.category)} · Prazo: ${fmtD(g.deadline)}</div>
+          <div class="flex ai g8">
+            <div class="pw" style="flex:1"><div class="pb" style="width:${pct}%"></div></div>
+            <span style="font-size:12px;color:var(--text2);width:34px;text-align:right">${pct}%</span>
+          </div>
+        </div>`;
+    });
+  }
+  document.getElementById('db-detail').innerHTML = det;
+}
+
+/* =========================================
+   MÓDULO 2 — GOALS
+   ========================================= */
+function addGoal() {
+  const goals = LS.goals.get();
+  goals.push({ id:uid(), name:'', category:'English', deadline:'', status:'Not Started', progress:0, notes:'' });
+  LS.goals.set(goals);
+  renderGoals();
+  setTimeout(() => { document.querySelector('#goals-body tr:last-child .ii')?.focus(); }, 40);
+}
+
+function delGoal(id) {
+  LS.goals.set(LS.goals.get().filter(g => g.id !== id));
+  renderGoals();
+}
+
+function upGoal(id, field, val) {
+  const goals = LS.goals.get();
+  const g = goals.find(g => g.id === id);
+  if (!g) return;
+  g[field] = val;
+  LS.goals.set(goals);
+  if (field === 'progress') {
+    const pct = Math.max(0, Math.min(100, parseInt(val)||0));
+    const bar = document.getElementById('gb-' + id);
+    if (bar) bar.style.width = pct + '%';
+  }
+}
+
+function renderGoals() {
+  const goals = LS.goals.get();
+  const cats  = ['English','Investment Banking','Secondary Tasks'];
+  const stats = ['Not Started','In Progress','Done'];
+  document.getElementById('goals-body').innerHTML = goals.length === 0
+    ? `<tr><td colspan="7" class="empty">Sem metas. Clique em "+ Nova Meta" para começar.</td></tr>`
+    : goals.map(g => {
+        const pct = Math.max(0, Math.min(100, parseInt(g.progress)||0));
+        return `
+          <tr>
+            <td><input class="ii" style="min-width:150px" value="${esc(g.name)}" placeholder="Nome da meta"
+              onchange="upGoal('${g.id}','name',this.value)"></td>
+            <td><select class="ii" style="min-width:150px" onchange="upGoal('${g.id}','category',this.value)">
+              ${cats.map(c=>`<option value="${c}" ${g.category===c?'selected':''}>${c}</option>`).join('')}
+            </select></td>
+            <td><input type="date" class="ii" style="min-width:130px" value="${g.deadline||''}"
+              onchange="upGoal('${g.id}','deadline',this.value)"></td>
+            <td><select class="ii" style="min-width:120px" onchange="upGoal('${g.id}','status',this.value)">
+              ${stats.map(s=>`<option value="${s}" ${g.status===s?'selected':''}>${s}</option>`).join('')}
+            </select></td>
+            <td style="min-width:150px">
+              <div class="flex ai g8">
+                <input type="number" class="ii" style="width:54px" min="0" max="100" value="${g.progress||0}"
+                  onchange="upGoal('${g.id}','progress',this.value)">
+                <div class="pw" style="flex:1"><div class="pb" id="gb-${g.id}" style="width:${pct}%"></div></div>
+              </div>
+            </td>
+            <td><input class="ii" style="min-width:110px" value="${esc(g.notes)}" placeholder="Notas..."
+              onchange="upGoal('${g.id}','notes',this.value)"></td>
+            <td><button class="btn btn-d" onclick="delGoal('${g.id}')">✕</button></td>
+          </tr>`;
+      }).join('');
+}
+
+/* =========================================
+   MÓDULO 3 — DIETA
+   ========================================= */
+function saveCalGoal() {
+  LS.calGoal.set(document.getElementById('cal-goal').value);
+}
+
+function changeWeek(d) { weekOff += d; renderDieta(); }
+
+function renderDieta() {
+  document.getElementById('cal-goal').value = LS.calGoal.get();
+  const ws   = weekStart(weekOff);
+  const days = DAYS.map((name,i) => {
+    const d = new Date(ws); d.setDate(ws.getDate()+i);
+    return { name, date:d, key:dk(d) };
+  });
+  document.getElementById('week-lbl').textContent =
+    `${days[0].date.toLocaleDateString('pt-BR')} – ${days[6].date.toLocaleDateString('pt-BR')}`;
+
+  const W    = wk(weekOff);
+  const diet = LS.diet.get();
+  const cg   = LS.calGoal.get();
+
+  document.getElementById('diet-thead').innerHTML = `<tr>
+    <th style="min-width:120px">Refeição</th>
+    ${days.map(d=>`<th class="dc">${d.name}<br><span style="font-size:10px;color:var(--text3);font-weight:400">${d.date.toLocaleDateString('pt-BR')}</span></th>`).join('')}
+  </tr>`;
+
+  document.getElementById('diet-body').innerHTML = MEALS.map((meal,mi) => `
+    <tr>
+      <td style="font-weight:500;text-align:left;white-space:nowrap">${meal}</td>
+      ${days.map((_,di) => {
+        const c = diet[W]?.[mi]?.[di];
+        return `<td onclick="openDietM('${W}',${mi},${di},'${meal}','${days[di].name}')">
+          ${c
+            ? `<div class="dc-food"><span class="fn">${esc(c.food)}</span><span class="fc">${c.cal} kcal</span><span class="fm">${c.prot}g P·${c.carb}g C·${c.fat}g G</span></div>`
+            : `<span class="dc-empty">+ Adicionar</span>`}
+        </td>`;
+      }).join('')}
+    </tr>`).join('');
+
+  const totals = days.map((_,di) => {
+    let cal=0,prot=0,carb=0,fat=0;
+    MEALS.forEach((_,mi) => {
+      const c = diet[W]?.[mi]?.[di];
+      if (c) { cal+=parseInt(c.cal)||0; prot+=parseFloat(c.prot)||0; carb+=parseFloat(c.carb)||0; fat+=parseFloat(c.fat)||0; }
+    });
+    return {cal,prot,carb,fat};
+  });
+
+  document.getElementById('diet-foot').innerHTML = `<tr>
+    <td style="text-align:left;padding:9px 14px">Total</td>
+    ${totals.map(t=>`
+      <td style="padding:9px 14px;text-align:center">
+        <div style="color:${t.cal>=cg?'var(--yellow)':'var(--green)'};font-weight:700">${t.cal} kcal</div>
+        <div style="font-size:10px;color:var(--text3)">${t.prot.toFixed(0)}P·${t.carb.toFixed(0)}C·${t.fat.toFixed(0)}G</div>
+      </td>`).join('')}
+  </tr>`;
+}
+
+function openDietM(W, mi, di, meal, day) {
+  const diet = LS.diet.get();
+  const c    = diet[W]?.[mi]?.[di] || {};
+  document.getElementById('mc').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeMC()">
+      <div class="modal">
+        <h3>🥗 ${meal} — ${day}</h3>
+        <div class="fg"><label>Alimento / Descrição</label><input id="df-food" value="${esc(c.food||'')}"></div>
+        <div class="fg"><label>Calorias (kcal)</label><input id="df-cal" type="number" value="${c.cal||''}"></div>
+        <div class="fg"><label>Proteína (g)</label><input id="df-prot" type="number" step="0.1" value="${c.prot||''}"></div>
+        <div class="fg"><label>Carboidrato (g)</label><input id="df-carb" type="number" step="0.1" value="${c.carb||''}"></div>
+        <div class="fg"><label>Gordura (g)</label><input id="df-fat" type="number" step="0.1" value="${c.fat||''}"></div>
+        <div class="mf">
+          <button class="btn btn-d" onclick="clearDiet('${W}',${mi},${di})">Limpar</button>
+          <button class="btn btn-g" onclick="closeMC()">Cancelar</button>
+          <button class="btn btn-p" onclick="saveDiet('${W}',${mi},${di})">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function saveDiet(W, mi, di) {
+  const diet = LS.diet.get();
+  if (!diet[W])       diet[W]     = {};
+  if (!diet[W][mi])   diet[W][mi] = {};
+  diet[W][mi][di] = {
+    food: document.getElementById('df-food').value,
+    cal:  document.getElementById('df-cal').value  || 0,
+    prot: document.getElementById('df-prot').value || 0,
+    carb: document.getElementById('df-carb').value || 0,
+    fat:  document.getElementById('df-fat').value  || 0,
+  };
+  LS.diet.set(diet);
+  closeMC(); renderDieta();
+}
+
+function clearDiet(W, mi, di) {
+  const diet = LS.diet.get();
+  if (diet[W]?.[mi]) delete diet[W][mi][di];
+  LS.diet.set(diet);
+  closeMC(); renderDieta();
+}
+
+/* =========================================
+   MÓDULO 4 — TREINO
+   ========================================= */
+function renderTreino() {
+  const ws     = weekStart(0);
+  const treino = LS.treino.get();
+  document.getElementById('treino-tabs').innerHTML = DAYS.map((day,i) => {
+    const d = new Date(ws); d.setDate(ws.getDate()+i);
+    const done = treino[dk(d)]?.done;
+    return `<div class="tab ${i===treinoDay?'active':''} ${done?'tdone':''}" onclick="selDay(${i})">
+      ${done?'✅ ':''}${day}
+    </div>`;
+  }).join('');
+  renderDayContent();
+  renderHist();
+}
+
+function selDay(i) { treinoDay = i; renderTreino(); }
+
+function renderDayContent() {
+  const ws  = weekStart(0);
+  const d   = new Date(ws); d.setDate(ws.getDate() + treinoDay);
+  const key = dk(d);
+  const treino = LS.treino.get();
+  const day    = treino[key] || { exercises:[], done:false };
+
+  document.getElementById('treino-day').innerHTML = `
+    <div class="flex ai" style="justify-content:space-between;margin-bottom:16px">
+      <div>
+        <span style="font-weight:600;font-size:16px">${DAYS[treinoDay]}</span>
+        <span style="font-size:12px;color:var(--text3);margin-left:8px">${d.toLocaleDateString('pt-BR')}</span>
+      </div>
+      <div class="flex g8">
+        <button class="btn btn-p" onclick="openExcM('${key}')">+ Exercício</button>
+        <button class="btn ${day.done?'btn-g':'btn-s'}" onclick="toggleDone('${key}')">
+          ${day.done?'✓ Concluído':'Marcar Concluído'}
+        </button>
+      </div>
+    </div>
+    ${!day.exercises?.length
+      ? `<div class="empty">Nenhum exercício para este dia.</div>`
+      : day.exercises.map((ex,ei) => {
+          const det = ex.type==='Cardio'
+            ? `${ex.dur||0} min · ${ex.dist||0} km`
+            : `${ex.sets||0} séries × ${ex.reps||0} reps · ${ex.load||0} kg`;
+          return `
+            <div class="exc">
+              <div class="exc-info">
+                <div class="flex ai g8" style="margin-bottom:3px">
+                  <span class="exc-name">${esc(ex.name)}</span>
+                  <span class="exc-type ${ex.type==='Cardio'?'t-card':'t-musc'}">${ex.type}</span>
+                </div>
+                <div class="exc-det"><span>${det}</span></div>
+              </div>
+              <button class="btn btn-d" onclick="delExc('${key}',${ei})">✕</button>
+            </div>`;
+        }).join('')
+    }`;
+}
+
+function toggleDone(key) {
+  const treino = LS.treino.get();
+  if (!treino[key]) treino[key] = { exercises:[], done:false };
+  treino[key].done = !treino[key].done;
+  LS.treino.set(treino);
+  renderTreino();
+}
+
+function openExcM(key) {
+  document.getElementById('mc').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeMC()">
+      <div class="modal">
+        <h3>💪 Adicionar Exercício</h3>
+        <div class="fg"><label>Nome</label><input id="ex-n" placeholder="ex: Supino Reto"></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="ex-t" onchange="toggleExF()">
+            <option value="Musculação">Musculação</option>
+            <option value="Cardio">Cardio</option>
+          </select>
+        </div>
+        <div id="ex-musc">
+          <div class="fg"><label>Séries</label><input id="ex-sets" type="number" placeholder="4"></div>
+          <div class="fg"><label>Repetições</label><input id="ex-reps" type="number" placeholder="12"></div>
+          <div class="fg"><label>Carga (kg)</label><input id="ex-load" type="number" placeholder="60"></div>
+        </div>
+        <div id="ex-crd" style="display:none">
+          <div class="fg"><label>Duração (min)</label><input id="ex-dur" type="number" placeholder="30"></div>
+          <div class="fg"><label>Distância (km)</label><input id="ex-dist" type="number" step="0.1" placeholder="5"></div>
+        </div>
+        <div class="mf">
+          <button class="btn btn-g" onclick="closeMC()">Cancelar</button>
+          <button class="btn btn-p" onclick="saveExc('${key}')">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleExF() {
+  const t = document.getElementById('ex-t').value;
+  document.getElementById('ex-musc').style.display = t==='Cardio'?'none':'block';
+  document.getElementById('ex-crd').style.display  = t==='Cardio'?'block':'none';
+}
+
+function saveExc(key) {
+  const type = document.getElementById('ex-t').value;
+  const ex   = { name: document.getElementById('ex-n').value || 'Exercício', type };
+  if (type === 'Cardio') {
+    ex.dur  = document.getElementById('ex-dur').value;
+    ex.dist = document.getElementById('ex-dist').value;
+  } else {
+    ex.sets = document.getElementById('ex-sets').value;
+    ex.reps = document.getElementById('ex-reps').value;
+    ex.load = document.getElementById('ex-load').value;
+  }
+  const treino = LS.treino.get();
+  if (!treino[key]) treino[key] = { exercises:[], done:false };
+  treino[key].exercises.push(ex);
+  LS.treino.set(treino);
+  closeMC(); renderDayContent();
+}
+
+function delExc(key, idx) {
+  const treino = LS.treino.get();
+  treino[key].exercises.splice(idx, 1);
+  LS.treino.set(treino);
+  renderDayContent();
+}
+
+function renderHist() {
+  const treino = LS.treino.get();
+  const today  = new Date();
+  let html = '';
+  for (let i=6; i>=0; i--) {
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const key  = dk(d);
+    const data = treino[key];
+    if (data && (data.done || data.exercises?.length)) {
+      html += `
+        <div class="hist-item">
+          <div>
+            <span style="font-weight:600">${d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'short'})}</span>
+            <span style="font-size:12px;color:var(--text3);margin-left:8px">${data.exercises?.length||0} exercício(s)</span>
+          </div>
+          <span style="color:${data.done?'var(--green)':'var(--text3)'}">${data.done?'✅ Concluído':'⏳ Registrado'}</span>
+        </div>`;
+    }
+  }
+  document.getElementById('treino-hist').innerHTML = html || `<div class="empty">Nenhum treino nos últimos 7 dias.</div>`;
+}
+
+/* =========================================
+   MÓDULO 5 — PROJETOS & TASKS
+   ========================================= */
+function renderTasks() {
+  const isK = taskView === 'kanban';
+  document.getElementById('tasks-kanban').style.display = isK ? 'block':'none';
+  document.getElementById('tasks-table').style.display  = isK ? 'none':'block';
+  document.getElementById('view-btn').textContent = isK ? '📋 Modo Tabela':'🗂️ Modo Kanban';
+  isK ? renderKanban() : renderTable();
+}
+
+function toggleView() { taskView = taskView==='kanban'?'table':'kanban'; renderTasks(); }
+
+function renderKanban() {
+  const tasks = LS.tasks.get();
+  const cols  = ['To Do','In Progress','Done'];
+  document.getElementById('tasks-kanban').innerHTML = `
+    <div class="kanban">
+      ${cols.map(col => {
+        const ct = tasks.filter(t => t.status === col);
+        return `
+          <div class="kcol" id="col-${col.replace(/ /g,'-')}"
+            ondragover="dOver(event)" ondrop="dDrop(event,'${col}')" ondragleave="dLeave(event)">
+            <div class="kcol-hd">
+              <span class="kcol-title">${col}</span>
+              <span class="kcol-cnt">${ct.length}</span>
+            </div>
+            ${ct.map(t => kcard(t)).join('')}
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function kcard(t) {
+  const pc = {Low:'b-low',Medium:'b-med',High:'b-high'};
+  return `
+    <div class="kcard" draggable="true" id="kc-${t.id}"
+      ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)">
+      <div class="kcard-title">${esc(t.title)}</div>
+      <div class="kcard-meta">
+        <span class="badge ${pc[t.priority]||'b-low'}">${t.priority}</span>
+        ${t.project ? `<span style="font-size:11px;color:var(--text3)">📁 ${esc(t.project)}</span>` : ''}
+        ${t.deadline? `<span style="font-size:11px;color:var(--text3)">📅 ${fmtD(t.deadline)}</span>` : ''}
+      </div>
+      <div class="kcard-actions">
+        <button class="btn btn-g" style="padding:3px 8px;font-size:11px" onclick="editTask('${t.id}')">✏️</button>
+        <button class="btn btn-d" style="padding:3px 8px;font-size:11px" onclick="delTask('${t.id}')">✕</button>
+      </div>
+    </div>`;
+}
+
+function renderTable() {
+  const tasks = LS.tasks.get();
+  const pc = {Low:'b-low',Medium:'b-med',High:'b-high'};
+  const sc = {'To Do':'b-todo','In Progress':'b-prog','Done':'b-done'};
+  document.getElementById('tasks-table').innerHTML = `
+    <div class="tw">
+      <table>
+        <thead><tr><th>Task</th><th>Projeto</th><th>Prioridade</th><th>Prazo</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${!tasks.length
+            ? `<tr><td colspan="6" class="empty">Sem tasks. Clique em "+ Nova Task".</td></tr>`
+            : tasks.map(t => `
+              <tr>
+                <td style="font-weight:500">${esc(t.title)}</td>
+                <td style="color:var(--text2)">${esc(t.project||'—')}</td>
+                <td><span class="badge ${pc[t.priority]||'b-low'}">${t.priority}</span></td>
+                <td style="color:var(--text2)">${fmtD(t.deadline)}</td>
+                <td><span class="badge ${sc[t.status]||'b-todo'}">${t.status}</span></td>
+                <td><div class="flex g8">
+                  <button class="btn btn-g" style="padding:3px 8px;font-size:11px" onclick="editTask('${t.id}')">✏️</button>
+                  <button class="btn btn-d" onclick="delTask('${t.id}')">✕</button>
+                </div></td>
+              </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openTaskModal(task) {
+  const t = task || { id:'', title:'', project:'', priority:'Medium', deadline:'', status:'To Do' };
+  document.getElementById('mc').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeMC()">
+      <div class="modal">
+        <h3>${t.id ? 'Editar Task' : '+ Nova Task'}</h3>
+        <div class="fg"><label>Título</label><input id="tk-t" value="${esc(t.title)}" placeholder="Nome da task"></div>
+        <div class="fg"><label>Projeto</label><input id="tk-p" value="${esc(t.project||'')}" placeholder="Nome do projeto"></div>
+        <div class="fg"><label>Prioridade</label>
+          <select id="tk-pri">
+            ${['Low','Medium','High'].map(p=>`<option value="${p}" ${t.priority===p?'selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><label>Prazo</label><input id="tk-d" type="date" value="${t.deadline||''}"></div>
+        <div class="fg"><label>Status</label>
+          <select id="tk-s">
+            ${['To Do','In Progress','Done'].map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="mf">
+          <button class="btn btn-g" onclick="closeMC()">Cancelar</button>
+          <button class="btn btn-p" onclick="saveTask('${t.id}')">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function editTask(id) { openTaskModal(LS.tasks.get().find(t => t.id===id)); }
+
+function saveTask(id) {
+  const tasks = LS.tasks.get();
+  const data  = {
+    title:    document.getElementById('tk-t').value   || 'Sem título',
+    project:  document.getElementById('tk-p').value,
+    priority: document.getElementById('tk-pri').value,
+    deadline: document.getElementById('tk-d').value,
+    status:   document.getElementById('tk-s').value,
+  };
+  if (id) {
+    const i = tasks.findIndex(t => t.id===id);
+    if (i !== -1) tasks[i] = { ...tasks[i], ...data };
+  } else {
+    tasks.push({ ...data, id: uid() });
+  }
+  LS.tasks.set(tasks);
+  closeMC(); renderTasks();
+}
+
+function delTask(id) {
+  LS.tasks.set(LS.tasks.get().filter(t => t.id !== id));
+  renderTasks();
+}
+
+// ===== DRAG AND DROP =====
+function dStart(e, id) {
+  dragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => document.getElementById('kc-' + id)?.classList.add('dragging'), 0);
+}
+function dEnd()    { document.querySelectorAll('.kcard,.kcol').forEach(c => c.classList.remove('dragging','drag-over')); }
+function dOver(e)  { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function dDrop(e, status) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragId) return;
+  const tasks = LS.tasks.get();
+  const t = tasks.find(t => t.id === dragId);
+  if (t) { t.status = status; LS.tasks.set(tasks); renderKanban(); }
+  dragId = null;
+}
+
+/* =============================================
+   INICIALIZAÇÃO
+   ============================================= */
+
+// Ao carregar a página, tenta reconectar ao Supabase automaticamente
+(function boot() {
+  const url = localStorage.getItem('lo_supa_url');
+  const key = localStorage.getItem('lo_supa_key');
+  if (url && key) {
+    initSupa(url, key);
+  }
+  renderDash();
+})();
+</script>
+</body>
+</html>
