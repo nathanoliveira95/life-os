@@ -1277,6 +1277,159 @@ textarea{font-family:var(--font-mono);line-height:1.6;tab-size:2}
   #pageFx .fx-bar.b{display:none}
   .page.active{animation-duration:.4s}
 }
+
+/* =============================================================
+   📱 MOBILE LAYER — auto-detect (sem precisar de toggle manual)
+   Breakpoint principal: 820px (cobre celulares e tablets pequenos)
+   ============================================================= */
+
+/* Botão hambúrguer + backdrop — escondidos no desktop */
+.mob-nav-btn{display:none}
+.mob-backdrop{display:none}
+
+@media (max-width: 820px){
+  /* ---------- Layout base ---------- */
+  body{height:100vh;height:100dvh;overflow:hidden;display:block;position:relative}
+
+  /* ---------- Sidebar vira drawer ---------- */
+  .sidebar{
+    position:fixed;top:0;left:0;height:100vh;height:100dvh;
+    width:80vw;max-width:280px;min-width:0;
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    z-index:1000;
+    box-shadow:6px 0 32px rgba(0,0,0,.7),inset -1px 0 0 rgba(0,168,255,.2);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  body.mob-nav-open .sidebar{transform:translateX(0)}
+
+  .mob-backdrop{
+    display:block;position:fixed;inset:0;z-index:999;
+    background:rgba(0,0,0,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    opacity:0;pointer-events:none;transition:opacity .28s;
+  }
+  body.mob-nav-open .mob-backdrop{opacity:1;pointer-events:auto}
+
+  /* Botão hambúrguer flutuante */
+  .mob-nav-btn{
+    display:flex;flex-direction:column;justify-content:space-between;
+    position:fixed;top:14px;left:14px;z-index:1001;
+    width:44px;height:44px;padding:11px 9px;
+    background:rgba(8,16,28,.92);border:1px solid var(--hud-line,rgba(0,168,255,.3));
+    border-radius:6px;cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.5),0 0 12px rgba(0,168,255,.2);
+    transition:transform .2s, background .2s;
+  }
+  .mob-nav-btn span{
+    display:block;height:2px;width:100%;
+    background:#00d4ff;border-radius:2px;
+    transition:transform .25s, opacity .25s;
+    box-shadow:0 0 4px rgba(0,212,255,.6);
+  }
+  body.mob-nav-open .mob-nav-btn{background:rgba(0,168,255,.18)}
+  body.mob-nav-open .mob-nav-btn span:nth-child(1){transform:translateY(9px) rotate(45deg)}
+  body.mob-nav-open .mob-nav-btn span:nth-child(2){opacity:0}
+  body.mob-nav-open .mob-nav-btn span:nth-child(3){transform:translateY(-9px) rotate(-45deg)}
+
+  /* ---------- Conteúdo principal ---------- */
+  .main{padding:62px 14px 24px;height:100vh;height:100dvh;width:100vw}
+  .page h1, .page h2{font-size:1.4rem;line-height:1.2;margin-bottom:14px;word-break:break-word}
+  .page h3{font-size:1.1rem}
+
+  /* ---------- HUD pesado: desliga pra performance ---------- */
+  .hud-bg .hud-core,
+  .hud-bg svg.hud-rings,
+  .hud-spotlight,
+  .hud-sight,
+  .hud-stream,
+  .hud-coord,
+  .hud-clock,
+  body::before{display:none !important}
+  .hud-bg{opacity:.4}
+
+  /* ---------- Grids viram coluna única ---------- */
+  .ctrl-grid,
+  .ctrl-budget-grid,
+  .port-layout,
+  .saude-layout,
+  .dash-grid,
+  .dash-cards,
+  .stat-grid,
+  .grid-2,
+  .grid-3,
+  .grid-4{
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  /* Cards menores */
+  .card,.stat-card,.dash-card,.metric-card{padding:14px;border-radius:8px}
+
+  /* ---------- Modais ocupam quase a tela ---------- */
+  .overlay{padding:8px;align-items:flex-start;padding-top:60px}
+  .modal,.modal-wide{
+    width:96vw !important;max-width:96vw !important;max-height:85vh;
+    padding:18px 16px;overflow-y:auto;border-radius:10px;
+  }
+  .modal h3{font-size:1.05rem;margin-bottom:12px}
+  .mf{flex-wrap:wrap;gap:8px}
+  .mf .btn{flex:1 1 auto;min-width:100px}
+
+  /* ---------- Inputs e formulários ---------- */
+  .fg{margin-bottom:10px}
+  input,select,textarea,.btn{
+    font-size:16px !important; /* impede zoom no iOS */
+    min-height:42px;
+    box-sizing:border-box;
+  }
+  textarea{min-height:80px}
+  .btn{padding:10px 14px}
+
+  /* ---------- Tabelas: scroll horizontal ---------- */
+  table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  table th,table td{padding:8px 10px;font-size:13px}
+
+  /* ---------- Controling: linha de despesa compacta ---------- */
+  .ctrl-exp-row{
+    grid-template-columns:1fr 80px 32px !important;
+    gap:6px;font-size:13px;
+  }
+  .ctrl-exp-row input,.ctrl-exp-row select{font-size:14px !important;padding:6px 8px;min-height:36px}
+
+  /* ---------- Sidebar interna: itens maiores pra dedo ---------- */
+  .sb-item{padding:12px 16px;font-size:15px}
+  .sb-label{padding:10px 16px 6px;font-size:11px}
+  .sb-logo{padding:18px 16px 10px}
+  .sb-footer{padding:14px 16px}
+
+  /* ---------- Toast e elementos flutuantes ---------- */
+  #toast{left:10px;right:10px;bottom:14px;width:auto;max-width:none;font-size:13px;padding:12px 14px}
+  #pageFx{display:none}
+
+  /* ---------- Charts/gráficos ---------- */
+  canvas{max-width:100% !important;height:auto !important}
+  .chart-wrap,.pie-wrap{max-width:100%;overflow:hidden}
+
+  /* ---------- Reduzir animações pesadas ---------- */
+  .page.active{animation-duration:.3s !important}
+  .pb::before{display:none}
+}
+
+/* Ajustes finos pra celulares MUITO pequenos (≤380px) */
+@media (max-width: 380px){
+  .main{padding:58px 10px 20px}
+  .page h1,.page h2{font-size:1.2rem}
+  .modal,.modal-wide{padding:14px 12px}
+  .ctrl-exp-row{grid-template-columns:1fr 70px 28px !important;font-size:12px}
+  .sb-item{font-size:14px;padding:11px 14px}
+}
+
+/* Tablet em retrato (821-1024px): sidebar visível mas mais estreita */
+@media (min-width: 821px) and (max-width: 1024px){
+  .sidebar{width:180px;min-width:180px}
+  .main{padding:24px 24px}
+  .ctrl-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
@@ -1448,6 +1601,12 @@ textarea{font-family:var(--font-mono);line-height:1.6;tab-size:2}
   <div class="fx-bar a"></div>
   <div class="fx-bar b"></div>
 </div>
+
+<!-- BOTÃO HAMBÚRGUER MOBILE + BACKDROP -->
+<button id="mobNavBtn" class="mob-nav-btn" onclick="toggleMobNav()" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
+<div id="mobBackdrop" class="mob-backdrop" onclick="toggleMobNav(false)"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -1697,20 +1856,43 @@ let progIdx   = 0; // índice atual na galeria de fotos de progresso
 let supa     = null;   // cliente Supabase (null = não configurado)
 let lastPush = 0;      // timestamp da última gravação feita por ESTA aba
 
+// Helper: log + toast de erro com mensagem completa pra debug
+function syncError(stage, err) {
+  const msg = (err && (err.message || err.error_description || err.hint)) || String(err || 'desconhecido');
+  console.error('[Supa]', stage, err);
+  setSyncStatus('err', 'Erro: ' + stage);
+  toast('⚠️ ' + stage + ': ' + msg);
+  // Expõe último erro pra inspeção no console: window._supaLastError
+  window._supaLastError = { stage, err, msg, when: new Date().toISOString() };
+}
+
 // Inicializa o cliente Supabase com as credenciais salvas
 function initSupa(url, key) {
+  if (!window.supabase || !window.supabase.createClient) {
+    syncError('SDK não carregado', new Error('window.supabase indisponível — verifique conexão com a internet'));
+    return;
+  }
+  // Validação básica de formato
+  if (!/^https:\/\/[a-z0-9]+\.supabase\.co\/?$/i.test(url)) {
+    syncError('URL inválida', new Error('Use o formato https://xxxxx.supabase.co'));
+    return;
+  }
+  if (!/^eyJ/.test(key)) {
+    syncError('Chave inválida', new Error('A anon key começa com eyJ...'));
+    return;
+  }
   try {
     const { createClient } = window.supabase;
-    supa = createClient(url, key);
+    supa = createClient(url, key, { realtime: { params: { eventsPerSecond: 5 } } });
+    console.info('[Supa] Cliente criado. Conectando em', url);
     setSyncStatus('busy', 'Conectando...');
     pullAll().then(() => {
       setSyncStatus('ok', 'Sincronizado');
       subscribeRealtime();
-    }).catch(() => {
-      setSyncStatus('err', 'Erro na conexão');
-    });
+      toast('✓ Conectado ao Supabase');
+    }).catch(err => syncError('pull falhou', err));
   } catch(e) {
-    setSyncStatus('err', 'Erro ao iniciar');
+    syncError('init falhou', e);
   }
 }
 
@@ -1718,7 +1900,9 @@ function initSupa(url, key) {
 async function pullAll() {
   const { data, error } = await supa.from('lifeos_data').select('key, value');
   if (error) throw error;
-  data.forEach(row => {
+  console.info('[Supa] pullAll: ' + (data?.length || 0) + ' registro(s)');
+  (data || []).forEach(row => {
+    if (row.value === null || row.value === undefined) return; // não sobrescreve com vazio
     localStorage.setItem('lo_' + row.key, JSON.stringify(row.value));
   });
   refreshPage(); // re-renderiza a página atual com os dados novos
@@ -1730,12 +1914,11 @@ async function pushSupa(key, value) {
   lastPush = Date.now();
   setSyncStatus('busy', 'Salvando...');
   try {
-    const { error } = await supa.from('lifeos_data').upsert({ key, value });
+    const { error } = await supa.from('lifeos_data').upsert({ key, value, updated_at: new Date().toISOString() });
     if (error) throw error;
     setSyncStatus('ok', 'Sincronizado');
   } catch(e) {
-    setSyncStatus('err', 'Erro ao salvar');
-    toast('⚠️ Falha ao sincronizar — dados salvos localmente');
+    syncError('push ' + key, e);
   }
 }
 
@@ -1745,19 +1928,38 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'lifeos_data' }, payload => {
       // Ignora mudanças que vieram desta própria aba (evita loop)
       if (Date.now() - lastPush < 2000) return;
-      const { key, value } = payload.new || {};
+      const row = payload.new || payload.old || {};
+      const { key, value } = row;
       if (!key) return;
-      // Atualiza localStorage com o valor recebido
-      localStorage.setItem('lo_' + key, JSON.stringify(value));
+      console.info('[Supa] realtime ←', key);
+      if (value !== null && value !== undefined) {
+        localStorage.setItem('lo_' + key, JSON.stringify(value));
+      }
       setSyncStatus('ok', 'Sincronizado');
       toast('🔄 Dados atualizados de outro dispositivo');
       refreshPage(); // re-renderiza sem perder estado de navegação
     })
     .subscribe(status => {
-      if (status === 'SUBSCRIBED') setSyncStatus('ok', 'Sincronizado');
-      if (status === 'CHANNEL_ERROR') setSyncStatus('err', 'Erro de conexão');
+      console.info('[Supa] channel status:', status);
+      if (status === 'SUBSCRIBED')   setSyncStatus('ok', 'Sincronizado');
+      if (status === 'CHANNEL_ERROR') syncError('realtime', new Error('CHANNEL_ERROR — confira se rodou: alter publication supabase_realtime add table lifeos_data;'));
+      if (status === 'TIMED_OUT')     syncError('realtime', new Error('TIMED_OUT — sem conexão com o servidor'));
     });
 }
+
+// Função de diagnóstico — chame no console: testSupa()
+window.testSupa = async function() {
+  if (!supa) { console.warn('Supabase não inicializado. Configure em Sincronização.'); return; }
+  console.info('--- TESTE SUPABASE ---');
+  try {
+    const r1 = await supa.from('lifeos_data').select('key').limit(1);
+    console.info('SELECT:', r1.error ? '❌ ' + r1.error.message : '✓ ok (' + (r1.data?.length||0) + ' linha)');
+    const r2 = await supa.from('lifeos_data').upsert({ key: '_ping', value: { ts: Date.now() } });
+    console.info('UPSERT:', r2.error ? '❌ ' + r2.error.message : '✓ ok');
+    console.info('--- fim ---');
+    return { select: r1, upsert: r2 };
+  } catch(e) { console.error('Falha:', e); }
+};
 
 // Re-renderiza a página ativa atual
 function refreshPage() {
@@ -1957,7 +2159,21 @@ function disconnectSupa() {
 
 // ===== NAVEGAÇÃO =====
 document.querySelectorAll('.sb-item').forEach(el => {
-  el.addEventListener('click', () => goto(el.dataset.p));
+  el.addEventListener('click', () => {
+    goto(el.dataset.p);
+    // Em mobile, fecha o drawer ao escolher uma página
+    if (window.matchMedia('(max-width: 820px)').matches) toggleMobNav(false);
+  });
+});
+
+// ===== TOGGLE MENU MOBILE =====
+function toggleMobNav(force) {
+  const open = (typeof force === 'boolean') ? force : !document.body.classList.contains('mob-nav-open');
+  document.body.classList.toggle('mob-nav-open', open);
+}
+// ESC fecha o menu mobile
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.body.classList.contains('mob-nav-open')) toggleMobNav(false);
 });
 
 function goto(page) {
