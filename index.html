@@ -15,10 +15,10 @@
 /* ===== RESET ===== */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0A0E14;--sidebar:#060910;--accent:#00A8FF;--accent-l:#38BDF8;
-  --accent-glow:#00D4FF;--hud-line:rgba(56,189,248,.28);
-  --text:#E8F4FF;--text2:#9CB3C9;--text3:#5A7088;
-  --border:#1A2332;--card:#0F1420;--card2:#141A28;--input:#0D121C;
+  --bg:#141B26;--sidebar:#10161F;--accent:#00A8FF;--accent-l:#38BDF8;
+  --accent-glow:#00D4FF;--hud-line:rgba(56,189,248,.32);
+  --text:#F0F7FF;--text2:#B5C7DB;--text3:#7C95B0;
+  --border:#293849;--card:#1B2433;--card2:#212C3D;--input:#19222F;
   --green:#10B981;--yellow:#F59E0B;--red:#EF4444;--blue:#38BDF8;
   --font:Inter,system-ui,-apple-system,sans-serif;
   --font-hud:'Space Grotesk',Inter,sans-serif;
@@ -700,6 +700,26 @@ tbody tr:hover{background:rgba(0,168,255,.06)}
 .port-layout{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;margin-top:16px}
 @media(max-width:900px){.port-layout{grid-template-columns:1fr}}
 .port-pie-wrap,.port-list-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px}
+.pie-v2{display:flex;flex-direction:column;align-items:center;gap:18px}
+.pie-svg{display:block;margin:0 auto}
+.pie-legend-v2{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:4px}
+.pie-leg-item-v2{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(0,168,255,.04);border:1px solid var(--border);border-radius:8px;transition:background .15s, border-color .15s}
+.pie-leg-item-v2:hover{background:rgba(0,168,255,.08);border-color:var(--accent-l)}
+.pie-leg-bar{width:4px;align-self:stretch;border-radius:2px;flex-shrink:0}
+.pie-leg-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.pie-leg-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pie-leg-name{font-size:13px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.06em}
+.pie-leg-pct{font-family:var(--font-mono);font-size:13px;font-weight:700}
+.pie-leg-val{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+
+/* Gráfico de retorno ao longo do tempo */
+.port-returns-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-top:18px}
+.returns-stats{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:14px;padding:12px 14px;background:rgba(0,168,255,.05);border:1px solid var(--border);border-radius:8px}
+.rs-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.rs-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.rs-lbl{color:var(--text2);text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+.rs-val{font-family:var(--font-mono);font-weight:700;color:var(--text)}
+.returns-svg{display:block;background:linear-gradient(180deg,rgba(0,168,255,.02),transparent);border-radius:6px}
 .port-pie-wrap .sec-title,.port-list-wrap .sec-title{margin-bottom:14px}
 .pie-container{display:flex;flex-direction:column;align-items:center;gap:14px}
 .pie-svg{width:220px;height:220px;filter:drop-shadow(0 0 20px rgba(0,212,255,.25))}
@@ -736,7 +756,7 @@ tbody tr:hover{background:rgba(0,168,255,.06)}
 
 :root{
   /* Profundidade */
-  --bg-deep:#05070C; --bg-elev-1:#0C1119; --bg-elev-2:#111826;
+  --bg-deep:#0E1420; --bg-elev-1:#1A2230; --bg-elev-2:#222C3D;
   /* Acento expandido */
   --accent-d:#0088CC; --accent-hot:#A7F3FF;
   /* Estados cinematográficos */
@@ -1296,6 +1316,15 @@ textarea{font-family:var(--font-mono);line-height:1.6;tab-size:2}
   .page.active{animation-duration:.4s}
 }
 
+/* Cards clicáveis: hover sutil HUD */
+.card-clickable{transition:transform .18s ease, border-color .18s ease, box-shadow .25s ease}
+.card-clickable:hover{
+  transform:translateY(-2px);
+  border-color:var(--accent-l);
+  box-shadow:0 6px 22px rgba(0,168,255,.18), 0 0 0 1px rgba(56,189,248,.35) inset;
+}
+.card-clickable:active{transform:translateY(0)}
+
 /* =============================================================
    📱 MOBILE LAYER — ativo via classe body.is-mobile
    Aplicado automaticamente em telas ≤820px OU quando o usuário
@@ -1443,21 +1472,519 @@ body.is-mobile .pb::before{display:none}
   body.is-mobile .sb-item{font-size:14px;padding:11px 14px}
 }
 
-/* Botão "Ativar modo mobile" no rodapé da sidebar (sempre visível) */
-.mob-toggle-btn{
-  display:flex;align-items:center;gap:8px;justify-content:center;
-  width:100%;margin-top:10px;padding:10px 12px;
-  background:rgba(0,168,255,.08);border:1px solid rgba(0,168,255,.3);
-  color:#00d4ff;font-family:inherit;font-size:12px;letter-spacing:.5px;
-  border-radius:6px;cursor:pointer;text-transform:uppercase;
-  transition:background .2s, transform .15s;
+/* =================================================================
+   POLISH SENIOR LEVEL — 12-PASS DETAILING
+   Variáveis novas, boot, status bar, tooltips, micro-interações.
+   Zero alteração de lógica funcional.
+   ================================================================= */
+
+:root{
+  --ease-out-expo:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart:   cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-snap:        cubic-bezier(0.4, 0, 0, 1);
+  --ease-jarvis:      cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-micro: 120ms; --t-std: 240ms; --t-large: 400ms; --t-show: 700ms;
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-3: 0 8px 24px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-4: 0 16px 48px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.5);
+  --glow-soft:   0 0 20px rgba(0, 212, 255, 0.25);
+  --glow-medium: 0 0 24px rgba(0, 212, 255, 0.4), 0 0 48px rgba(0, 212, 255, 0.15);
+  --glow-strong: 0 0 32px rgba(0, 240, 255, 0.6), 0 0 64px rgba(0, 212, 255, 0.25), 0 0 96px rgba(0, 212, 255, 0.1);
 }
-.mob-toggle-btn:hover{background:rgba(0,168,255,.18)}
-.mob-toggle-btn:active{transform:scale(.97)}
-body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color:#00d4ff;box-shadow:0 0 10px rgba(0,212,255,.3)}
+
+::selection{background:rgba(0,212,255,.4);color:#fff;text-shadow:0 0 8px var(--accent-glow,#00D4FF)}
+input,textarea{caret-color:var(--accent-glow,#00D4FF)}
+:focus-visible{outline:1px solid var(--accent-glow,#00D4FF);outline-offset:2px;box-shadow:0 0 0 4px rgba(0,212,255,.18)}
+
+/* cursor crosshair removido a pedido — UI mais sóbria */
+
+/* 1 · BOOT SEQUENCE OVERLAY */
+#oliv-boot{
+  position:fixed;inset:0;z-index:99999;
+  background:radial-gradient(ellipse at center,rgba(0,30,55,.95) 0%,rgba(0,0,0,.99) 70%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',ui-monospace,monospace;color:#9CB3C9;
+  transition:opacity 400ms var(--ease-out-quart),visibility 400ms;
+}
+#oliv-boot.fading{opacity:0;visibility:hidden}
+#oliv-boot::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at center,transparent 30%,rgba(0,0,0,.6) 100%);
+}
+#oliv-boot::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,212,255,.04) 0 1px,transparent 1px 4px);
+  mix-blend-mode:screen;
+}
+.oliv-boot-logo{
+  font-family:'Orbitron','Space Grotesk',sans-serif;font-weight:900;
+  font-size:64px;letter-spacing:.32em;color:#00D4FF;
+  text-shadow:0 0 16px rgba(0,212,255,.8),0 0 40px rgba(0,212,255,.4),0 0 80px rgba(0,212,255,.2);
+  animation:oliv-boot-logo 1200ms var(--ease-out-expo) both;
+  margin-bottom:8px;position:relative;z-index:2;
+}
+.oliv-boot-sub{
+  font-size:10px;letter-spacing:.5em;color:rgba(0,212,255,.5);
+  margin-bottom:36px;position:relative;z-index:2;
+  animation:oliv-boot-fade 600ms 400ms var(--ease-out-quart) both;
+}
+.oliv-boot-log{
+  width:min(440px,86vw);font-size:11px;line-height:1.9;
+  text-align:left;position:relative;z-index:2;min-height:130px;padding:0 14px;
+}
+.oliv-boot-log .ll{display:block;white-space:nowrap;overflow:hidden}
+.oliv-boot-log .lk{color:#00D4FF}
+.oliv-boot-log .lv{color:#10B981;text-shadow:0 0 6px rgba(16,185,129,.6)}
+.oliv-boot-bar{
+  width:min(440px,86vw);height:2px;margin-top:24px;
+  background:rgba(0,212,255,.12);border-radius:2px;overflow:hidden;
+  position:relative;z-index:2;
+}
+.oliv-boot-bar > i{
+  display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,#0088CC,#00D4FF,#7be9ff);
+  box-shadow:0 0 12px rgba(0,212,255,.7);
+  animation:oliv-boot-progress 1700ms var(--ease-out-quart) forwards;
+}
+.oliv-boot-skip{
+  position:absolute;bottom:18px;right:20px;z-index:3;
+  background:transparent;border:1px solid rgba(0,212,255,.3);color:rgba(0,212,255,.7);
+  padding:6px 14px;font-family:inherit;font-size:10px;letter-spacing:.3em;
+  cursor:pointer;border-radius:3px;transition:all var(--t-micro) var(--ease-snap);
+}
+.oliv-boot-skip:hover{background:rgba(0,212,255,.1);color:#fff;border-color:#00D4FF}
+.oliv-boot-scan{
+  position:absolute;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,transparent,#00D4FF,transparent);
+  box-shadow:0 0 24px rgba(0,212,255,.8);opacity:0;
+  animation:oliv-boot-scanline 700ms 1500ms var(--ease-out-expo) forwards;
+}
+@keyframes oliv-boot-logo{0%{opacity:0;transform:scale(.8);filter:blur(8px)}100%{opacity:1;transform:scale(1);filter:blur(0)}}
+@keyframes oliv-boot-fade{from{opacity:0}to{opacity:1}}
+@keyframes oliv-boot-progress{from{width:0}to{width:100%}}
+@keyframes oliv-boot-scanline{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(100vh)}}
+
+/* 2 · STATUS BAR GLOBAL */
+#oliv-statusbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:500;
+  height:24px;display:flex;align-items:center;
+  background:rgba(5,7,12,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-top:1px solid rgba(0,212,255,.18);
+  font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;
+  color:#9CB3C9;letter-spacing:.04em;padding:0 14px;
+  user-select:none;
+}
+#oliv-statusbar::before{
+  content:"";position:absolute;left:0;right:0;top:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.5),transparent);
+}
+#oliv-statusbar .sb-blk{display:inline-flex;align-items:center;gap:5px;padding:0 10px;position:relative;cursor:default}
+#oliv-statusbar .sb-blk[data-tooltip]{cursor:help}
+#oliv-statusbar .sb-sep{color:rgba(0,212,255,.3);font-weight:300;padding:0 2px}
+#oliv-statusbar .sb-k{color:rgba(255,255,255,.45);text-transform:uppercase}
+#oliv-statusbar .sb-v{color:#E8F4FF;font-weight:500}
+#oliv-statusbar .sb-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+#oliv-statusbar .sb-dot.ok{background:#10B981;box-shadow:0 0 6px #10B981}
+#oliv-statusbar .sb-dot.warn{background:#FFB547;box-shadow:0 0 6px #FFB547;animation:oliv-pulse-amber 1s var(--ease-jarvis) infinite}
+#oliv-statusbar .sb-dot.err{background:#EF4444;box-shadow:0 0 6px #EF4444}
+#oliv-statusbar .sb-dot.idle{background:#5A7088}
+@keyframes oliv-pulse-amber{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.25)}}
+#oliv-statusbar .sb-scan{
+  position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.18),transparent);
+  transform:translateX(-100%);opacity:0;
+}
+#oliv-statusbar .sb-scan.run{animation:oliv-sb-scan 700ms var(--ease-out-quart) 1}
+@keyframes oliv-sb-scan{0%{opacity:1;transform:translateX(-100%)}100%{opacity:0;transform:translateX(100%)}}
+
+.main{padding-bottom:46px !important}
+body.is-mobile .main{padding-bottom:42px !important}
+body.is-mobile #oliv-statusbar .sb-blk:not(.keep-mobile){display:none}
+body.is-mobile #oliv-statusbar{font-size:10px;padding:0 8px}
+
+/* 3 · TOOLTIP SYSTEM */
+#oliv-tip{
+  position:fixed;z-index:9000;pointer-events:none;
+  background:#0E1420;border:1px solid rgba(0,212,255,.45);border-radius:4px;
+  padding:8px 12px;font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:11px;color:#E8F4FF;line-height:1.6;
+  box-shadow:var(--shadow-3),var(--glow-soft);
+  opacity:0;transform:translateY(4px);
+  transition:opacity 180ms var(--ease-out-quart),transform 180ms var(--ease-out-quart);
+  max-width:300px;white-space:pre-line;
+}
+#oliv-tip.show{opacity:1;transform:translateY(0)}
+#oliv-tip::before,#oliv-tip::after{
+  content:"";position:absolute;width:6px;height:6px;
+  border:1px solid rgba(0,212,255,.7);
+}
+#oliv-tip::before{top:-2px;left:-2px;border-right:none;border-bottom:none}
+#oliv-tip::after{bottom:-2px;right:-2px;border-left:none;border-top:none}
+#oliv-tip .tt-title{
+  color:rgba(0,212,255,.7);font-size:9px;letter-spacing:.22em;
+  margin-bottom:4px;font-weight:600;text-transform:uppercase;
+}
+#oliv-tip .tt-row{display:flex;justify-content:space-between;gap:14px;font-size:10.5px}
+#oliv-tip .tt-row .k{color:rgba(255,255,255,.45)}
+#oliv-tip .tt-row .v{color:#E8F4FF;font-weight:500}
+body.is-mobile #oliv-tip{display:none !important}
+
+/* 4 · MICRO-INTERAÇÕES */
+.btn{position:relative;overflow:hidden;transition:transform var(--t-micro) var(--ease-snap),box-shadow var(--t-std) var(--ease-jarvis),border-color var(--t-micro) var(--ease-snap)}
+.btn:hover{transform:scale(1.02);box-shadow:var(--glow-soft)}
+.btn:active{transform:scale(.97);box-shadow:none;transition:transform 80ms var(--ease-snap)}
+.btn::after{
+  content:"";position:absolute;width:8px;height:8px;border-radius:50%;
+  background:rgba(0,212,255,.55);pointer-events:none;
+  transform:translate(-50%,-50%) scale(0);opacity:0;
+  left:var(--rip-x,50%);top:var(--rip-y,50%);
+}
+.btn.rip::after{animation:oliv-ripple 600ms var(--ease-out-expo)}
+@keyframes oliv-ripple{0%{opacity:.7;transform:translate(-50%,-50%) scale(0)}100%{opacity:0;transform:translate(-50%,-50%) scale(28)}}
+
+.card-clickable{position:relative;overflow:hidden}
+.card-clickable::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(0,212,255,.12) 50%,transparent 65%);
+  transform:translateX(-120%);transition:transform 700ms var(--ease-out-expo);
+}
+.card-clickable:hover::after{transform:translateX(120%)}
+.card-clickable.flash{animation:oliv-card-flash 200ms var(--ease-snap)}
+@keyframes oliv-card-flash{0%{background-color:rgba(0,212,255,.18)}100%{background-color:initial}}
+
+table tbody tr,.port-tbl tbody tr{transition:background var(--t-micro) var(--ease-snap),box-shadow var(--t-micro) var(--ease-snap)}
+table tbody tr:hover,.port-tbl tbody tr:hover{background:rgba(0,212,255,.05);box-shadow:inset 3px 0 0 var(--accent-glow,#00D4FF)}
+
+input,select,textarea{transition:border-color var(--t-micro) var(--ease-snap),box-shadow var(--t-std) var(--ease-jarvis),background var(--t-micro) var(--ease-snap)}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(0,212,255,.18),0 0 12px rgba(0,212,255,.25)}
+
+.sb-item{transition:background var(--t-micro) var(--ease-snap),color var(--t-micro) var(--ease-snap),padding-left 200ms var(--ease-out-expo)}
+.sb-item:hover{padding-left:22px}
+
+/* 5 · LOADING STATES */
+.oliv-skel{
+  position:relative;background:var(--bg-elev-1,#1A2230);border-radius:4px;overflow:hidden;
+  min-height:14px;
+}
+.oliv-skel::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,transparent 40%,rgba(0,212,255,.2) 50%,transparent 60%,transparent 100%);
+  animation:oliv-skel-scan 1.4s var(--ease-out-quart) infinite;
+}
+@keyframes oliv-skel-scan{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* 6 · TERMINAL EMPTY STATES */
+.oliv-term{
+  position:relative;border:1px dashed rgba(0,212,255,.32);border-radius:6px;
+  background:rgba(5,7,12,.45);padding:24px 28px;margin:14px auto;
+  font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;
+  color:#9CB3C9;max-width:520px;
+}
+.oliv-term::before,.oliv-term::after{
+  content:"";position:absolute;width:10px;height:10px;
+  border:1.5px solid var(--accent-glow,#00D4FF);
+}
+.oliv-term::before{top:-2px;left:-2px;border-right:none;border-bottom:none}
+.oliv-term::after{bottom:-2px;right:-2px;border-left:none;border-top:none}
+.oliv-term .tk{color:#00D4FF}
+.oliv-term .tv{color:#7be9ff}
+.oliv-term .tc{color:rgba(255,255,255,.45)}
+.oliv-term .tcaret::after{content:"_";color:#00D4FF;animation:oliv-blink 1s steps(2,end) infinite;margin-left:2px}
+@keyframes oliv-blink{50%{opacity:0}}
+.oliv-term .term-cta{
+  display:inline-block;margin-top:10px;padding:7px 18px;
+  border:1px solid var(--accent-glow,#00D4FF);color:#00D4FF;background:transparent;
+  font-family:inherit;font-size:11px;letter-spacing:.2em;cursor:pointer;border-radius:3px;
+  transition:all var(--t-micro) var(--ease-snap);
+}
+.oliv-term .term-cta:hover{background:rgba(0,212,255,.15);box-shadow:var(--glow-soft)}
+
+/* 8 · IDLE / ATIVIDADE */
+body.oliv-idle .hud-bg{opacity:1 !important;transition:opacity 1.2s var(--ease-out-quart)}
+body.oliv-idle .hud-bg .hud-rot-slow,
+body.oliv-idle .hud-bg .hud-rot-mid,
+body.oliv-idle .hud-bg .hud-rot-mid-rev{opacity:.85 !important}
+@keyframes oliv-typing-pulse{0%,100%{filter:drop-shadow(0 0 4px rgba(0,212,255,.4))}50%{filter:drop-shadow(0 0 12px rgba(0,212,255,.9))}}
+.oliv-act-pulse{animation:oliv-typing-pulse 600ms var(--ease-jarvis)}
+
+.sb-item.nav-wave{position:relative}
+.sb-item.nav-wave::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid var(--accent-glow,#00D4FF);
+  animation:oliv-nav-wave 600ms var(--ease-out-expo) forwards;
+  pointer-events:none;
+}
+@keyframes oliv-nav-wave{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.6);opacity:0}}
+
+/* 9 · DENSIDADE INFORMACIONAL */
+.deco{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(0,212,255,.28);letter-spacing:.18em;text-transform:uppercase;font-weight:500}
+.deco-hot{color:rgba(0,212,255,.5)}
+.sb-deco{padding:0 16px 6px;font-size:9px;color:rgba(0,212,255,.32);letter-spacing:.3em;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.main-deco-tl{position:fixed;top:8px;left:240px;z-index:6;pointer-events:none}
+.main-deco-tr{position:fixed;top:8px;right:18px;z-index:6;pointer-events:none}
+.ph-deco{display:block;margin-bottom:4px}
+.card-deco{display:block;margin-top:6px;font-size:9px;color:rgba(0,212,255,.35);letter-spacing:.18em;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.tbl-query{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(0,212,255,.42);
+  letter-spacing:.06em;padding:4px 0 8px;display:block;
+}
+.tbl-query .qk{color:#00D4FF}
+.tbl-query .qm{color:rgba(255,255,255,.4)}
+body.is-mobile .main-deco-tl,body.is-mobile .main-deco-tr,body.is-mobile .deco,body.is-mobile .sb-deco,body.is-mobile .card-deco,body.is-mobile .ph-deco,body.is-mobile .tbl-query{display:none !important}
+
+/* 10 · TIPOGRAFIA UTILS */
+.tech-label{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:10px;letter-spacing:.20em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.data-lg{font-family:'Orbitron','Space Grotesk',sans-serif;font-weight:700;font-size:32px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.data-md{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:16px;font-variant-numeric:tabular-nums}
+.data-sm{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;font-variant-numeric:tabular-nums}
+
+/* SLOT MACHINE */
+.oliv-slot{display:inline-block;position:relative;overflow:hidden;vertical-align:bottom}
+.oliv-slot.run{animation:oliv-slot-blur 400ms var(--ease-out-quart)}
+@keyframes oliv-slot-blur{0%{filter:blur(2px) opacity(.7)}100%{filter:blur(0) opacity(1)}}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce){
+  #oliv-boot,.oliv-skel::after,.card-clickable::after,.btn::after,.oliv-term .tcaret::after,.sb-item.nav-wave::after,.oliv-slot.run,.oliv-act-pulse{animation:none !important;transition:none !important}
+  #oliv-boot{display:none !important}
+}
+
+/* ============================================================
+   ░▒▓ ADVANCED CHARTS ▓▒░  Heatmap · Calendar · Candlestick
+   ============================================================ */
+
+/* --- Generic HUD wrapper used by the 3 new widgets --- */
+.hud-panel{position:relative;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:18px 18px 14px;margin:18px 0}
+.hud-panel::before,.hud-panel::after,.hud-panel>.hud-cnr{content:'';position:absolute;width:14px;height:14px;pointer-events:none}
+.hud-panel::before{top:-1px;left:-1px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);border-top-left-radius:12px}
+.hud-panel::after{top:-1px;right:-1px;border-top:2px solid var(--accent);border-right:2px solid var(--accent);border-top-right-radius:12px}
+.hud-panel>.hud-cnr.bl{bottom:-1px;left:-1px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent);border-bottom-left-radius:12px}
+.hud-panel>.hud-cnr.br{bottom:-1px;right:-1px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);border-bottom-right-radius:12px}
+.hud-panel-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.hud-panel-title{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:12px;letter-spacing:.18em;color:var(--accent-l);text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.hud-panel-title::before{content:'┤';color:var(--accent);opacity:.7}
+.hud-panel-title::after{content:'├';color:var(--accent);opacity:.7}
+.hud-panel-actions{display:inline-flex;gap:6px;align-items:center}
+.hud-mini-btn{background:transparent;border:1px solid var(--border);color:var(--text2);padding:5px 10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;border-radius:5px;cursor:pointer;transition:all .2s}
+.hud-mini-btn:hover{border-color:var(--accent);color:var(--accent-l)}
+.hud-mini-btn.active{background:rgba(0,168,255,.12);border-color:var(--accent);color:var(--accent-l);box-shadow:inset 0 0 8px rgba(0,212,255,.15)}
+.hud-source{position:absolute;bottom:6px;right:14px;font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:var(--text3);opacity:.55;text-transform:uppercase;pointer-events:none}
+
+/* ░▒▓ 1. ANNUAL HEATMAP ▓▒░ */
+.heatmap-wrap{overflow-x:auto;padding:8px 4px 6px;-webkit-overflow-scrolling:touch}
+.heatmap-svg{display:block;min-width:760px}
+.heatmap-cell{transition:transform .14s var(--ease-out-expo,ease),filter .14s ease;cursor:pointer;rx:2;ry:2}
+.heatmap-cell:hover{transform-origin:center;transform:scale(1.6);filter:drop-shadow(0 0 6px var(--accent-glow))}
+.heatmap-cell.lvl-0{fill:#1A2332;stroke:rgba(56,189,248,.06);stroke-width:.5}
+.heatmap-cell.lvl-1{fill:rgba(0,168,255,.25)}
+.heatmap-cell.lvl-2{fill:rgba(0,168,255,.60)}
+.heatmap-cell.lvl-3{fill:#00D4FF;filter:drop-shadow(0 0 4px rgba(0,212,255,.55))}
+.heatmap-cell.is-future{opacity:.25;cursor:default}
+.heatmap-cell.is-future:hover{transform:none;filter:none}
+.heatmap-mlbl,.heatmap-dlbl{font-family:var(--font-mono);font-size:9px;fill:var(--text3);opacity:.55;letter-spacing:.04em}
+.heatmap-legend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:8px;font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase}
+.heatmap-legend-sq{width:10px;height:10px;border-radius:2px;display:inline-block}
+@keyframes hm-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
+.heatmap-cell.hm-anim{animation:hm-fade .25s var(--ease-out-expo,ease) both}
+@media (prefers-reduced-motion: reduce){.heatmap-cell.hm-anim{animation:none !important}.heatmap-cell:hover{transform:none}}
+
+/* ░▒▓ 2. CONTROLING — CALENDAR VIEW ▓▒░ */
+.cal-tabs{display:flex;gap:2px;margin:18px 0 14px;border-bottom:1px solid var(--border)}
+.cal-tab{padding:10px 18px;cursor:pointer;font-family:var(--font-hud,'Orbitron',sans-serif);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text2);border-bottom:2px solid transparent;transition:all .2s;background:transparent;border-radius:0}
+.cal-tab:hover{color:var(--accent-l)}
+.cal-tab.active{color:var(--accent-l);border-bottom-color:var(--accent);box-shadow:inset 0 -8px 14px -8px rgba(0,212,255,.25)}
+.cal-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.cal-sumcard{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden}
+.cal-sumcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent-glow),transparent);opacity:.4}
+.cal-sumcard .lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.cal-sumcard .val{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:18px;color:var(--accent-l);font-weight:600;letter-spacing:.04em}
+.cal-sumcard .sub{font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-top:2px}
+.cal-nav{display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:12px}
+.cal-nav .lbl{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:16px;color:var(--accent-l);letter-spacing:.12em;min-width:200px;text-align:center;text-transform:uppercase}
+.cal-grid-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.cal-grid-head>div{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--text3);text-align:center;padding:6px 0;text-transform:uppercase}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:90px;gap:4px}
+.cal-cell{position:relative;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;cursor:pointer;overflow:hidden;transition:all .2s var(--ease-out-expo,ease);display:flex;flex-direction:column}
+.cal-cell:hover{transform:scale(1.04);border-color:var(--accent);box-shadow:0 6px 18px rgba(0,0,0,.4),0 0 0 1px var(--accent),inset 0 0 24px rgba(0,168,255,.08);z-index:5}
+.cal-cell.cal-empty{background:rgba(20,27,38,.4);border-style:dashed;cursor:default;opacity:.4}
+.cal-cell.cal-empty:hover{transform:none;border-color:var(--border);box-shadow:none}
+.cal-cell.cal-out{background:transparent;border:1px dashed rgba(41,56,73,.4);opacity:.35;cursor:default}
+.cal-cell.cal-today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 14px rgba(0,212,255,.45),inset 0 0 18px rgba(0,168,255,.08)}
+.cal-cell.cal-over{border-color:var(--danger,#ef4444);box-shadow:0 0 0 1px var(--danger,#ef4444),0 0 14px rgba(239,68,68,.45)}
+.cal-cell .cal-d{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:13px;color:var(--text);font-weight:600}
+.cal-cell .cal-badge{background:rgba(0,168,255,.18);color:var(--accent-l);font-size:9px;font-family:var(--font-mono);padding:1px 6px;border-radius:8px;letter-spacing:.06em}
+.cal-cell .cal-val{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:13px;color:var(--accent-l);font-weight:600;margin-top:auto;letter-spacing:.02em}
+.cal-cell.cal-over .cal-val{color:var(--danger,#ef4444)}
+.cal-cell .cal-bar{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:4px;overflow:hidden}
+.cal-cell .cal-bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-glow));border-radius:2px;transition:width .4s var(--ease-out-expo,ease)}
+.cal-cell.cal-over .cal-bar>div{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.cal-cell .cal-empty-d{font-family:var(--font-mono);font-size:18px;color:var(--text3);opacity:.3;text-align:center;margin:auto}
+.cal-cell.cal-bg-1{background:linear-gradient(180deg,var(--card2),rgba(0,168,255,.05))}
+.cal-cell.cal-bg-2{background:linear-gradient(180deg,var(--card2),rgba(0,168,255,.10))}
+.cal-cell.cal-bg-3{background:linear-gradient(180deg,var(--card2),rgba(0,168,255,.18))}
+.cal-cell.cal-bg-4{background:linear-gradient(180deg,var(--card2),rgba(0,168,255,.28))}
+
+/* ░▒▓ 3. BTC CANDLESTICK ▓▒░ */
+.btc-chart-readout{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em}
+.btc-chart-readout .ro{color:var(--text3)}
+.btc-chart-readout .ro strong{color:var(--accent-l);font-weight:600;margin-left:4px}
+.btc-chart-readout .ro.up strong{color:#3BFFB5}
+.btc-chart-readout .ro.dn strong{color:#FF3B5C}
+.btc-chart-host{position:relative;width:100%;height:320px;background:rgba(20,27,38,.4);border-radius:8px;overflow:hidden}
+.btc-chart-skel{position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,212,255,.08),transparent);background-size:200% 100%;animation:btc-skel 1.4s linear infinite}
+@keyframes btc-skel{from{background-position:200% 0}to{background-position:-200% 0}}
+.btc-chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase}
+.btc-chart-empty::before{content:'> ';color:var(--accent);margin-right:4px}
+body.is-mobile .btc-chart-host{height:220px}
+body.is-mobile .cal-grid{grid-auto-rows:64px}
+body.is-mobile .cal-cell .cal-val{font-size:11px}
+body.is-mobile .cal-summary{grid-template-columns:repeat(2,1fr)}
+
+/* ============================================================
+   ░▒▓ OLIVER (Game) — avatar · inventory · shop ▓▒░
+   ============================================================ */
+.oli-top{display:grid;grid-template-columns:380px 1fr;gap:18px;margin-bottom:18px}
+.oli-avatar-wrap{position:relative;background:radial-gradient(circle at 50% 55%, rgba(0,168,255,.10) 0%, rgba(0,168,255,.04) 40%, transparent 70%), linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:18px;min-height:420px;overflow:hidden}
+.oli-avatar-wrap::before,.oli-avatar-wrap::after{content:'';position:absolute;width:18px;height:18px;pointer-events:none}
+.oli-avatar-wrap::before{top:-1px;left:-1px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);border-top-left-radius:12px}
+.oli-avatar-wrap::after{top:-1px;right:-1px;border-top:2px solid var(--accent);border-right:2px solid var(--accent);border-top-right-radius:12px}
+.oli-avatar-wrap .oli-cnr{position:absolute;width:18px;height:18px;pointer-events:none}
+.oli-avatar-wrap .oli-cnr.bl{bottom:-1px;left:-1px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent);border-bottom-left-radius:12px}
+.oli-avatar-wrap .oli-cnr.br{bottom:-1px;right:-1px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);border-bottom-right-radius:12px}
+.oli-avatar-tag{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;color:var(--accent-l);text-shadow:0 0 10px var(--accent-glow);z-index:3}
+.oli-avatar-svg{display:block;margin:30px auto 0;width:100%;max-width:340px;height:auto}
+#layer-body{transform-origin:100px 130px}
+#layer-body{animation:oli-breath 4s ease-in-out infinite}
+@keyframes oli-breath{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+.oli-avatar-wrap.has-bmw .oli-avatar-svg{max-width:560px}
+/* Pedestal: anéis concêntricos no fundo */
+.oli-pedestal{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:300px;height:80px;pointer-events:none;opacity:.35}
+.oli-pedestal::before,.oli-pedestal::after{content:'';position:absolute;left:50%;bottom:0;border:1px solid var(--accent);border-radius:50%;transform:translateX(-50%)}
+.oli-pedestal::before{width:300px;height:80px;animation:oli-pulse 3s ease-in-out infinite}
+.oli-pedestal::after{width:200px;height:55px;border-color:var(--accent-glow);animation:oli-pulse 3s ease-in-out infinite .8s}
+@keyframes oli-pulse{0%,100%{opacity:.4;box-shadow:0 0 16px rgba(0,212,255,.2)}50%{opacity:.8;box-shadow:0 0 32px rgba(0,212,255,.45)}}
+/* Scan line ao abrir */
+.oli-scan{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent-glow),transparent);box-shadow:0 0 14px var(--accent-glow);opacity:0;pointer-events:none;z-index:4}
+.oli-scan.run{animation:oli-scan 1.3s ease-out 1}
+@keyframes oli-scan{0%{opacity:0;top:0}10%{opacity:1}90%{opacity:1}100%{opacity:0;top:100%}}
+/* Materializar item */
+@keyframes oli-mat{0%{opacity:0;transform:scale(.7);filter:brightness(2.5) drop-shadow(0 0 18px var(--accent-glow))}60%{opacity:1;filter:brightness(1.6) drop-shadow(0 0 12px var(--accent-glow))}100%{opacity:1;transform:scale(1);filter:none}}
+.oli-mat{animation:oli-mat .6s var(--ease-out-expo,ease) both}
+@keyframes oli-demat{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.8);filter:brightness(2)}}
+.oli-demat{animation:oli-demat .35s var(--ease-out-expo,ease) both}
+
+/* WEALTH STATUS panel */
+.oli-status{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:20px 22px;position:relative;overflow:hidden}
+.oli-status::before,.oli-status::after{content:'';position:absolute;width:18px;height:18px;pointer-events:none}
+.oli-status::before{top:-1px;left:-1px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);border-top-left-radius:12px}
+.oli-status::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);border-bottom-right-radius:12px}
+.oli-stat-hd{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:12px;letter-spacing:.22em;color:var(--accent-l);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.oli-stat-hd::before{content:'┤';color:var(--accent);opacity:.7}
+.oli-stat-hd::after{content:'├';color:var(--accent);opacity:.7;margin-left:auto}
+.oli-stat-row{margin-bottom:14px}
+.oli-stat-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.oli-stat-val{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:26px;color:var(--accent-l);font-weight:700;letter-spacing:.04em;text-shadow:0 0 14px rgba(0,212,255,.25)}
+.oli-stat-val.tier-bronze{color:#cd7f32;text-shadow:0 0 14px rgba(205,127,50,.4)}
+.oli-stat-val.tier-silver{color:#c0c8d8}
+.oli-stat-val.tier-gold{color:#ffd66b;text-shadow:0 0 14px rgba(255,214,107,.4)}
+.oli-stat-val.tier-platinum{color:#e5e4e2;text-shadow:0 0 16px rgba(255,255,255,.35)}
+.oli-stat-val.tier-diamond{color:#9be8ff;text-shadow:0 0 18px rgba(155,232,255,.6)}
+.oli-pwbar{height:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:6px;position:relative}
+.oli-pwbar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-glow));box-shadow:0 0 14px var(--accent-glow);transition:width .8s var(--ease-out-expo,ease)}
+.oli-pwbar-lbl{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:.08em}
+.oli-attrs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+.oli-attr{background:rgba(0,168,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+.oli-attr .l{font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:var(--text3);text-transform:uppercase}
+.oli-attr .v{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:14px;color:var(--accent-l);margin-top:2px}
+.oli-attr .b{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:6px;overflow:hidden}
+.oli-attr .b>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-glow))}
+.oli-achv{margin-top:12px;font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--text3);text-transform:uppercase;padding:6px 0;border-top:1px dashed var(--border)}
+.oli-achv strong{color:var(--accent-l)}
+
+/* Section panels (inventory + shop) */
+.oli-sec{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;position:relative}
+.oli-sec::before,.oli-sec::after{content:'';position:absolute;width:14px;height:14px;pointer-events:none}
+.oli-sec::before{top:-1px;left:-1px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);border-top-left-radius:12px}
+.oli-sec::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);border-bottom-right-radius:12px}
+.oli-sec-hd{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:12px;letter-spacing:.22em;color:var(--accent-l);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.oli-sec-hd::before{content:'┤';color:var(--accent);opacity:.7}
+.oli-sec-hd::after{content:'├';color:var(--accent);opacity:.7}
+
+/* Inventory grid */
+.oli-inv{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.oli-slot{aspect-ratio:1;border:1px solid var(--border);border-radius:8px;background:rgba(0,168,255,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;cursor:pointer;transition:all .2s var(--ease-out-expo,ease);position:relative;overflow:hidden}
+.oli-slot:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 6px 18px rgba(0,0,0,.4),0 0 14px rgba(0,212,255,.18)}
+.oli-slot.empty{border-style:dashed;cursor:default;opacity:.45}
+.oli-slot.empty:hover{transform:none;border-color:var(--border);box-shadow:none}
+.oli-slot.equipped{border-color:var(--accent);box-shadow:inset 0 0 18px rgba(0,168,255,.15),0 0 12px rgba(0,212,255,.25)}
+.oli-slot .ico{font-size:34px;filter:drop-shadow(0 0 8px rgba(0,212,255,.35))}
+.oli-slot .nm{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--text);text-align:center;text-transform:uppercase}
+.oli-slot .tag{position:absolute;top:4px;right:4px;font-family:var(--font-mono);font-size:8px;letter-spacing:.14em;color:var(--accent-l);background:rgba(0,168,255,.2);padding:1px 5px;border-radius:3px;text-transform:uppercase}
+.oli-slot .plus{font-size:28px;color:var(--accent);opacity:.5}
+
+/* Shop grid */
+.oli-shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.oli-shop-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;position:relative;transition:all .25s var(--ease-out-expo,ease);overflow:hidden}
+.oli-shop-card::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,212,255,.08),transparent);transition:left .8s ease;pointer-events:none}
+.oli-shop-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.4),0 0 18px rgba(0,212,255,.18)}
+.oli-shop-card:hover::before{left:100%}
+.oli-shop-card.owned{opacity:.7}
+.oli-shop-card .ico{font-size:42px;filter:drop-shadow(0 0 10px rgba(0,212,255,.35))}
+.oli-shop-card .nm{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:14px;color:var(--accent-l);letter-spacing:.06em;font-weight:600}
+.oli-shop-card .ds{font-size:11px;color:var(--text2);line-height:1.4}
+.oli-shop-card .pr{font-family:var(--font-hud,'Orbitron',sans-serif);font-size:16px;color:var(--text);font-weight:600;margin-top:4px}
+.oli-shop-card .lk{font-family:var(--font-mono);font-size:10px;color:#FF3B5C;letter-spacing:.08em}
+.oli-shop-card .ok{font-family:var(--font-mono);font-size:10px;color:#3BFFB5;letter-spacing:.14em;text-align:center;padding:6px;border:1px solid #3BFFB5;border-radius:5px;margin-top:auto}
+
+/* Confirm modal scoped tweaks */
+.oli-confirm{font-family:var(--font-mono);font-size:13px;line-height:1.7}
+.oli-confirm .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border)}
+.oli-confirm .row .k{color:var(--text3);letter-spacing:.12em;text-transform:uppercase;font-size:11px}
+.oli-confirm .row .v{color:var(--accent-l);font-family:var(--font-hud,'Orbitron',sans-serif)}
+
+/* Acquire full-screen flash */
+.oli-fx{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none}
+.oli-fx.run{display:block}
+.oli-fx::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%, rgba(0,212,255,.4) 0%, transparent 60%);animation:oli-fxflash .9s ease-out}
+.oli-fx::after{content:'';position:absolute;left:50%;top:50%;width:40px;height:40px;border:2px solid var(--accent-glow);border-radius:50%;transform:translate(-50%,-50%);animation:oli-fxring 1s ease-out}
+@keyframes oli-fxflash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+@keyframes oli-fxring{0%{width:40px;height:40px;opacity:1}100%{width:1200px;height:1200px;opacity:0}}
+
+@media (prefers-reduced-motion: reduce){
+  #layer-body,.oli-pedestal::before,.oli-pedestal::after,.oli-scan,.oli-mat,.oli-demat,.oli-fx::before,.oli-fx::after{animation:none !important}
+}
+
+/* Mobile */
+body.is-mobile .oli-top{grid-template-columns:1fr}
+body.is-mobile .oli-avatar-wrap{min-height:340px}
+body.is-mobile .oli-avatar-svg{max-width:240px;margin-top:24px}
+body.is-mobile .oli-avatar-wrap.has-bmw .oli-avatar-svg{max-width:380px}
+body.is-mobile .oli-inv{display:flex;overflow-x:auto;gap:10px;padding-bottom:6px}
+body.is-mobile .oli-inv .oli-slot{flex:0 0 110px;aspect-ratio:1}
+body.is-mobile .oli-shop{grid-template-columns:1fr}
+body.is-mobile .oli-attrs{grid-template-columns:1fr 1fr}
+
 </style>
 </head>
 <body>
+
+<!-- ░▒▓ BOOT SEQUENCE OVERLAY ▓▒░ -->
+<div id="oliv-boot" role="status" aria-label="Booting Oliver OS">
+  <div class="oliv-boot-logo">OLIVER</div>
+  <div class="oliv-boot-sub">PERSONAL OPERATING SYSTEM</div>
+  <div class="oliv-boot-log" id="olivBootLog"></div>
+  <div class="oliv-boot-bar"><i></i></div>
+  <button class="oliv-boot-skip" onclick="olivBootSkip()">SKIP →</button>
+  <div class="oliv-boot-scan"></div>
+</div>
+
+<!-- ░▒▓ TOOLTIP CONTAINER ▓▒░ -->
+<div id="oliv-tip" role="tooltip" aria-hidden="true"></div>
+
+<!-- (status bar removida a pedido do usuário) -->
+<style>#oliv-statusbar{display:none !important}</style>
 
 <!-- ===== HUD BACKGROUND (camadas animadas estilo Jarvis) ===== -->
 <div class="hud-bg" aria-hidden="true">
@@ -1614,10 +2141,7 @@ body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color
   <div class="s"><span class="d-dot"></span><span>SYS_OK</span></div>
 </div>
 
-<!-- Coordenadas decorativas -->
-<div class="hud-coord tl" aria-hidden="true">LAT 37.42N / LONG 122.08W</div>
-<div class="hud-coord bl" aria-hidden="true">SEC_LVL: 3 // AUTH: OLIVER</div>
-<div class="hud-coord br" aria-hidden="true">FRAME <span id="hudFrame">00000</span> / 60 FPS</div>
+<!-- Coordenadas decorativas removidas para reduzir poluição visual -->
 
 <!-- Overlay cinematográfico de transição de página -->
 <div id="pageFx" aria-hidden="true">
@@ -1652,16 +2176,15 @@ body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color
   <div class="sb-item" data-p="investbl"><span class="ico">📥</span><span class="sep">|</span>Backlog Invest</div>
   <div class="sb-item" data-p="controling"><span class="ico">💰</span><span class="sep">|</span>Controling</div>
 
+  <div class="sb-label" style="margin-top:14px">🎮 Game</div>
+  <div class="sb-item" data-p="oliver"><span class="ico">🧍</span><span class="sep">|</span>Oliver</div>
+
   <!-- Rodapé: status de sync e botão de configuração -->
   <div class="sb-footer">
     <div class="sync-status" onclick="openSyncConfig()" title="Configurar sincronização">
       <div class="sync-dot dot-off" id="sync-dot"></div>
       <span id="sync-label">Sem sincronização</span>
     </div>
-    <button id="mobToggleBtn" class="mob-toggle-btn" onclick="toggleForceMobile()" title="Ativar/desativar modo celular">
-      <span id="mobToggleIcon">📱</span>
-      <span id="mobToggleLabel">Modo Mobile</span>
-    </button>
   </div>
 </aside>
 
@@ -1722,6 +2245,30 @@ body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color
       <span id="saude-week-lbl" style="font-size:13px;color:var(--text2);white-space:nowrap;min-width:200px;text-align:center"></span>
       <button class="btn btn-g" onclick="changeSaudeWeek(1)">Próxima →</button>
     </div>
+    <!-- Heatmap anual de consistência -->
+    <div class="hud-panel" id="saude-heatmap-panel">
+      <div class="hud-cnr bl"></div><div class="hud-cnr br"></div>
+      <div class="hud-panel-hd">
+        <span class="hud-panel-title">ANNUAL_CONSISTENCY</span>
+        <div class="hud-panel-actions" id="hm-filters">
+          <button class="hud-mini-btn active" data-hm="all">TUDO</button>
+          <button class="hud-mini-btn" data-hm="treino">TREINO</button>
+          <button class="hud-mini-btn" data-hm="dieta">DIETA</button>
+          <button class="hud-mini-btn" data-hm="note">NOTE</button>
+        </div>
+      </div>
+      <div class="heatmap-wrap"><div id="saude-heatmap"></div></div>
+      <div class="heatmap-legend">
+        <span>MENOS</span>
+        <span class="heatmap-legend-sq" style="background:#1A2332;border:1px solid rgba(56,189,248,.06)"></span>
+        <span class="heatmap-legend-sq" style="background:rgba(0,168,255,.25)"></span>
+        <span class="heatmap-legend-sq" style="background:rgba(0,168,255,.60)"></span>
+        <span class="heatmap-legend-sq" style="background:#00D4FF;box-shadow:0 0 4px rgba(0,212,255,.55)"></span>
+        <span>MAIS</span>
+      </div>
+      <div class="hud-source">SOURCE: LS.SAUDE + LS.NOTEDIARIO</div>
+    </div>
+
     <div class="saude-layout">
       <div id="saude-grid"></div>
       <div id="prog-panel" class="prog-panel"></div>
@@ -1751,10 +2298,11 @@ body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color
       </div>
       <div class="flex ai g8">
         <span id="port-fx-lbl" style="font-size:11px;color:var(--text3);font-family:var(--font-mono)"></span>
-        <button class="btn btn-g" onclick="refreshAllQuotes()">🔄 REFRESH BTC</button>
+        <button class="btn btn-g" onclick="refreshAllQuotes()">🔄 REFRESH</button>
       </div>
     </div>
     <div id="port-summary" class="port-summary"></div>
+
     <div class="port-layout">
       <div class="port-pie-wrap">
         <div class="sec-title">Concentração por Tipo</div>
@@ -1764,6 +2312,14 @@ body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color
         <div class="sec-title">Ativos</div>
         <div id="port-table"></div>
       </div>
+    </div>
+    <!-- Gráfico de retorno ao longo do tempo -->
+    <div class="port-returns-wrap">
+      <div class="sec-title flex ai" style="justify-content:space-between">
+        <span>📈 Retorno ao Longo do Tempo</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:400;letter-spacing:0">Bench: SELIC ~10.5% a.a.</span>
+      </div>
+      <div id="port-returns"></div>
     </div>
   </div>
 
@@ -1791,7 +2347,18 @@ body.is-mobile .mob-toggle-btn.is-on{background:rgba(0,212,255,.22);border-color
       <span id="ctrl-month-lbl" style="font-size:16px;color:var(--accent-l);white-space:nowrap;min-width:220px;text-align:center;font-weight:700;font-family:var(--font-hud);letter-spacing:.1em"></span>
       <button class="btn btn-g" onclick="changeCtrlMonth(1)">Próximo Mês →</button>
     </div>
+    <div class="cal-tabs">
+      <div class="cal-tab active" id="ctrl-view-tab-grid" onclick="setCtrlView('grid')">📊 GRID_VIEW</div>
+      <div class="cal-tab" id="ctrl-view-tab-cal" onclick="setCtrlView('calendar')">📅 CALENDAR_VIEW</div>
+    </div>
     <div id="ctrl-single"></div>
+    <div id="ctrl-calendar" style="display:none"></div>
+  </div>
+
+  <!-- OLIVER (Game) -->
+  <div class="page" id="page-oliver">
+    <div class="ph"><h1>Oliver</h1><p>MODULE_09 :: OLIVER :: AVATAR_v1.0 — gamificação do seu patrimônio</p></div>
+    <div id="oliver-root"></div>
   </div>
 
 </main>
@@ -1992,7 +2559,7 @@ window.testSupa = async function() {
 
 // Re-renderiza a página ativa atual
 function refreshPage() {
-  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL };
+  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, oliver:renderOliver };
   fn[curPage]?.();
 }
 
@@ -2088,6 +2655,14 @@ const LS = {
     // cache persistente: { "BR:PETR4": {price, changePercent, ts}, "USD-BRL": {rate, ts}, ... }
     get: () => JSON.parse(localStorage.getItem('lo_quotes')|| '{}'),
     set(v) { localStorage.setItem('lo_quotes',JSON.stringify(v)); pushSupa('quotes', v); }
+  },
+  game:{
+    // gamificação OLIVER: { ownedItems:[id,...], equippedItems:[id,...] }
+    get: () => {
+      try { return JSON.parse(localStorage.getItem('lo_game') || '{"ownedItems":[],"equippedItems":[]}'); }
+      catch(e) { return {ownedItems:[], equippedItems:[]}; }
+    },
+    set(v) { localStorage.setItem('lo_game', JSON.stringify(v)); pushSupa('game', v); }
   },
 };
 
@@ -2197,26 +2772,9 @@ document.querySelectorAll('.sb-item').forEach(el => {
 
 // ===== MODO MOBILE — detecção automática + força manual =====
 function applyMobileMode() {
-  const forced = localStorage.getItem('lo_force_mobile') === '1';
-  const auto   = window.matchMedia('(max-width: 820px)').matches;
-  const on     = forced || auto;
+  const on = window.matchMedia('(max-width: 820px)').matches;
   document.body.classList.toggle('is-mobile', on);
-  // Atualiza o rótulo do botão
-  const lbl  = document.getElementById('mobToggleLabel');
-  const icon = document.getElementById('mobToggleIcon');
-  const btn  = document.getElementById('mobToggleBtn');
-  if (btn) {
-    btn.classList.toggle('is-on', forced);
-    if (lbl)  lbl.textContent  = forced ? 'Modo Mobile ATIVO' : 'Modo Mobile';
-    if (icon) icon.textContent = forced ? '✓' : '📱';
-  }
-  // Se saiu do modo mobile, garante que o drawer feche
   if (!on) document.body.classList.remove('mob-nav-open');
-}
-function toggleForceMobile() {
-  const cur = localStorage.getItem('lo_force_mobile') === '1';
-  localStorage.setItem('lo_force_mobile', cur ? '0' : '1');
-  applyMobileMode();
 }
 function toggleMobNav(force) {
   const open = (typeof force === 'boolean') ? force : !document.body.classList.contains('mob-nav-open');
@@ -2264,7 +2822,7 @@ function goto(page) {
   // Para auto-refresh do BTC quando sai da página Portfolio
   if (curPage === 'portfolio' && page !== 'portfolio') { try{ stopPortfolioAutoRefresh(); }catch(_){} }
   curPage = page;
-  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL };
+  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, oliver:renderOliver };
   fn[page]?.();
 }
 
@@ -2352,38 +2910,38 @@ function renderDash() {
   const pendTarget = pendList.includes('treino') || pendList.includes('dieta') ? 'saude' : (pendList.includes('note') ? 'notediario' : 'dashboard');
 
   document.getElementById('db-cards').innerHTML = `
-    <div class="card">
+    <div class="card card-clickable" onclick="goto('goals')" style="cursor:pointer" title="Ir para Goals">
       <div class="card-ico">🎯</div>
       <div class="card-lbl">Progresso Médio (Goals Ativos)</div>
       <div class="card-val" style="color:var(--accent-l)">${avgProg}%</div>
       <div class="pw"><div class="pb" style="width:${avgProg}%"></div></div>
       <div class="card-sub" style="margin-top:6px">${active.length} meta(s) ativa(s)</div>
     </div>
-    <div class="card">
+    <div class="card card-clickable" onclick="goto('saude')" style="cursor:pointer" title="Ir para Saúde">
       <div class="card-ico">🥗</div>
       <div class="card-lbl">Dieta Hoje</div>
       <div class="card-val" style="color:${dietFilled ? (dietPct>=DIET_THRESHOLD?'var(--green)':'var(--red)') : 'var(--text3)'}">${dietFilled ? dietPct+'%' : '—'}</div>
       <div class="card-sub">${dietFilled ? (dietPct>=DIET_THRESHOLD?'✓ Dentro da meta':'✗ Abaixo da meta') : 'Sem registro hoje'}</div>
     </div>
-    <div class="card">
+    <div class="card card-clickable" onclick="goto('saude')" style="cursor:pointer" title="Ir para Saúde">
       <div class="card-ico">💪</div>
       <div class="card-lbl">Treinos Esta Semana</div>
       <div class="card-val" style="color:var(--blue)">${weekW}</div>
       <div class="card-sub">de 7 dias possíveis</div>
     </div>
-    <div class="card">
+    <div class="card card-clickable" onclick="goto('notediario')" style="cursor:pointer" title="Ir para Note Diário">
       <div class="card-ico">📓</div>
       <div class="card-lbl">Notas Diárias</div>
       <div class="card-val" style="color:var(--accent-l)">${notesCount}</div>
       <div class="card-sub">dias registrados</div>
     </div>
-    <div class="card">
+    <div class="card card-clickable" onclick="goto('tasks100')" style="cursor:pointer" title="Ir para 100 Tasks">
       <div class="card-ico">💯</div>
       <div class="card-lbl">100 Tasks</div>
       <div class="card-val" style="color:${t100Done>=50?'var(--green)':'var(--text)'}">${t100Done}/100</div>
       <div class="card-sub">${t100.length} criadas · ${t100Done} completas</div>
     </div>
-    <div class="card card-pend ${pendCount===0?'card-pend-done':''}" onclick="goto('${pendTarget}')" style="cursor:pointer">
+    <div class="card card-pend card-clickable ${pendCount===0?'card-pend-done':''}" onclick="goto('${pendTarget}')" style="cursor:pointer">
       <div class="card-ico">${pendCount===0?'✅':'⚡'}</div>
       <div class="card-lbl">Pendências Diárias</div>
       <div class="card-val" style="color:${pendCount===0?'var(--green)':pendCount>=2?'var(--red)':'var(--accent-l)'}">${pendCount===0?'0/3':pendCount+'/3'}</div>
@@ -2696,7 +3254,7 @@ function delBacklog(id) {
    ========================================= */
 
 // Opções de treino e limiar de aprovação da dieta
-const TREINO_OPTS = ['A','B','C','D','X'];
+const TREINO_OPTS = ['A','B','C','D','E','X'];
 const DIET_THRESHOLD = 70; // % mínimo para check verde
 
 function changeSaudeWeek(d) { weekOff += d; renderSaude(); }
@@ -2757,7 +3315,7 @@ function renderSaude() {
       <div class="saude-grid">${days.map(dietCell).join('')}</div>
     </div>
     <div class="saude-section">
-      <div class="saude-section-title">💪 Treino <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— A/B/C/D se treinou, X se faltou</span></div>
+      <div class="saude-section-title">💪 Treino <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— A/B/C/D/E se treinou, X se faltou</span></div>
       <div class="saude-grid">${days.map(treinoCell).join('')}</div>
     </div>`;
   renderProgPanel();
@@ -2819,7 +3377,7 @@ function openTreinoCheck(dateKey, dayName) {
                 onclick="saveTreinoCheck('${dateKey}','${o}')">${o}</button>
             `).join('')}
           </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:10px">A, B, C, D = tipo de treino realizado · X = faltou</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:10px">A, B, C, D, E = tipo de treino realizado · X = faltou</div>
         </div>
         <div class="mf">
           <button class="btn btn-d" onclick="clearTreinoCheck('${dateKey}')">Limpar</button>
@@ -3096,11 +3654,21 @@ function convertCur(val, from, to, rate) {
 
 // Refresh manual (botão)
 async function refreshAllQuotes() {
-  toast('🔄 Atualizando cotação BTC...');
-  const data = await fetchBTCPrice({force:true});
-  if (!data) toast('⚠ Sem conexão — usando última cotação salva');
-  else if (data.stale) toast('⚠ API offline — exibindo último valor salvo');
-  else toast('✓ Cotação atualizada');
+  toast('🔄 Atualizando cotações...');
+  // Limpa caches em memória
+  Object.keys(QUOTE_CACHE).forEach(k => delete QUOTE_CACHE[k]);
+  BTC_CACHE.data = null; BTC_CACHE.ts = 0;
+  const items = (typeof LS !== 'undefined' && LS.portfolio) ? LS.portfolio.get() : [];
+  const tasks = [ fetchBTCPrice({force:true}) ];
+  items.forEach(it => {
+    if (isBTC(it)) return;
+    tasks.push(fetchAssetQuote(it.ticker, it.currency || 'BRL').catch(()=>null));
+  });
+  const results = await Promise.all(tasks);
+  const ok = results.filter(r => r && !r.stale).length;
+  const stale = results.filter(r => r && r.stale).length;
+  if (ok) toast(`✓ ${ok} cotação(ões) atualizadas${stale?` (${stale} offline)`:''}`);
+  else toast('⚠ Sem conexão — exibindo últimas cotações salvas');
   renderPortfolio();
 }
 
@@ -3109,7 +3677,13 @@ function startPortfolioAutoRefresh() {
   if (_btcAutoTimer) return;
   _btcAutoTimer = setInterval(async () => {
     if (curPage !== 'portfolio') { stopPortfolioAutoRefresh(); return; }
-    await fetchBTCPrice({force:true});
+    const items = (typeof LS !== 'undefined' && LS.portfolio) ? LS.portfolio.get() : [];
+    const tasks = [ fetchBTCPrice({force:true}) ];
+    items.forEach(it => {
+      if (isBTC(it)) return;
+      tasks.push(fetchAssetQuote(it.ticker, it.currency || 'BRL').catch(()=>null));
+    });
+    await Promise.all(tasks);
     renderPortfolio();
   }, 2 * 60 * 1000);
 }
@@ -3124,6 +3698,108 @@ function isBTC(inv) {
 }
 
 function fmtCur(v, cur) { return FMT.money(v, cur === 'USD' ? 'USD' : 'BRL'); }
+
+/* =========================================================
+   COTAÇÕES GENÉRICAS — Yahoo Finance (CORS via proxy fallback)
+   - Aceita ticker BR (ex: PETR4 → PETR4.SA) ou US (ex: SPY)
+   - Cache 90s + persistência LS para fallback offline
+   ========================================================= */
+const QUOTE_CACHE = {};               // {SYMBOL: {data, ts}}
+const QUOTE_TTL   = 90_000;           // 1.5 min
+let _portRefetching = false;
+
+// Tickers US "conhecidos" (apenas ajuda na resolução do mercado)
+const KNOWN_US_TICKERS = new Set([
+  'SPY','DVY','BUD','O','STAG','VOO','QQQ','VTI','SCHD','VYM','IVV','BND',
+  'AAPL','MSFT','AMZN','GOOG','GOOGL','META','TSLA','NVDA','BRK.B','JPM','JNJ','V','PG','XOM'
+]);
+
+function resolveYahooSymbol(ticker, currency) {
+  const t = (ticker || '').toUpperCase().trim();
+  if (!t) return null;
+  if (t === 'BTC' || t === 'BITCOIN') return null; // tratado via CoinGecko
+  if (t.includes('.')) return t;                   // já tem sufixo
+  if (currency === 'USD' || KNOWN_US_TICKERS.has(t)) return t;
+  return t + '.SA';                                 // assume B3
+}
+
+async function fetchYahooQuote(symbol) {
+  const key = symbol.toUpperCase();
+  const cached = QUOTE_CACHE[key];
+  if (cached && (Date.now() - cached.ts) < QUOTE_TTL) return cached.data;
+
+  const yahoo = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=2d&interval=1d`;
+  const candidates = [
+    yahoo,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(yahoo)}`,
+    `https://corsproxy.io/?${encodeURIComponent(yahoo)}`
+  ];
+  let lastErr;
+  for (const url of candidates) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) { lastErr = new Error('HTTP '+res.status); continue; }
+      const json = await res.json();
+      const r = json?.chart?.result?.[0];
+      const meta = r?.meta;
+      if (!meta || typeof meta.regularMarketPrice !== 'number') { lastErr = new Error('formato'); continue; }
+      const prev = meta.previousClose || meta.chartPreviousClose || meta.regularMarketPrice;
+      const data = {
+        symbol: meta.symbol || symbol,
+        price:  meta.regularMarketPrice,
+        prevClose: prev,
+        currency: meta.currency || 'USD',
+        change24h: prev ? ((meta.regularMarketPrice - prev) / prev * 100) : 0,
+        fetchedAt: Date.now(),
+        source: 'Yahoo',
+        stale: false
+      };
+      QUOTE_CACHE[key] = { data, ts: Date.now() };
+      try { localStorage.setItem('oliver_quote_'+key, JSON.stringify(data)); } catch(_){}
+      return data;
+    } catch(e) { lastErr = e; }
+  }
+  // Fallback offline
+  const saved = localStorage.getItem('oliver_quote_'+key);
+  if (saved) {
+    try {
+      const data = JSON.parse(saved); data.stale = true;
+      QUOTE_CACHE[key] = { data, ts: Date.now() - QUOTE_TTL/2 };
+      return data;
+    } catch(_){}
+  }
+  console.warn('[QUOTE] Falha:', symbol, lastErr?.message);
+  return null;
+}
+
+async function fetchAssetQuote(ticker, currency) {
+  const sym = resolveYahooSymbol(ticker, currency);
+  if (!sym) return null;
+  return fetchYahooQuote(sym);
+}
+
+// Busca assíncrona para todos os ativos do portfolio (em paralelo)
+function kickOffPortfolioQuotes(items) {
+  if (_portRefetching) return;
+  const pending = [];
+  items.forEach(it => {
+    if (isBTC(it)) return;
+    const sym = resolveYahooSymbol(it.ticker, it.currency || 'BRL');
+    if (!sym) return;
+    const c = QUOTE_CACHE[sym];
+    if (c && (Date.now() - c.ts) < QUOTE_TTL) return;
+    pending.push(fetchAssetQuote(it.ticker, it.currency || 'BRL').catch(()=>null));
+  });
+  if (!pending.length) return;
+  _portRefetching = true;
+  Promise.all(pending).then(() => {
+    _portRefetching = false;
+    if (typeof curPage !== 'undefined' && curPage === 'portfolio') renderPortfolio();
+  });
+}
 
 // ===== Render Portfolio =====
 function renderPortfolio() {
@@ -3154,6 +3830,9 @@ function renderPortfolio() {
     }
   }
 
+  // Dispara fetches assíncronos das cotações dos demais ativos
+  kickOffPortfolioQuotes(items);
+
   // Calcula linhas
   let totalInvested = 0, totalCurrent = 0;
   let btcInPortfolio = null;
@@ -3168,6 +3847,13 @@ function renderPortfolio() {
       priceNow = (cur === 'USD') ? btc.usd : btc.brl;
       auto = true;
       btcInPortfolio = it;
+    } else {
+      const sym = resolveYahooSymbol(it.ticker, cur);
+      const q = sym ? QUOTE_CACHE[sym]?.data : null;
+      if (q && typeof q.price === 'number') {
+        priceNow = q.price;
+        auto = true;
+      }
     }
 
     const investedNative = qty * avg;
@@ -3183,14 +3869,28 @@ function renderPortfolio() {
   const lucro = totalCurrent - totalInvested;
   const rent  = totalInvested > 0 ? (lucro/totalInvested*100) : 0;
 
-  // Variação 24h — só BTC
+  // Variação 24h — média ponderada do portfólio (BTC + Yahoo)
   let var24Cell = '<div class="card-val" style="color:var(--text3)">—</div>';
-  if (btcInPortfolio && btc) {
-    const ch = portCur === 'USD' ? btc.change24h_usd : btc.change24h_brl;
+  let totalChVal = 0, totalWeighted = 0;
+  rows.forEach(r => {
+    if (!r.curDisp) return;
+    let ch24 = null;
+    if (r.isBtc && btc) ch24 = (r.cur === 'USD' ? btc.change24h_usd : btc.change24h_brl);
+    else {
+      const sym = resolveYahooSymbol(r.it.ticker, r.cur);
+      const q = sym ? QUOTE_CACHE[sym]?.data : null;
+      if (q && typeof q.change24h === 'number') ch24 = q.change24h;
+    }
+    if (ch24 == null) return;
+    totalChVal += r.curDisp;
+    totalWeighted += (ch24 * r.curDisp);
+  });
+  if (totalChVal > 0) {
+    const ch = totalWeighted / totalChVal;
     const col = ch >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
     const arrow = ch >= 0 ? '▲' : '▼';
     var24Cell = `<div class="card-val" style="color:${col};text-shadow:0 0 12px ${ch>=0?'rgba(16,185,129,.6)':'rgba(239,68,68,.6)'}">${arrow} ${FMT.pct(ch)}</div>
-                 <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">BTC ${FMT.money(portCur==='USD'?btc.usd:btc.brl, portCur)}</div>`;
+                 <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">média ponderada</div>`;
   }
 
   // 4 Cards de resumo
@@ -3205,7 +3905,7 @@ function renderPortfolio() {
       <div class="card-val" style="color:${lucroCol};text-shadow:${lucroGlow}">${FMT.money(lucro, portCur)}</div>
       <div style="font-family:var(--font-mono);font-size:12px;color:${lucroCol}">${FMT.pct(rent)}</div>
     </div>
-    <div class="card"><div class="card-ico">⚡</div><div class="card-lbl">Variação 24h (BTC)</div>
+    <div class="card"><div class="card-ico">⚡</div><div class="card-lbl">Variação 24h</div>
       ${var24Cell}
     </div>`;
 
@@ -3231,6 +3931,7 @@ function renderPortfolio() {
     byTipo[tp] = (byTipo[tp]||0) + r.curDisp;
   });
   renderPortPie(byTipo, Object.values(byTipo).reduce((a,b)=>a+b,0));
+  renderPortReturnsChart(rows, totalCurrent);
 
   // Tabela
   document.getElementById('port-table').innerHTML = `
@@ -3279,6 +3980,122 @@ function renderPortfolio() {
     </table></div>`;
 }
 
+/* =========================================
+   GRÁFICO DE RETORNO AO LONGO DO TEMPO
+   3 linhas: Aportado, Aportado+Rendimento, SELIC benchmark
+   ========================================= */
+const SELIC_ANNUAL = 0.105; // 10.5% a.a. — aproximação atual
+
+function renderPortReturnsChart(rows, totalCurrent) {
+  const el = document.getElementById('port-returns');
+  if (!el) return;
+
+  // Coleta aportes com data válida
+  const aportes = rows
+    .filter(r => r.it.dataCompra && r.invDisp > 0)
+    .map(r => ({ date: new Date(r.it.dataCompra + 'T12:00:00'), val: r.invDisp }))
+    .filter(a => !isNaN(a.date.getTime()))
+    .sort((a,b) => a.date - b.date);
+
+  if (!aportes.length) {
+    el.innerHTML = `<div class="empty" style="padding:30px;text-align:center;color:var(--text3)">
+      Adicione a <strong>data de compra</strong> nos investimentos (botão ✎) para ver o gráfico de retorno ao longo do tempo.
+    </div>`;
+    return;
+  }
+
+  // Constrói série mensal: do mês do primeiro aporte até o mês atual
+  const start = new Date(aportes[0].date.getFullYear(), aportes[0].date.getMonth(), 1);
+  const today = new Date();
+  const end   = new Date(today.getFullYear(), today.getMonth(), 1);
+  const months = [];
+  let d = new Date(start);
+  while (d <= end) { months.push(new Date(d)); d.setMonth(d.getMonth()+1); }
+
+  // Para cada mês, calcula:
+  // - aportado (cumulativo até o fim do mês)
+  // - selic (cada aporte cresce a SELIC desde sua data)
+  // - atual (linear: parte de aportado e converge p/ totalCurrent no último mês)
+  const selicMonthly = Math.pow(1 + SELIC_ANNUAL, 1/12) - 1;
+  const totalAportado = aportes.reduce((s,a)=>s+a.val,0);
+  const series = months.map((m, idx) => {
+    const monthEnd = new Date(m.getFullYear(), m.getMonth()+1, 0, 23, 59);
+    let aportado = 0, selic = 0;
+    aportes.forEach(a => {
+      if (a.date <= monthEnd) {
+        aportado += a.val;
+        const monthsElapsed = (monthEnd.getFullYear()-a.date.getFullYear())*12 + (monthEnd.getMonth()-a.date.getMonth());
+        selic += a.val * Math.pow(1 + selicMonthly, Math.max(0, monthsElapsed));
+      }
+    });
+    // "Atual": interpolação linear de aportado→totalCurrent (porque não temos histórico de preço)
+    const progress = months.length > 1 ? idx / (months.length - 1) : 1;
+    const lucroTotal = totalCurrent - totalAportado;
+    const atual = aportado + (lucroTotal * progress * (aportado/totalAportado || 0));
+    return { m, aportado, selic, atual };
+  });
+
+  // Forçar último ponto = totalCurrent real
+  if (series.length) series[series.length-1].atual = totalCurrent;
+
+  // Dimensões SVG
+  const W = 800, H = 320, P = { l:64, r:18, t:18, b:42 };
+  const innerW = W - P.l - P.r, innerH = H - P.t - P.b;
+  const maxY = Math.max(...series.flatMap(s => [s.aportado, s.selic, s.atual]), 1) * 1.05;
+  const minY = 0;
+  const xAt = i => P.l + (series.length === 1 ? innerW/2 : (i/(series.length-1)) * innerW);
+  const yAt = v => P.t + innerH - ((v-minY)/(maxY-minY)) * innerH;
+
+  const lineFor = (key) => series.map((s,i) => `${i===0?'M':'L'}${xAt(i).toFixed(1)},${yAt(s[key]).toFixed(1)}`).join(' ');
+  const areaFor = (key) => `${lineFor(key)} L${xAt(series.length-1).toFixed(1)},${yAt(0).toFixed(1)} L${xAt(0).toFixed(1)},${yAt(0).toFixed(1)} Z`;
+
+  // Ticks do eixo Y (4)
+  const yTicks = [];
+  for (let i=0;i<=4;i++) yTicks.push(minY + (maxY-minY)*(i/4));
+
+  // Labels do eixo X (mostra ~6 meses ou todos se ≤6)
+  const showEvery = Math.max(1, Math.ceil(series.length/6));
+  const xLabels = series.map((s,i) => ({ i, show: i % showEvery === 0 || i === series.length-1, label: s.m.toLocaleDateString('en-US',{month:'short',year:'2-digit'}) }));
+
+  const lucro = totalCurrent - totalAportado;
+  const ganhoSelic = series[series.length-1].selic - totalAportado;
+  const lucroCol = lucro >= 0 ? '#10B981' : '#EF4444';
+
+  el.innerHTML = `
+    <div class="returns-stats">
+      <div class="rs-item"><span class="rs-dot" style="background:#38BDF8"></span><span class="rs-lbl">Aportado</span><span class="rs-val">${FMT.money(totalAportado, portCur)}</span></div>
+      <div class="rs-item"><span class="rs-dot" style="background:#10B981"></span><span class="rs-lbl">Patrimônio Atual</span><span class="rs-val" style="color:${lucroCol}">${FMT.money(totalCurrent, portCur)} <em style="font-style:normal;font-size:11px;color:${lucroCol}">(${lucro>=0?'+':''}${FMT.money(lucro, portCur)})</em></span></div>
+      <div class="rs-item"><span class="rs-dot" style="background:#A78BFA"></span><span class="rs-lbl">Bench SELIC</span><span class="rs-val">${FMT.money(series[series.length-1].selic, portCur)} <em style="font-style:normal;font-size:11px;color:var(--text3)">(+${FMT.money(ganhoSelic, portCur)})</em></span></div>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" class="returns-svg" preserveAspectRatio="none" style="width:100%;height:auto;max-height:380px">
+      <defs>
+        <linearGradient id="rg-atual" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10B981" stop-opacity=".35"/><stop offset="100%" stop-color="#10B981" stop-opacity="0"/></linearGradient>
+        <linearGradient id="rg-aporte" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38BDF8" stop-opacity=".25"/><stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/></linearGradient>
+      </defs>
+      <!-- Grid horizontal -->
+      ${yTicks.map((v,i)=>`
+        <line x1="${P.l}" x2="${W-P.r}" y1="${yAt(v).toFixed(1)}" y2="${yAt(v).toFixed(1)}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
+        <text x="${P.l-8}" y="${(yAt(v)+4).toFixed(1)}" text-anchor="end" fill="var(--text3)" font-size="10" font-family="JetBrains Mono">${FMT.num(v,0)}</text>
+      `).join('')}
+      <!-- Áreas -->
+      <path d="${areaFor('atual')}"   fill="url(#rg-atual)"/>
+      <path d="${areaFor('aportado')}" fill="url(#rg-aporte)"/>
+      <!-- Linhas -->
+      <path d="${lineFor('aportado')}" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${lineFor('selic')}"    fill="none" stroke="#A78BFA" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${lineFor('atual')}"    fill="none" stroke="#10B981" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(16,185,129,.55))"/>
+      <!-- Ponto final destaque -->
+      <circle cx="${xAt(series.length-1).toFixed(1)}" cy="${yAt(totalCurrent).toFixed(1)}" r="5" fill="#10B981" stroke="var(--card)" stroke-width="2"/>
+      <!-- Eixo X labels -->
+      ${xLabels.filter(x=>x.show).map(x=>`
+        <text x="${xAt(x.i).toFixed(1)}" y="${H-P.b+18}" text-anchor="middle" fill="var(--text3)" font-size="10" font-family="JetBrains Mono">${x.label}</text>
+      `).join('')}
+    </svg>
+    <div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.5">
+      ⓘ A linha de <strong style="color:#10B981">patrimônio atual</strong> é uma estimativa interpolada — o app não rastreia preço histórico dos ativos. O ponto final é o valor real de hoje.
+    </div>`;
+}
+
 // Paleta de cores por tipo (ciano-friendly)
 const PIE_COLORS = {
   'Ações':'#00D4FF','FIIs':'#38BDF8','Renda Fixa':'#10B981','Cripto':'#F59E0B',
@@ -3291,37 +4108,78 @@ function renderPortPie(byTipo, total) {
   if (!total) { el.innerHTML = '<div class="empty">Adicione investimentos para ver a concentração</div>'; return; }
 
   const entries = Object.entries(byTipo).sort((a,b) => b[1]-a[1]);
-  const cx = 110, cy = 110, r = 95;
-  let a0 = -Math.PI/2;
+  // Donut: usa stroke em circunferência + stroke-dasharray pra cada fatia
+  const size = 240, cx = size/2, cy = size/2;
+  const rOuter = 100, strokeW = 36;
+  const C = 2 * Math.PI * rOuter;
+  let offset = 0;
   const slices = entries.map(([tipo, val]) => {
     const frac = val/total;
-    const a1 = a0 + frac*Math.PI*2;
-    const large = frac > 0.5 ? 1 : 0;
-    const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    const len  = frac * C;
     const color = PIE_COLORS[tipo] || '#64748B';
-    const path = `M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${large} 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z`;
-    a0 = a1;
-    return { path, color, tipo, val, frac };
+    const seg = { tipo, val, frac, color, len, dashOffset: -offset };
+    offset += len;
+    return seg;
   });
 
   el.innerHTML = `
-    <div class="pie-container">
-      <svg viewBox="0 0 220 220" class="pie-svg">
+    <div class="pie-container pie-v2">
+      <svg viewBox="0 0 ${size} ${size}" class="pie-svg" style="width:100%;max-width:280px;height:auto">
         <defs>
-          <filter id="pie-glow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="pie-glow2" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3"/>
+          </filter>
+          <radialGradient id="pie-bg-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(0,168,255,.12)"/>
+            <stop offset="100%" stop-color="rgba(0,168,255,0)"/>
+          </radialGradient>
         </defs>
-        ${slices.map(s => `<path d="${s.path}" fill="${s.color}" stroke="var(--bg)" stroke-width="2" filter="url(#pie-glow)" opacity=".88"><title>${s.tipo}: ${fmtBRL(s.val)} (${(s.frac*100).toFixed(1)}%)</title></path>`).join('')}
-        <circle cx="${cx}" cy="${cy}" r="48" fill="var(--bg)" stroke="var(--hud-line)" stroke-width="1"/>
-        <text x="${cx}" y="${cy-4}" text-anchor="middle" fill="var(--text2)" font-size="10" font-family="Space Grotesk" style="letter-spacing:.12em">TOTAL</text>
-        <text x="${cx}" y="${cy+14}" text-anchor="middle" fill="var(--accent-l)" font-size="14" font-weight="700" font-family="JetBrains Mono">${FMT.num(total)}</text>
+        <!-- Halo central -->
+        <circle cx="${cx}" cy="${cy}" r="${rOuter-strokeW/2-2}" fill="url(#pie-bg-grad)"/>
+        <!-- Trilho de fundo -->
+        <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none"
+                stroke="rgba(255,255,255,.04)" stroke-width="${strokeW}"/>
+        <!-- Glow das fatias (atrás) -->
+        <g filter="url(#pie-glow2)" opacity=".55" transform="rotate(-90 ${cx} ${cy})">
+          ${slices.map(s => `
+            <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none"
+                    stroke="${s.color}" stroke-width="${strokeW}"
+                    stroke-dasharray="${s.len.toFixed(2)} ${(C-s.len).toFixed(2)}"
+                    stroke-dashoffset="${s.dashOffset.toFixed(2)}"/>
+          `).join('')}
+        </g>
+        <!-- Fatias (frente, com gap entre elas) -->
+        <g transform="rotate(-90 ${cx} ${cy})">
+          ${slices.map(s => `
+            <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none"
+                    stroke="${s.color}" stroke-width="${strokeW}"
+                    stroke-dasharray="${Math.max(0, s.len-2).toFixed(2)} ${(C-s.len+2).toFixed(2)}"
+                    stroke-dashoffset="${s.dashOffset.toFixed(2)}"
+                    stroke-linecap="butt">
+              <title>${s.tipo}: ${FMT.money(s.val, portCur)} (${(s.frac*100).toFixed(1)}%)</title>
+            </circle>
+          `).join('')}
+        </g>
+        <!-- Texto central: Total + N tipos -->
+        <text x="${cx}" y="${cy-12}" text-anchor="middle" fill="var(--text3)" font-size="10"
+              font-family="Space Grotesk" style="letter-spacing:.18em">PATRIMÔNIO</text>
+        <text x="${cx}" y="${cy+10}" text-anchor="middle" fill="var(--accent-glow)" font-size="20"
+              font-weight="700" font-family="JetBrains Mono"
+              style="filter:drop-shadow(0 0 8px rgba(0,212,255,.5))">${FMT.num(total)}</text>
+        <text x="${cx}" y="${cy+28}" text-anchor="middle" fill="var(--text3)" font-size="9"
+              font-family="JetBrains Mono">${entries.length} tipo${entries.length>1?'s':''} · ${portCur}</text>
       </svg>
-      <div class="pie-legend">
+      <div class="pie-legend pie-legend-v2">
         ${slices.map(s => `
-          <div class="pie-leg-item">
-            <span class="pie-leg-dot" style="background:${s.color};box-shadow:0 0 8px ${s.color}"></span>
-            <span class="pie-leg-name">${s.tipo}</span>
-            <span class="pie-leg-pct">${(s.frac*100).toFixed(1)}%</span>
+          <div class="pie-leg-item-v2" title="${s.tipo}: ${FMT.money(s.val, portCur)}">
+            <span class="pie-leg-bar" style="background:${s.color};box-shadow:0 0 10px ${s.color}80"></span>
+            <div class="pie-leg-body">
+              <div class="pie-leg-row">
+                <span class="pie-leg-name">${s.tipo}</span>
+                <span class="pie-leg-pct" style="color:${s.color}">${(s.frac*100).toFixed(1)}%</span>
+              </div>
+              <div class="pie-leg-val">${FMT.money(s.val, portCur)}</div>
+            </div>
           </div>`).join('')}
       </div>
     </div>`;
@@ -3385,6 +4243,19 @@ function renderPortPriceField() {
       <div class="fg"><label>Preço atual (por unidade)</label>
         <input type="text" value="${auto}" disabled style="opacity:.7;font-family:var(--font-mono)">
         <div style="font-size:11px;color:var(--accent-l);margin-top:4px;font-family:var(--font-mono)">⚡ Automático via CoinGecko</div>
+      </div>`;
+    return;
+  }
+  // Tenta reconhecer ticker — se reconhecido, busca cotação automática (Yahoo)
+  const sym = resolveYahooSymbol(tk, cur);
+  const cached = sym ? QUOTE_CACHE[sym]?.data : null;
+  if (sym) {
+    if (!cached) fetchAssetQuote(tk, cur).then(d => { if (d) renderPortPriceField(); }).catch(()=>{});
+    const display = cached ? FMT.money(cached.price, cur) : 'buscando...';
+    wrap.innerHTML = `
+      <div class="fg"><label>Preço atual (por unidade)</label>
+        <input type="text" value="${display}" disabled style="opacity:.7;font-family:var(--font-mono)">
+        <div style="font-size:11px;color:var(--accent-l);margin-top:4px;font-family:var(--font-mono)">⚡ Automático via Yahoo Finance (${sym})</div>
       </div>`;
   } else {
     wrap.innerHTML = `
@@ -4386,6 +5257,1255 @@ function openProgPhotoModal(wkKey) {
   }, { passive: true });
   window.addEventListener('mouseleave', () => { tx = 50; ty = 50; kick(); });
   document.addEventListener('mouseleave', () => { tx = 50; ty = 50; kick(); });
+})();
+
+/* =================================================================
+   ░▒▓ POLISH SENIOR LEVEL — RUNTIME ▓▒░
+   Boot, Status Bar, Tooltips, Ripple, Slot Machine, Idle, Decoratives.
+   ================================================================= */
+(function olivPolish(){
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- 0 · SESSION ID FAKE ---------- */
+  function genSid(){
+    const c='0123456789ABCDEF'; let s=''; for(let i=0;i<8;i++) s+=c[Math.floor(Math.random()*16)];
+    return s;
+  }
+  const SID = genSid();
+  const _sbSid = document.getElementById('sbSid');           if (_sbSid) _sbSid.textContent = SID;
+  const _sidDeco = document.getElementById('olivSidDeco');   if (_sidDeco) _sidDeco.textContent = 'SID :: ' + SID;
+
+  /* ---------- 1 · BOOT SEQUENCE ---------- */
+  const bootEl = document.getElementById('oliv-boot');
+  const bootLog = document.getElementById('olivBootLog');
+  const BOOT_LINES = [
+    ['> INITIALIZING OLIVER OS v2.4.1', 'OK'],
+    ['> LOADING MODULES..............', 'OK'],
+    ['> SYNC HANDSHAKE...............', 'OK'],
+    ['> BIOMETRIC AUTH...............', 'OK'],
+    ['> WELCOME, OPERATOR',           null],
+  ];
+  let _bootSkipped = false;
+  window.olivBootSkip = function(){
+    if (!bootEl) return;
+    _bootSkipped = true;
+    bootEl.classList.add('fading');
+    setTimeout(() => bootEl.remove(), 400);
+  };
+  function startBoot(){
+    if (!bootEl) return;
+    if (sessionStorage.getItem('oliver_booted') || reduceMotion){
+      bootEl.remove(); return;
+    }
+    sessionStorage.setItem('oliver_booted','1');
+    let lineIdx = 0;
+    const charDelay = 18;
+    function typeLine(){
+      if (_bootSkipped || lineIdx >= BOOT_LINES.length){ scheduleEnd(); return; }
+      const [text, status] = BOOT_LINES[lineIdx++];
+      const line = document.createElement('span'); line.className = 'll';
+      bootLog.appendChild(line);
+      let i = 0;
+      function tick(){
+        if (_bootSkipped) return;
+        if (i <= text.length){
+          line.innerHTML = '<span class="lk">' + text.slice(0,i) + '</span>';
+          i++;
+          setTimeout(tick, charDelay);
+        } else if (status){
+          line.innerHTML += ' <span class="lv">[' + status + ']</span>';
+          setTimeout(typeLine, 100);
+        } else {
+          setTimeout(typeLine, 250);
+        }
+      }
+      tick();
+    }
+    function scheduleEnd(){
+      if (_bootSkipped) return;
+      setTimeout(() => {
+        if (_bootSkipped) return;
+        bootEl.classList.add('fading');
+        setTimeout(() => bootEl.remove(), 400);
+      }, 350);
+    }
+    typeLine();
+    // Fallback: garante remoção em 2.6s
+    setTimeout(() => { if (bootEl.parentNode) olivBootSkip(); }, 2600);
+  }
+  // Roda imediatamente
+  startBoot();
+
+  /* ---------- 2 · STATUS BAR UPDATERS (versão enxuta) ---------- */
+  const sb = {
+    clock: document.getElementById('sbClock'),
+    syncDot: document.getElementById('sbSyncDot'),
+    scan: document.getElementById('sbScan'),
+  };
+  // Clock real
+  function tickClock(){
+    if (!sb.clock) return;
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
+    sb.clock.textContent = `${p(d.getDate())}.${p(d.getMonth()+1)}.${String(d.getFullYear()).slice(-2)}  ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+  tickClock(); setInterval(tickClock, 1000);
+  // Sync dot — sincroniza com window.supa state (heurística)
+  function updateSyncDot(){
+    if (!sb.syncDot) return;
+    sb.syncDot.classList.remove('ok','err','warn','idle');
+    if (typeof supa !== 'undefined' && supa) sb.syncDot.classList.add('ok');
+    else sb.syncDot.classList.add('idle');
+  }
+  setInterval(updateSyncDot, 2000); updateSyncDot();
+  // Status bar scan ao salvar (hook em pushSupa via wrap)
+  if (typeof window.pushSupa === 'function'){
+    const _orig = window.pushSupa;
+    window.pushSupa = async function(){
+      if (sb.scan){ sb.scan.classList.remove('run'); void sb.scan.offsetWidth; sb.scan.classList.add('run'); }
+      if (sb.syncDot){
+        sb.syncDot.classList.remove('ok','err','idle');
+        sb.syncDot.classList.add('warn');
+        setTimeout(() => { sb.syncDot.classList.remove('warn'); updateSyncDot(); }, 700);
+      }
+      return _orig.apply(this, arguments);
+    };
+  }
+
+  /* ---------- 3 · TOOLTIP SYSTEM ---------- */
+  const tip = document.getElementById('oliv-tip');
+  let _tipTimer = null, _tipTarget = null;
+  function showTip(target){
+    if (!tip || !target) return;
+    let data;
+    try { data = JSON.parse(target.getAttribute('data-tooltip')); } catch(e){ return; }
+    let html = '';
+    if (data.title) html += '<div class="tt-title">' + data.title + '</div>';
+    if (data.rows) html += data.rows.map(r => `<div class="tt-row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('');
+    if (data.html) html += data.html;
+    tip.innerHTML = html;
+    const r = target.getBoundingClientRect();
+    tip.classList.remove('show');
+    // Posicionamento inicial (acima do alvo)
+    tip.style.left = '0px'; tip.style.top = '0px';
+    tip.classList.add('show');
+    requestAnimationFrame(() => {
+      const tw = tip.offsetWidth, th = tip.offsetHeight, vw = innerWidth, vh = innerHeight;
+      let left = r.left + r.width/2 - tw/2;
+      let top  = r.top - th - 10;
+      if (top < 8){ top = r.bottom + 10; tip.classList.add('flip-bottom'); } else { tip.classList.remove('flip-bottom'); }
+      if (left < 8) left = 8;
+      if (left + tw > vw - 8) left = vw - tw - 8;
+      tip.style.left = left + 'px'; tip.style.top = top + 'px';
+    });
+  }
+  function hideTip(){ if (tip) tip.classList.remove('show'); _tipTarget = null; }
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest('[data-tooltip]');
+    if (!t || t === _tipTarget) return;
+    _tipTarget = t;
+    clearTimeout(_tipTimer);
+    _tipTimer = setTimeout(() => showTip(t), 300);
+  });
+  document.addEventListener('mouseout', e => {
+    const t = e.target.closest('[data-tooltip]');
+    if (!t) return;
+    clearTimeout(_tipTimer); hideTip();
+  });
+
+  /* ---------- 4 · RIPPLE EFFECT em .btn ---------- */
+  document.addEventListener('click', e => {
+    if (reduceMotion) return;
+    const b = e.target.closest('.btn');
+    if (!b) return;
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--rip-x', (e.clientX - r.left) + 'px');
+    b.style.setProperty('--rip-y', (e.clientY - r.top)  + 'px');
+    b.classList.remove('rip'); void b.offsetWidth; b.classList.add('rip');
+    setTimeout(() => b.classList.remove('rip'), 620);
+  });
+
+  /* ---------- 4b · CARD CLICK FLASH ---------- */
+  document.addEventListener('click', e => {
+    if (reduceMotion) return;
+    const c = e.target.closest('.card-clickable');
+    if (!c) return;
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+    setTimeout(() => c.classList.remove('flash'), 250);
+  });
+
+  /* ---------- 8 · TYPING PULSE no logo ---------- */
+  const sbLogo = document.querySelector('.sb-logo');
+  let _typeTimer = null;
+  document.addEventListener('input', e => {
+    if (reduceMotion || !sbLogo) return;
+    if (!e.target.matches('input,textarea,select')) return;
+    sbLogo.classList.remove('oliv-act-pulse'); void sbLogo.offsetWidth;
+    sbLogo.classList.add('oliv-act-pulse');
+    clearTimeout(_typeTimer);
+    _typeTimer = setTimeout(() => sbLogo.classList.remove('oliv-act-pulse'), 700);
+  });
+
+  /* ---------- 8b · NAV WAVE ao trocar de aba ---------- */
+  if (typeof window.goto === 'function' && !window._gotoWrapped){
+    const _origGoto = window.goto;
+    window._gotoWrapped = true;
+    window.goto = function(page){
+      _origGoto.apply(this, arguments);
+      if (reduceMotion) return;
+      requestAnimationFrame(() => {
+        const item = document.querySelector('.sb-item.active');
+        if (item){ item.classList.remove('nav-wave'); void item.offsetWidth; item.classList.add('nav-wave');
+          setTimeout(() => item.classList.remove('nav-wave'), 650); }
+      });
+    };
+  }
+
+  /* ---------- 8c · IDLE detector ---------- */
+  let _idleTimer = null;
+  function resetIdle(){
+    document.body.classList.remove('oliv-idle');
+    clearTimeout(_idleTimer);
+    _idleTimer = setTimeout(() => document.body.classList.add('oliv-idle'), 5000);
+  }
+  ['mousemove','mousedown','keydown','touchstart','wheel'].forEach(ev =>
+    document.addEventListener(ev, resetIdle, { passive: true })
+  );
+  resetIdle();
+
+  /* ---------- 9 · DECORATIVOS POR PÁGINA ---------- */
+  const PAGE_META = {
+    dashboard:  { num:'01', name:'DASHBOARD',     query:'metrics.summary' },
+    goals:      { num:'02', name:'GOALS',         query:'goals.active' },
+    backlog:    { num:'03', name:'BACKLOG',       query:'backlog.entries' },
+    notediario: { num:'04', name:'NOTE_DIARIO',   query:'notes.daily' },
+    completed:  { num:'05', name:'COMPLETED',     query:'goals.done' },
+    saude:      { num:'06', name:'HEALTH',        query:'saude.entries' },
+    tasks100:   { num:'07', name:'TASKS_100',     query:'tasks100.all' },
+    portfolio:  { num:'08', name:'PORTFOLIO',     query:'portfolio.assets WHERE active=true' },
+    investbl:   { num:'09', name:'BACKLOG_INVEST',query:'portfolio.assets' },
+    controling: { num:'10', name:'CONTROLING',    query:'controling.month' },
+  };
+  function injectPageDeco(){
+    document.querySelectorAll('.page').forEach(p => {
+      const id = (p.id||'').replace('page-','');
+      const meta = PAGE_META[id]; if (!meta) return;
+      const ph = p.querySelector('.ph');
+      if (ph && !ph.querySelector('.ph-deco')){
+        const d = document.createElement('span');
+        d.className = 'deco ph-deco';
+        d.textContent = `MODULE_${meta.num} :: ${meta.name} :: MAIN_VIEW`;
+        ph.insertBefore(d, ph.firstChild);
+      }
+    });
+    // Query decorativa acima de tabelas que tenham thead
+    document.querySelectorAll('.tw table:not([data-deco-done])').forEach(tbl => {
+      tbl.setAttribute('data-deco-done','1');
+      const wrap = tbl.closest('.tw');
+      if (wrap && !wrap.previousElementSibling?.classList.contains('tbl-query')){
+        const pageEl = tbl.closest('.page');
+        const id = (pageEl?.id||'').replace('page-','');
+        const meta = PAGE_META[id] || { query: 'data.entries' };
+        const ms = (180 + Math.random()*420).toFixed(0);
+        const q = document.createElement('span');
+        q.className = 'tbl-query';
+        q.innerHTML = `<span class="qm">[QUERY]</span> <span class="qk">SELECT</span> * <span class="qk">FROM</span> ${meta.query} <span class="qm">[${ms}ms]</span>`;
+        wrap.parentNode.insertBefore(q, wrap);
+      }
+    });
+  }
+  // Roda inicial + após cada render (via wrap suave)
+  injectPageDeco();
+  ['renderDash','renderPortfolio','renderControling','renderGoals','renderBacklog','renderInvestBL','renderTasks100','renderNoteDiario','renderSaude','renderCompleted'].forEach(fn => {
+    if (typeof window[fn] === 'function' && !window[fn]._wrapped){
+      const _o = window[fn];
+      window[fn] = function(){
+        const r = _o.apply(this, arguments);
+        requestAnimationFrame(() => { injectPageDeco(); enhanceTooltips(); });
+        return r;
+      };
+      window[fn]._wrapped = true;
+    }
+  });
+
+  /* ---------- 9b · CARD MICRO-LABELS + TOOLTIPS no DASHBOARD ---------- */
+  function enhanceTooltips(){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    document.querySelectorAll('#db-cards .card').forEach((card, idx) => {
+      // Micro-label embaixo do valor
+      if (!card.querySelector('.card-deco')){
+        const v = card.querySelector('.card-val');
+        if (v){
+          const d = document.createElement('span');
+          d.className = 'card-deco';
+          const conf = (95 + Math.random()*4.9).toFixed(1);
+          d.textContent = `LAST_UPDATE: ${hh}Z · CONFIDENCE: ${conf}%`;
+          v.parentNode.insertBefore(d, v.nextSibling);
+        }
+      }
+      // Tooltip
+      if (!card.hasAttribute('data-tooltip')){
+        const lbl = card.querySelector('.card-lbl')?.textContent.trim() || 'METRIC';
+        const val = card.querySelector('.card-val')?.textContent.trim() || '—';
+        const sub = card.querySelector('.card-sub')?.textContent.trim() || '';
+        card.setAttribute('data-tooltip', JSON.stringify({
+          title: lbl,
+          rows: [['VALUE', val], ['NOTE', sub.slice(0,40)], ['UPDATED', hh]]
+        }));
+      }
+    });
+    // Cotação BTC tooltip
+    const fxLbl = document.getElementById('port-fx-lbl');
+    if (fxLbl && !fxLbl.hasAttribute('data-tooltip') && typeof BTC_CACHE !== 'undefined' && BTC_CACHE.data){
+      const b = BTC_CACHE.data;
+      fxLbl.setAttribute('data-tooltip', JSON.stringify({
+        title: 'BTC LIVE QUOTE',
+        rows: [
+          ['USD', '$ ' + (b.usd||0).toLocaleString('en-US')],
+          ['BRL', 'R$ ' + (b.brl||0).toLocaleString('en-US')],
+          ['24H USD', ((b.change24h_usd||0)>=0?'+':'') + (b.change24h_usd||0).toFixed(2) + '%'],
+          ['SOURCE', 'COINGECKO'],
+        ]
+      }));
+    }
+  }
+  enhanceTooltips();
+  // Re-aplica periodicamente pra pegar valores atualizados
+  setInterval(enhanceTooltips, 5000);
+
+  /* ---------- 10 · SLOT MACHINE em valores que atualizam ---------- */
+  // Wrap em FMT.money/num pra detectar alterações em #port-fx-lbl etc.
+  // Versão simples: re-enrola .card-val pra animar quando texto muda.
+  const slotObs = new MutationObserver(muts => {
+    if (reduceMotion) return;
+    muts.forEach(m => {
+      if (m.type === 'characterData' || m.type === 'childList'){
+        const el = m.target.parentElement || m.target;
+        if (el && el.classList && el.classList.contains('card-val')){
+          el.classList.remove('oliv-slot','run'); void el.offsetWidth;
+          el.classList.add('oliv-slot','run');
+          setTimeout(() => el.classList.remove('run'), 420);
+        }
+      }
+    });
+  });
+  document.querySelectorAll('#db-cards').forEach(el => slotObs.observe(el, { childList:true, characterData:true, subtree:true }));
+
+})();
+
+/* ============================================================
+   ░▒▓ ADVANCED CHARTS — heatmap · calendar · candlestick ▓▒░
+   ============================================================ */
+(function(){
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- helpers ---------- */
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function dkey(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  function mkey(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1); }
+  function escapeAttr(s){ return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function moneyBR(v){ try { return 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); } catch(e){ return 'R$ '+v; } }
+  const DIET_T = (typeof DIET_THRESHOLD !== 'undefined') ? DIET_THRESHOLD : 80;
+
+  /* ============================================================
+     1) HEATMAP ANUAL ESTILO GITHUB — page-saude
+     ============================================================ */
+  const HM = { filter: 'all' };
+
+  // Score 0..3 por dia. base = LS.saude[key] = {treino, dietPct}; LS.notediario[key] = {today,week,general} ou string
+  function dayScore(saude, notes, key){
+    const s = saude[key] || {};
+    const treinoOk = s.treino && s.treino !== 'X';                     // contou
+    const dietOk   = s.dietPct !== undefined && s.dietPct !== '' && s.dietPct !== null
+                     && parseFloat(s.dietPct) >= DIET_T;
+    const n = notes[key];
+    let noteOk = false;
+    if (n){
+      if (typeof n === 'string') noteOk = n.trim().length > 0;
+      else noteOk = ((n.today||'') + (n.week||'') + (n.general||'')).trim().length > 0;
+    }
+    return { treino:!!treinoOk, dieta:!!dietOk, note:!!noteOk };
+  }
+  function levelOf(parts){
+    if (HM.filter === 'all'){
+      return (parts.treino?1:0) + (parts.dieta?1:0) + (parts.note?1:0);
+    }
+    return parts[HM.filter] ? 2 : 0;
+  }
+
+  function renderSaudeHeatmap(){
+    const host = document.getElementById('saude-heatmap');
+    if (!host) return;
+    const saude = (typeof LS !== 'undefined' && LS.saude) ? LS.saude.get() : {};
+    const notes = (typeof LS !== 'undefined' && LS.notediario) ? LS.notediario.get() : {};
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const year  = today.getFullYear();
+    const start = new Date(year, 0, 1);
+    const end   = new Date(year, 11, 31);
+
+    // alinhar ao domingo (col 0 = domingo)
+    const startCol = new Date(start); startCol.setDate(start.getDate() - start.getDay());
+    const totalDays = Math.round((end - startCol)/86400000) + 1;
+    const cols = Math.ceil(totalDays / 7);
+
+    const CELL = 11, GAP = 2, LEFT_PAD = 22, TOP_PAD = 16;
+    const W = LEFT_PAD + cols*(CELL+GAP) + 4;
+    const H = TOP_PAD + 7*(CELL+GAP) + 4;
+
+    const dayLbls = ['D','S','T','Q','Q','S','S']; // dom..sab
+    const monthLbls = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    let cells = '';
+    let monthMarks = '';
+    const monthFirstCol = new Array(12).fill(-1);
+
+    for (let c=0; c<cols; c++){
+      for (let r=0; r<7; r++){
+        const d = new Date(startCol); d.setDate(startCol.getDate() + c*7 + r);
+        if (d.getFullYear() !== year) continue;
+        const key = dkey(d);
+        const isFuture = d > today;
+        const parts = isFuture ? {treino:false,dieta:false,note:false} : dayScore(saude, notes, key);
+        const lvl = isFuture ? 0 : levelOf(parts);
+
+        // primeira coluna em que cada mês aparece (independente do dia da semana)
+        const m = d.getMonth();
+        if (monthFirstCol[m] === -1) monthFirstCol[m] = c;
+
+        const x = LEFT_PAD + c*(CELL+GAP);
+        const y = TOP_PAD + r*(CELL+GAP);
+        const dateStr = d.toLocaleDateString('pt-BR');
+        const tip = JSON.stringify({
+          title: dateStr,
+          rows: [
+            ['TREINO', parts.treino ? '✓ '+(saude[key]?.treino||'') : '✗'],
+            ['DIETA',  parts.dieta  ? '✓ '+(saude[key]?.dietPct||'')+'%' : '✗'],
+            ['NOTE',   parts.note   ? '✓ preenchida' : '✗'],
+            ['SCORE',  ((parts.treino?1:0)+(parts.dieta?1:0)+(parts.note?1:0)) + '/3']
+          ]
+        });
+        const animDelay = reduceMotion ? '' : ` style="animation-delay:${c*5}ms"`;
+        cells += `<rect class="heatmap-cell lvl-${lvl} ${isFuture?'is-future':''} ${reduceMotion?'':'hm-anim'}" x="${x}" y="${y}" width="${CELL}" height="${CELL}" data-tooltip='${escapeAttr(tip)}'${animDelay}></rect>`;
+      }
+    }
+
+    // Labels dos meses — gerados a partir do mapa de primeira coluna
+    monthFirstCol.forEach((c, m) => {
+      if (c < 0) return;
+      const x = LEFT_PAD + c*(CELL+GAP);
+      monthMarks += `<text class="heatmap-mlbl" x="${x}" y="11">${monthLbls[m]}</text>`;
+    });
+
+    let dlbls = '';
+    [1,3,5].forEach(r => { // Mon, Wed, Fri
+      const y = TOP_PAD + r*(CELL+GAP) + 9;
+      dlbls += `<text class="heatmap-dlbl" x="2" y="${y}">${dayLbls[r]}</text>`;
+    });
+
+    host.innerHTML = `<svg class="heatmap-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${monthMarks}${dlbls}${cells}</svg>`;
+  }
+
+  // Filtros
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('#hm-filters [data-hm]');
+    if (!b) return;
+    HM.filter = b.dataset.hm;
+    document.querySelectorAll('#hm-filters .hud-mini-btn').forEach(x => x.classList.toggle('active', x === b));
+    renderSaudeHeatmap();
+  });
+
+  /* ============================================================
+     2) CALENDAR VIEW — page-controling
+     ============================================================ */
+  const CAL = { view: 'grid', y: new Date().getFullYear(), m: new Date().getMonth() };
+
+  window.setCtrlView = function(v){
+    CAL.view = v;
+    const grid = document.getElementById('ctrl-single');
+    const cal  = document.getElementById('ctrl-calendar');
+    document.getElementById('ctrl-view-tab-grid')?.classList.toggle('active', v==='grid');
+    document.getElementById('ctrl-view-tab-cal')?.classList.toggle('active', v==='calendar');
+    if (grid) grid.style.display = (v==='grid') ? '' : 'none';
+    if (cal)  cal.style.display  = (v==='calendar') ? '' : 'none';
+    if (v==='calendar') renderCalendarView();
+  };
+
+  window.calNav = function(d){
+    CAL.m += d;
+    if (CAL.m < 0){ CAL.m = 11; CAL.y--; }
+    if (CAL.m > 11){ CAL.m = 0; CAL.y++; }
+    renderCalendarView();
+  };
+
+  function renderCalendarView(){
+    const host = document.getElementById('ctrl-calendar');
+    if (!host) return;
+    if (typeof LS === 'undefined' || !LS.controling) return;
+
+    // Sincroniza com mês selecionado em "ctrlYear/ctrlMonth" se existir
+    if (typeof ctrlYear !== 'undefined' && typeof ctrlMonth !== 'undefined'){
+      CAL.y = ctrlYear; CAL.m = ctrlMonth;
+    }
+
+    const monthKey = `${CAL.y}-${pad(CAL.m+1)}`;
+    const all = LS.controling.get();
+    let monthData = all[monthKey];
+    // estrutura nova: {expenses, budget, limit}; antiga: array
+    let expenses = [];
+    if (Array.isArray(monthData)) expenses = monthData;
+    else if (monthData && Array.isArray(monthData.expenses)) expenses = monthData.expenses;
+
+    const limitObj = (typeof LS.ctrlBudget !== 'undefined') ? LS.ctrlBudget.get() : {};
+    const monthLimit = monthData?.limit ?? limitObj?.[monthKey]?.limit ?? 0;
+
+    // Agrupa por dia
+    const byDay = {};
+    expenses.forEach(e => {
+      const d = e.date || `${monthKey}-01`;
+      if (!d.startsWith(monthKey)) return;
+      const day = parseInt(d.slice(8,10),10);
+      const v = parseFloat(String(e.value||0).replace(/[^\d.,-]/g,'').replace(',','.')) || 0;
+      if (!byDay[day]) byDay[day] = { total:0, items:[], cats:{} };
+      byDay[day].total += v;
+      byDay[day].items.push(e);
+      byDay[day].cats[e.cat||'—'] = (byDay[day].cats[e.cat||'—']||0) + v;
+    });
+
+    const daysInMonth = new Date(CAL.y, CAL.m+1, 0).getDate();
+    const dailyLimit = monthLimit > 0 ? monthLimit/daysInMonth : 0;
+    const totals = Object.values(byDay).map(b => b.total);
+    const maxDay = totals.length ? Math.max(...totals) : 0;
+
+    // Resumo
+    const totalSpent = totals.reduce((a,b)=>a+b,0);
+    const avgDaily   = totals.length ? totalSpent/daysInMonth : 0;
+    const peakDay    = Object.entries(byDay).sort((a,b)=>b[1].total-a[1].total)[0];
+    const catTotals  = {};
+    expenses.filter(e => (e.date||'').startsWith(monthKey)).forEach(e => {
+      const v = parseFloat(String(e.value||0).replace(/[^\d.,-]/g,'').replace(',','.')) || 0;
+      catTotals[e.cat||'—'] = (catTotals[e.cat||'—']||0) + v;
+    });
+    const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+    let streak = 0;
+    if (dailyLimit > 0){
+      for (let d=1; d<=daysInMonth; d++){
+        if ((byDay[d]?.total||0) <= dailyLimit) streak++; else break;
+      }
+    }
+
+    const MONTH_NAMES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    const today = new Date();
+    const isCurrentMonth = (today.getFullYear()===CAL.y && today.getMonth()===CAL.m);
+
+    // Grid 7×6 começando no domingo
+    const firstDow = new Date(CAL.y, CAL.m, 1).getDay();
+    let cells = '';
+    const totalCells = 42;
+    for (let i=0; i<totalCells; i++){
+      const dayNum = i - firstDow + 1;
+      if (dayNum < 1 || dayNum > daysInMonth){
+        cells += `<div class="cal-cell cal-out"></div>`;
+        continue;
+      }
+      const data = byDay[dayNum];
+      const total = data?.total || 0;
+      const isToday = isCurrentMonth && today.getDate() === dayNum;
+      const isOver = dailyLimit > 0 && total > dailyLimit;
+      const intensity = maxDay > 0 ? total/maxDay : 0;
+      let bgCls = '';
+      if (intensity > 0.75) bgCls = 'cal-bg-4';
+      else if (intensity > 0.5) bgCls = 'cal-bg-3';
+      else if (intensity > 0.25) bgCls = 'cal-bg-2';
+      else if (intensity > 0)    bgCls = 'cal-bg-1';
+
+      const pct = dailyLimit > 0 ? Math.min(100, total/dailyLimit*100) : (maxDay>0 ? total/maxDay*100 : 0);
+
+      const top3 = data ? Object.entries(data.cats).sort((a,b)=>b[1]-a[1]).slice(0,3) : [];
+      const tip = JSON.stringify({
+        title: `${pad(dayNum)}/${pad(CAL.m+1)}/${CAL.y}`,
+        rows: [
+          ['TOTAL', moneyBR(total)],
+          ['ITENS', String(data?.items.length||0)],
+          ...top3.map(([c,v]) => [c.toUpperCase().slice(0,10), moneyBR(v)])
+        ]
+      });
+
+      if (!data){
+        cells += `<div class="cal-cell cal-empty ${isToday?'cal-today':''}" data-tooltip='${escapeAttr(tip)}'>
+          <div class="cal-d"><span>${dayNum}</span></div>
+          <div class="cal-empty-d">—</div>
+        </div>`;
+      } else {
+        cells += `<div class="cal-cell ${bgCls} ${isToday?'cal-today':''} ${isOver?'cal-over':''}" data-tooltip='${escapeAttr(tip)}' onclick="calOpenDay(${dayNum})">
+          <div class="cal-d"><span>${dayNum}</span><span class="cal-badge">${data.items.length}</span></div>
+          <div class="cal-val">${moneyBR(total)}</div>
+          <div class="cal-bar"><div style="width:${pct}%"></div></div>
+        </div>`;
+      }
+    }
+
+    host.innerHTML = `
+      <div class="hud-panel">
+        <div class="hud-cnr bl"></div><div class="hud-cnr br"></div>
+        <div class="hud-panel-hd">
+          <span class="hud-panel-title">CALENDAR_VIEW :: ${monthKey}</span>
+        </div>
+        <div class="cal-summary">
+          <div class="cal-sumcard"><div class="lbl">TOTAL DO MÊS</div><div class="val">${moneyBR(totalSpent)}</div><div class="sub">limite: ${moneyBR(monthLimit)}</div></div>
+          <div class="cal-sumcard"><div class="lbl">DIA MAIS CARO</div><div class="val">${peakDay?moneyBR(peakDay[1].total):'—'}</div><div class="sub">${peakDay?'dia '+peakDay[0]:'sem dados'}</div></div>
+          <div class="cal-sumcard"><div class="lbl">MÉDIA DIÁRIA</div><div class="val">${moneyBR(avgDaily)}</div><div class="sub">cap: ${moneyBR(dailyLimit)}</div></div>
+          <div class="cal-sumcard"><div class="lbl">STREAK NO LIMITE</div><div class="val">${streak} ${streak===1?'dia':'dias'}</div><div class="sub">${topCat?'top: '+topCat[0]:'—'}</div></div>
+        </div>
+        <div class="cal-nav">
+          <button class="hud-mini-btn" onclick="calNav(-1)">←</button>
+          <span class="lbl">${MONTH_NAMES[CAL.m]} ${CAL.y}</span>
+          <button class="hud-mini-btn" onclick="calNav(1)">→</button>
+        </div>
+        <div class="cal-grid-head">
+          <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SAB</div>
+        </div>
+        <div class="cal-grid">${cells}</div>
+        <div class="hud-source">SOURCE: LS.CONTROLING</div>
+      </div>`;
+  }
+
+  window.calOpenDay = function(day){
+    const monthKey = `${CAL.y}-${pad(CAL.m+1)}`;
+    const all = LS.controling.get();
+    let monthData = all[monthKey];
+    let expenses = Array.isArray(monthData) ? monthData : (monthData?.expenses || []);
+    const dayKey = `${monthKey}-${pad(day)}`;
+    const items = expenses.filter(e => (e.date||'').startsWith(dayKey));
+    const total = items.reduce((s,e) => s + (parseFloat(String(e.value||0).replace(',','.')) || 0), 0);
+
+    const mc = document.getElementById('mc');
+    if (!mc) return;
+    mc.innerHTML = `
+      <div class="overlay" onclick="if(event.target===this)closeMC()">
+        <div class="modal modal-wide">
+          <h3>📅 ${pad(day)}/${pad(CAL.m+1)}/${CAL.y} — ${moneyBR(total)}</h3>
+          <div style="max-height:60vh;overflow:auto;margin:8px 0">
+            ${items.length ? `<table style="width:100%"><thead><tr><th>Descrição</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
+              <tbody>${items.map(e => `<tr><td>${escapeAttr(e.desc||'—')}</td><td>${escapeAttr(e.cat||'—')}</td><td style="text-align:right;font-family:var(--font-mono)">${moneyBR(parseFloat(String(e.value||0).replace(',','.')))}</td></tr>`).join('')}</tbody>
+              </table>` : `<div style="padding:30px;text-align:center;color:var(--text3)">Sem lançamentos nesse dia</div>`}
+          </div>
+          <div class="mf">
+            <button class="btn btn-g" onclick="closeMC()">Fechar</button>
+          </div>
+        </div>
+      </div>`;
+  };
+
+  /* ============================================================
+     3) BTC CANDLESTICK — page-portfolio (Lightweight Charts)
+     ============================================================ */
+  const BTCC = { period: 30, chart: null, series: null, cache: {}, lastFit: 0 };
+
+  function btcReadout(o,h,l,c){
+    const ro = document.getElementById('btc-chart-readout');
+    if (!ro) return;
+    const dir = c >= o ? 'up' : 'dn';
+    const fmt = v => '$ ' + Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    ro.innerHTML = `
+      <span class="ro">OPEN <strong>${fmt(o)}</strong></span>
+      <span class="ro">HIGH <strong>${fmt(h)}</strong></span>
+      <span class="ro">LOW <strong>${fmt(l)}</strong></span>
+      <span class="ro ${dir}">CLOSE <strong>${fmt(c)}</strong></span>`;
+  }
+
+  async function fetchBTCOhlc(days){
+    const cached = BTCC.cache[days];
+    if (cached && (Date.now() - cached.ts) < 5*60*1000) return cached.data;
+    const url = `https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=${days}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const ohlc = await res.json();
+    if (!Array.isArray(ohlc) || !ohlc.length) throw new Error('Empty OHLC');
+    const data = ohlc.map(([t,o,h,l,c]) => ({
+      time: Math.floor(t/1000),
+      open: o, high: h, low: l, close: c
+    }));
+    BTCC.cache[days] = { ts: Date.now(), data };
+    return data;
+  }
+
+  function showBtcEmpty(msg){
+    const host = document.getElementById('btc-chart');
+    if (host) host.innerHTML = `<div class="btc-chart-empty">${msg||'CHART_DATA_UNAVAILABLE'}</div>`;
+  }
+
+  async function renderBTCChart(){
+    const panel = document.getElementById('btc-chart-panel');
+    const host  = document.getElementById('btc-chart');
+    if (!panel || !host) return;
+
+    // Mostra apenas se BTC está no portfolio
+    let hasBtc = false;
+    try {
+      const items = (typeof LS!=='undefined' && LS.portfolio) ? LS.portfolio.get() : [];
+      hasBtc = items.some(it => {
+        const t = (it.ticker||it.symbol||'').toUpperCase();
+        return t === 'BTC' || t === 'BITCOIN' || (typeof isBTC === 'function' && isBTC(it));
+      });
+    } catch(e){}
+    if (!hasBtc){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    if (typeof LightweightCharts === 'undefined'){
+      showBtcEmpty('LIGHTWEIGHT_CHARTS_NOT_LOADED');
+      return;
+    }
+
+    // Loading state
+    host.innerHTML = '<div class="btc-chart-skel"></div>';
+
+    let data;
+    try {
+      data = await fetchBTCOhlc(BTCC.period);
+    } catch(e){
+      console.warn('[BTC chart] fetch err', e);
+      showBtcEmpty('CHART_DATA_UNAVAILABLE');
+      return;
+    }
+
+    host.innerHTML = ''; // limpa skel
+
+    // Cria chart
+    if (BTCC.chart){
+      try { BTCC.chart.remove(); } catch(e){}
+      BTCC.chart = null;
+    }
+    const chart = LightweightCharts.createChart(host, {
+      width: host.clientWidth,
+      height: host.clientHeight || 320,
+      layout: { background: { color: 'transparent' }, textColor: '#8AA4B8', fontFamily: 'JetBrains Mono, monospace' },
+      grid: { vertLines: { color: 'rgba(0, 212, 255, 0.06)' }, horzLines: { color: 'rgba(0, 212, 255, 0.06)' } },
+      rightPriceScale: { borderColor: 'rgba(0, 212, 255, 0.2)' },
+      timeScale: { borderColor: 'rgba(0, 212, 255, 0.2)', timeVisible: true, secondsVisible: false },
+      crosshair: {
+        mode: 1,
+        vertLine: { color: '#00D4FF', width: 1, style: 2, labelBackgroundColor: '#00A8FF' },
+        horzLine: { color: '#00D4FF', width: 1, style: 2, labelBackgroundColor: '#00A8FF' }
+      }
+    });
+    const series = chart.addCandlestickSeries({
+      upColor: '#3BFFB5', downColor: '#FF3B5C',
+      borderUpColor: '#3BFFB5', borderDownColor: '#FF3B5C',
+      wickUpColor: '#3BFFB5', wickDownColor: '#FF3B5C'
+    });
+    series.setData(data);
+    chart.timeScale().fitContent();
+    BTCC.chart = chart;
+    BTCC.series = series;
+
+    // Crosshair → readout
+    const last = data[data.length-1];
+    btcReadout(last.open, last.high, last.low, last.close);
+    chart.subscribeCrosshairMove(p => {
+      if (!p || !p.seriesData) return;
+      const v = p.seriesData.get(series);
+      if (v) btcReadout(v.open, v.high, v.low, v.close);
+    });
+
+    // Atualiza título
+    const title = document.getElementById('btc-chart-title');
+    if (title){
+      const lbl = ({7:'7D',30:'30D',90:'90D',365:'1Y'})[BTCC.period] || (BTCC.period+'D');
+      title.textContent = `BTC/USD :: ${lbl}_CHART`;
+    }
+  }
+
+  // Resize
+  let _btcResizeT;
+  window.addEventListener('resize', () => {
+    clearTimeout(_btcResizeT);
+    _btcResizeT = setTimeout(() => {
+      const host = document.getElementById('btc-chart');
+      if (BTCC.chart && host){
+        BTCC.chart.applyOptions({ width: host.clientWidth, height: host.clientHeight || 320 });
+        BTCC.chart.timeScale().fitContent();
+      }
+    }, 150);
+  });
+
+  // Botões de período + refresh
+  document.addEventListener('click', (e) => {
+    const pb = e.target.closest('[data-btcp]');
+    if (pb){
+      const p = parseInt(pb.dataset.btcp,10);
+      if (p === BTCC.period) return;
+      BTCC.period = p;
+      document.querySelectorAll('[data-btcp]').forEach(x => x.classList.toggle('active', parseInt(x.dataset.btcp,10)===p));
+      renderBTCChart();
+      return;
+    }
+    if (e.target.id === 'btc-refresh-btn'){
+      delete BTCC.cache[BTCC.period];
+      renderBTCChart();
+    }
+  });
+
+  /* ============================================================
+     WIRE: hooks nos renderers existentes (sem alterar lógica)
+     ============================================================ */
+  function wrapRender(fn, after){
+    if (typeof window[fn] !== 'function' || window[fn]._chartsWrapped) return;
+    const _o = window[fn];
+    window[fn] = function(){
+      const r = _o.apply(this, arguments);
+      requestAnimationFrame(() => { try { after(); } catch(e){ console.warn('[charts]', fn, e); } });
+      return r;
+    };
+    window[fn]._chartsWrapped = true;
+  }
+  wrapRender('renderSaude',     () => renderSaudeHeatmap());
+  wrapRender('renderControling',() => { if (CAL.view === 'calendar') renderCalendarView(); });
+  wrapRender('renderPortfolio', () => renderBTCChart());
+
+  // Render inicial caso já estejamos numa página relevante
+  setTimeout(() => {
+    if (typeof curPage !== 'undefined'){
+      if (curPage === 'saude')      renderSaudeHeatmap();
+      if (curPage === 'controling' && CAL.view === 'calendar') renderCalendarView();
+      if (curPage === 'portfolio')  renderBTCChart();
+    }
+  }, 600);
+
+  // Expor pra debug
+  window.oliverCharts = { renderSaudeHeatmap, renderCalendarView, renderBTCChart, BTCC, CAL, HM };
+})();
+
+/* ============================================================
+   ░▒▓ OLIVER (Game) — avatar · inventory · shop ▓▒░
+   ============================================================ */
+(function(){
+  // Catálogo de itens (expandível)
+  const GAME_ITEMS = [
+    { id:'bag',     name:'Designer Bag',  desc:'Bolsa de grife premium',           price:5000,    svgId:'item-bag',     icon:'👜', kind:'wear' },
+    { id:'watch',   name:'Luxury Watch',  desc:'Relógio suíço de coleção',         price:25000,   svgId:'item-watch',   icon:'⌚', kind:'wear' },
+    { id:'glasses', name:'Smart Glasses', desc:'Óculos com HUD integrado',         price:12000,   svgId:'item-glasses', icon:'🕶️', kind:'wear' },
+    { id:'suit',    name:'Tailored Suit', desc:'Terno sob medida',                 price:18000,   svgId:'item-suit',    icon:'🤵', kind:'wear' },
+    { id:'bmw',     name:'BMW Coupé',     desc:'Veículo esportivo de luxo',        price:250000,  svgId:'item-bmw',     icon:'🚗', kind:'vehicle' },
+  ];
+
+  const TIERS = [
+    { name:'BRONZE',   min:0,        next:10000,    cls:'tier-bronze'   },
+    { name:'SILVER',   min:10000,    next:100000,   cls:'tier-silver'   },
+    { name:'GOLD',     min:100000,   next:1000000,  cls:'tier-gold'     },
+    { name:'PLATINUM', min:1000000,  next:10000000, cls:'tier-platinum' },
+    { name:'DIAMOND',  min:10000000, next:100000000,cls:'tier-diamond'  },
+  ];
+  function tierOf(w){
+    let t = TIERS[0];
+    for (const x of TIERS){ if (w >= x.min) t = x; }
+    return t;
+  }
+
+  function moneyBR(v){
+    try { return 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    catch(e){ return 'R$ '+v; }
+  }
+
+  // ------- WEALTH: lê do Portfolio (valor atual em BRL) -------
+  function computeWealth(){
+    if (typeof LS === 'undefined' || !LS.portfolio) return 0;
+    const items = LS.portfolio.get();
+    if (!items.length) return 0;
+
+    const btc = (typeof BTC_CACHE !== 'undefined') ? BTC_CACHE.data : null;
+    const fxRate = (typeof btcFxRate === 'function') ? btcFxRate(btc) : (btc && btc.brl && btc.usd ? (btc.brl/btc.usd) : null);
+
+    let totalBRL = 0;
+    items.forEach(it => {
+      const qty = (typeof FMT !== 'undefined') ? FMT.parse(it.qty) : parseFloat(it.qty)||0;
+      const cur = it.currency || 'BRL';
+      let priceNow = (typeof FMT !== 'undefined') ? FMT.parse(it.precoAtual) : parseFloat(it.precoAtual)||0;
+
+      if (typeof isBTC === 'function' && isBTC(it) && btc){
+        priceNow = (cur === 'USD') ? btc.usd : btc.brl;
+      }
+      let nativeVal = qty * priceNow;
+      // Converte pra BRL
+      if (cur === 'USD' && fxRate) nativeVal = nativeVal * fxRate;
+      totalBRL += nativeVal;
+    });
+    return totalBRL;
+  }
+
+  // ------- ATRIBUTOS decorativos -------
+  function computeAttrs(){
+    let strength = 0, intelligence = 0, discipline = 0;
+    try {
+      const port = LS.portfolio.get();
+      const invested = port.reduce((s,it) => {
+        const q = (typeof FMT!=='undefined')?FMT.parse(it.qty):parseFloat(it.qty)||0;
+        const a = (typeof FMT!=='undefined')?FMT.parse(it.avgPrice):parseFloat(it.avgPrice)||0;
+        return s + q*a;
+      }, 0);
+      strength = Math.min(999, Math.floor(invested / 1000));
+    } catch(e){}
+    try {
+      const notes = LS.notediario.get();
+      const filled = Object.values(notes).filter(n => {
+        if (!n) return false;
+        if (typeof n === 'string') return n.trim().length>0;
+        return ((n.today||'')+(n.week||'')+(n.general||'')).trim().length>0;
+      }).length;
+      intelligence = Math.min(999, filled * 3);
+    } catch(e){}
+    try {
+      const saude = LS.saude.get();
+      // streak de treino contando trás-pra-frente do hoje
+      const today = new Date(); today.setHours(0,0,0,0);
+      let streak = 0;
+      for (let i=0; i<365; i++){
+        const d = new Date(today); d.setDate(today.getDate()-i);
+        const k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        const e = saude[k];
+        if (e && e.treino && e.treino !== 'X') streak++;
+        else if (i>0) break;
+      }
+      discipline = streak;
+    } catch(e){}
+    return { strength, intelligence, discipline };
+  }
+
+  // ------- SVG do avatar (com placeholders pra todos itens) -------
+  function avatarSVG(){
+    return `
+<svg viewBox="0 0 400 320" id="oliver-avatar" class="oli-avatar-svg" preserveAspectRatio="xMidYMid meet">
+  <!-- Anéis HUD (camada FX) -->
+  <g id="layer-fx" opacity=".55">
+    <circle cx="100" cy="160" r="120" fill="none" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.35">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 160" to="360 100 160" dur="40s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="100" cy="160" r="95"  fill="none" stroke="var(--accent-glow)" stroke-width="0.4" stroke-dasharray="1 6" opacity="0.5">
+      <animateTransform attributeName="transform" type="rotate" from="360 100 160" to="0 100 160" dur="55s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Camada base do corpo -->
+  <g id="layer-body">
+    <!-- Halo cabeça -->
+    <circle cx="100" cy="40" r="28" fill="none" stroke="var(--accent-glow)" stroke-width=".6" opacity=".4"/>
+    <!-- Cabeça -->
+    <circle cx="100" cy="40" r="22" fill="rgba(0,168,255,.06)" stroke="var(--accent)" stroke-width="2"/>
+    <!-- Pescoço -->
+    <line x1="100" y1="62" x2="100" y2="78" stroke="var(--accent)" stroke-width="2"/>
+    <!-- Tronco (trapézio) -->
+    <path d="M 70 80 L 130 80 L 135 180 L 65 180 Z" fill="rgba(0,168,255,.04)" stroke="var(--accent)" stroke-width="2"/>
+    <!-- Linhas decorativas no tronco -->
+    <line x1="100" y1="82" x2="100" y2="178" stroke="var(--accent)" stroke-width=".5" opacity=".4"/>
+    <line x1="78" y1="120" x2="122" y2="120" stroke="var(--accent)" stroke-width=".5" opacity=".4"/>
+    <!-- Braços -->
+    <line x1="70"  y1="85" x2="40"  y2="170" stroke="var(--accent)" stroke-width="2"/>
+    <line x1="130" y1="85" x2="160" y2="170" stroke="var(--accent)" stroke-width="2"/>
+    <!-- Mãos -->
+    <circle cx="40"  cy="170" r="4" fill="rgba(0,168,255,.15)" stroke="var(--accent)" stroke-width="1.5"/>
+    <circle cx="160" cy="170" r="4" fill="rgba(0,168,255,.15)" stroke="var(--accent)" stroke-width="1.5"/>
+    <!-- Pernas -->
+    <line x1="85"  y1="180" x2="75"  y2="290" stroke="var(--accent)" stroke-width="2"/>
+    <line x1="115" y1="180" x2="125" y2="290" stroke="var(--accent)" stroke-width="2"/>
+    <!-- Pés -->
+    <line x1="68" y1="290" x2="82" y2="290" stroke="var(--accent)" stroke-width="3"/>
+    <line x1="118" y1="290" x2="132" y2="290" stroke="var(--accent)" stroke-width="3"/>
+    <!-- Núcleo do tronco (arc reactor leve) -->
+    <circle cx="100" cy="105" r="4" fill="var(--accent-glow)" opacity=".7">
+      <animate attributeName="opacity" values=".5;1;.5" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Camada de itens equipáveis (cada um com display:none default) -->
+  <g id="layer-items">
+    <!-- Bolsa -->
+    <g id="item-bag" style="display:none">
+      <rect x="135" y="120" width="22" height="28" rx="2" fill="rgba(0,168,255,.25)" stroke="var(--accent-glow)" stroke-width="1.5"/>
+      <line x1="138" y1="120" x2="138" y2="110" stroke="var(--accent-glow)" stroke-width="1"/>
+      <line x1="154" y1="120" x2="154" y2="110" stroke="var(--accent-glow)" stroke-width="1"/>
+      <circle cx="146" cy="134" r="2" fill="var(--accent-glow)"/>
+    </g>
+    <!-- Relógio (no pulso esquerdo do avatar -> direita do espectador) -->
+    <g id="item-watch" style="display:none">
+      <rect x="155" y="163" width="10" height="14" rx="2" fill="rgba(0,168,255,.4)" stroke="var(--accent-glow)" stroke-width="1"/>
+      <circle cx="160" cy="170" r="3" fill="var(--accent)" opacity=".85"/>
+    </g>
+    <!-- Óculos -->
+    <g id="item-glasses" style="display:none">
+      <rect x="80"  y="34" width="16" height="10" rx="2" fill="rgba(0,212,255,.3)" stroke="var(--accent-glow)" stroke-width="1"/>
+      <rect x="104" y="34" width="16" height="10" rx="2" fill="rgba(0,212,255,.3)" stroke="var(--accent-glow)" stroke-width="1"/>
+      <line x1="96" y1="38" x2="104" y2="38" stroke="var(--accent-glow)" stroke-width="1"/>
+    </g>
+    <!-- Terno (sobreposto ao tronco) -->
+    <g id="item-suit" style="display:none">
+      <path d="M 70 80 L 100 95 L 130 80 L 135 180 L 65 180 Z" fill="rgba(0,168,255,.15)" stroke="var(--accent-glow)" stroke-width="1.5"/>
+      <path d="M 100 95 L 100 178" stroke="var(--accent-glow)" stroke-width="1" opacity=".7"/>
+      <circle cx="100" cy="125" r="1.5" fill="var(--accent-glow)"/>
+      <circle cx="100" cy="145" r="1.5" fill="var(--accent-glow)"/>
+      <circle cx="100" cy="165" r="1.5" fill="var(--accent-glow)"/>
+    </g>
+    <!-- BMW (lateral direita, fora do corpo) -->
+    <g id="item-bmw" style="display:none">
+      <!-- Carroceria -->
+      <path d="M 220 245 L 240 215 Q 270 200 300 200 Q 330 200 345 215 L 365 245 L 365 270 L 220 270 Z"
+            fill="rgba(0,212,255,.08)" stroke="var(--accent-glow)" stroke-width="2"/>
+      <!-- Janelas -->
+      <path d="M 248 217 L 268 222 L 300 222 L 318 217 L 308 240 L 258 240 Z"
+            fill="rgba(0,212,255,.20)" stroke="var(--accent)" stroke-width="1"/>
+      <!-- Faróis -->
+      <circle cx="358" cy="232" r="3" fill="var(--accent-glow)" opacity=".9"/>
+      <circle cx="227"  cy="232" r="3" fill="var(--accent-glow)" opacity=".7"/>
+      <!-- Rodas -->
+      <circle cx="245" cy="270" r="13" fill="rgba(0,0,0,.4)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="245" cy="270" r="5"  fill="none" stroke="var(--accent-glow)" stroke-width="1"/>
+      <circle cx="335" cy="270" r="13" fill="rgba(0,0,0,.4)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="335" cy="270" r="5"  fill="none" stroke="var(--accent-glow)" stroke-width="1"/>
+      <!-- Logo BMW estilizado -->
+      <circle cx="290" cy="225" r="4" fill="none" stroke="var(--accent-glow)" stroke-width="1"/>
+      <line x1="290" y1="221" x2="290" y2="229" stroke="var(--accent-glow)" stroke-width=".8"/>
+      <line x1="286" y1="225" x2="294" y2="225" stroke="var(--accent-glow)" stroke-width=".8"/>
+      <!-- Linha de luz "scan" sob o carro -->
+      <line x1="220" y1="285" x2="365" y2="285" stroke="var(--accent-glow)" stroke-width="1" opacity=".5"/>
+    </g>
+  </g>
+</svg>`;
+  }
+
+  function applyEquipped(){
+    const game = LS.game.get();
+    const equipped = new Set(game.equippedItems || []);
+    const wrap = document.querySelector('.oli-avatar-wrap');
+    GAME_ITEMS.forEach(it => {
+      const el = document.getElementById(it.svgId);
+      if (!el) return;
+      el.style.display = equipped.has(it.id) ? '' : 'none';
+    });
+    if (wrap) wrap.classList.toggle('has-bmw', equipped.has('bmw'));
+  }
+
+  function materializeItem(svgId){
+    const el = document.getElementById(svgId);
+    if (!el) return;
+    el.classList.remove('oli-mat'); void el.getBBox();
+    el.classList.add('oli-mat');
+    setTimeout(() => el.classList.remove('oli-mat'), 700);
+  }
+
+  // ------- ACTIONS -------
+  window.gameBuyItem = function(id){
+    const item = GAME_ITEMS.find(i => i.id === id);
+    if (!item) return;
+    const wealth = computeWealth();
+    if (wealth < item.price){
+      if (typeof showToast === 'function') showToast('Patrimônio insuficiente: faltam ' + moneyBR(item.price - wealth));
+      return;
+    }
+    const after = wealth; // não desconta — é só trava de unlock
+    document.getElementById('mc').innerHTML = `
+      <div class="overlay" onclick="if(event.target===this)closeMC()">
+        <div class="modal" style="max-width:440px">
+          <h3 style="font-family:var(--font-hud,'Orbitron',sans-serif);letter-spacing:.18em;color:var(--accent-l)">┤ TRANSACTION_CONFIRM ├</h3>
+          <div class="oli-confirm" style="margin:16px 0">
+            <div class="row"><span class="k">ITEM</span><span class="v">${item.icon} ${item.name.toUpperCase()}</span></div>
+            <div class="row"><span class="k">PRICE</span><span class="v">${moneyBR(item.price)}</span></div>
+            <div class="row"><span class="k">WEALTH</span><span class="v">${moneyBR(wealth)}</span></div>
+            <div class="row"><span class="k">UNLOCK_AFTER</span><span class="v">${moneyBR(after)}</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">// Aquisição não afeta seu patrimônio real — só desbloqueia visualmente o item.</div>
+          <div class="mf">
+            <button class="btn btn-g" onclick="closeMC()">CANCEL</button>
+            <button class="btn btn-p" onclick="gameConfirmBuy('${id}')">CONFIRM</button>
+          </div>
+        </div>
+      </div>`;
+  };
+
+  window.gameConfirmBuy = function(id){
+    const item = GAME_ITEMS.find(i => i.id === id);
+    if (!item) return;
+    const game = LS.game.get();
+    if (!game.ownedItems.includes(id)) game.ownedItems.push(id);
+    if (!game.equippedItems.includes(id)) game.equippedItems.push(id);
+    LS.game.set(game);
+
+    if (typeof closeMC === 'function') closeMC();
+
+    // Flash full-screen
+    let fx = document.getElementById('oli-fx');
+    if (!fx){ fx = document.createElement('div'); fx.id = 'oli-fx'; fx.className = 'oli-fx'; document.body.appendChild(fx); }
+    fx.classList.remove('run'); void fx.offsetWidth; fx.classList.add('run');
+    setTimeout(() => fx.classList.remove('run'), 950);
+
+    if (typeof showToast === 'function') showToast('[ OK ] OLIVER ACQUIRED: ' + item.name.toUpperCase());
+
+    renderOliver();
+    setTimeout(() => materializeItem(item.svgId), 50);
+  };
+
+  window.gameToggleEquip = function(id){
+    const item = GAME_ITEMS.find(i => i.id === id);
+    if (!item) return;
+    const game = LS.game.get();
+    const was = game.equippedItems.includes(id);
+    if (was){
+      game.equippedItems = game.equippedItems.filter(x => x !== id);
+    } else {
+      game.equippedItems.push(id);
+    }
+    LS.game.set(game);
+    // Demat antes de desligar / Mat depois de ligar
+    if (was){
+      const el = document.getElementById(item.svgId);
+      if (el){
+        el.classList.add('oli-demat');
+        setTimeout(() => { el.classList.remove('oli-demat'); renderOliver(); }, 350);
+        return;
+      }
+    }
+    renderOliver();
+    if (!was) setTimeout(() => materializeItem(item.svgId), 30);
+  };
+
+  window.gameSellItem = function(id){
+    if (!confirm('Remover este item do inventário?')) return;
+    const game = LS.game.get();
+    game.ownedItems    = game.ownedItems.filter(x => x !== id);
+    game.equippedItems = game.equippedItems.filter(x => x !== id);
+    LS.game.set(game);
+    renderOliver();
+  };
+
+  // ------- RENDER -------
+  window.renderOliver = function renderOliver(){
+    const root = document.getElementById('oliver-root');
+    if (!root) return;
+    const game = LS.game.get();
+    const owned    = new Set(game.ownedItems    || []);
+    const equipped = new Set(game.equippedItems || []);
+    const wealth = computeWealth();
+    const tier = tierOf(wealth);
+    const pct  = tier.next > tier.min ? Math.min(100, ((wealth - tier.min) / (tier.next - tier.min)) * 100) : 100;
+    const attrs = computeAttrs();
+
+    // Inventory: 10 slots
+    const SLOTS = 10;
+    let invHtml = '';
+    const ownedItems = GAME_ITEMS.filter(i => owned.has(i.id));
+    for (let i=0; i<SLOTS; i++){
+      const it = ownedItems[i];
+      if (it){
+        const isEq = equipped.has(it.id);
+        invHtml += `<div class="oli-slot ${isEq?'equipped':''}" onclick="gameToggleEquip('${it.id}')" title="${isEq?'UNEQUIP':'EQUIP'} — ${it.name}">
+          ${isEq?'<span class="tag">EQ</span>':''}
+          <span class="ico">${it.icon}</span>
+          <span class="nm">${it.name}</span>
+        </div>`;
+      } else {
+        invHtml += `<div class="oli-slot empty"><span class="plus">+</span></div>`;
+      }
+    }
+
+    // Shop
+    const shopHtml = GAME_ITEMS.map(it => {
+      const isOwned = owned.has(it.id);
+      const canBuy = wealth >= it.price;
+      const lack = it.price - wealth;
+      let action;
+      if (isOwned){
+        action = `<div class="ok">✓ OWNED</div>`;
+      } else if (canBuy){
+        action = `<button class="btn btn-p" onclick="gameBuyItem('${it.id}')">⟶ ACQUIRE</button>`;
+      } else {
+        action = `<button class="btn btn-g" disabled style="opacity:.55;cursor:not-allowed">LOCKED</button>
+                  <div class="lk">FALTAM ${moneyBR(lack)}</div>`;
+      }
+      return `<div class="oli-shop-card ${isOwned?'owned':''}">
+        <div class="ico">${it.icon}</div>
+        <div class="nm">${it.name}</div>
+        <div class="ds">${it.desc}</div>
+        <div class="pr">${moneyBR(it.price)}</div>
+        ${action}
+      </div>`;
+    }).join('');
+
+    root.innerHTML = `
+      <div class="oli-top">
+        <div class="oli-avatar-wrap">
+          <div class="oli-avatar-tag">▸ OLIVER ◂</div>
+          <div class="oli-pedestal"></div>
+          <div class="oli-scan" id="oli-scan"></div>
+          ${avatarSVG()}
+        </div>
+        <div class="oli-status">
+          <div class="oli-stat-hd">WEALTH STATUS</div>
+          <div class="oli-stat-row">
+            <div class="oli-stat-lbl">PATRIMÔNIO TOTAL</div>
+            <div class="oli-stat-val">${moneyBR(wealth)}</div>
+          </div>
+          <div class="oli-stat-row">
+            <div class="oli-stat-lbl">TIER ATUAL</div>
+            <div class="oli-stat-val ${tier.cls}" style="font-size:20px">${tier.name}</div>
+          </div>
+          <div class="oli-stat-row">
+            <div class="oli-stat-lbl">POWER LEVEL</div>
+            <div class="oli-pwbar"><div style="width:${pct}%"></div></div>
+            <div class="oli-pwbar-lbl">
+              <span>${moneyBR(tier.min)}</span>
+              <span>${pct.toFixed(0)}%</span>
+              <span>${moneyBR(tier.next)}</span>
+            </div>
+          </div>
+          <div class="oli-attrs">
+            <div class="oli-attr"><div class="l">STR</div><div class="v">${attrs.strength}</div><div class="b"><div style="width:${Math.min(100,attrs.strength/9.99)}%"></div></div></div>
+            <div class="oli-attr"><div class="l">INT</div><div class="v">${attrs.intelligence}</div><div class="b"><div style="width:${Math.min(100,attrs.intelligence/9.99)}%"></div></div></div>
+            <div class="oli-attr"><div class="l">DSC</div><div class="v">${attrs.discipline}</div><div class="b"><div style="width:${Math.min(100,attrs.discipline*3.33)}%"></div></div></div>
+          </div>
+          <div class="oli-achv">ACHIEVEMENTS [ <strong>${owned.size}</strong> / 12 ] — em breve</div>
+        </div>
+      </div>
+
+      <div class="oli-sec">
+        <div class="oli-sec-hd">┤ INVENTORY :: ${owned.size}/${SLOTS} ├</div>
+        <div class="oli-inv">${invHtml}</div>
+      </div>
+
+      <div class="oli-sec">
+        <div class="oli-sec-hd">┤ SHOP :: AVAILABLE_ITEMS ├</div>
+        <div class="oli-shop">${shopHtml}</div>
+      </div>`;
+
+    // Aplica equipados no SVG + dispara scan
+    requestAnimationFrame(() => {
+      applyEquipped();
+      const scan = document.getElementById('oli-scan');
+      if (scan){ scan.classList.remove('run'); void scan.offsetWidth; scan.classList.add('run'); }
+    });
+  };
+
+  // Re-render leve quando voltar à página (e quando o portfolio muda valor)
+  // Hook: re-render depois de renderPortfolio se Oliver estiver na tela
+  if (typeof window.renderPortfolio === 'function' && !window.renderPortfolio._oliverWrapped){
+    const _o = window.renderPortfolio;
+    window.renderPortfolio = function(){
+      const r = _o.apply(this, arguments);
+      if (typeof curPage !== 'undefined' && curPage === 'oliver'){
+        requestAnimationFrame(() => { try { renderOliver(); } catch(e){} });
+      }
+      return r;
+    };
+    window.renderPortfolio._oliverWrapped = true;
+  }
+
+  // Auto-refresh do wealth a cada 60s quando Oliver aberto (caso BTC mude)
+  setInterval(() => {
+    if (typeof curPage !== 'undefined' && curPage === 'oliver'){
+      // re-render só do bloco de status (mais leve seria, mas full render já é barato)
+      try { renderOliver(); } catch(e){}
+    }
+  }, 60000);
+
+  window.oliverGame = { GAME_ITEMS, computeWealth, tierOf, renderOliver };
 })();
 </script>
 </body>
