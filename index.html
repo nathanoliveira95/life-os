@@ -10,7 +10,7 @@
 <!-- Google Fonts — Inter (corpo) + Space Grotesk (títulos HUD) + JetBrains Mono (números) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Source+Serif+Pro:wght@400;600;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET ===== */
 *{margin:0;padding:0;box-sizing:border-box}
@@ -1966,6 +1966,566 @@ body.is-mobile .oli-inv .oli-slot{flex:0 0 110px;aspect-ratio:1}
 body.is-mobile .oli-shop{grid-template-columns:1fr}
 body.is-mobile .oli-attrs{grid-template-columns:1fr 1fr}
 
+</style>
+<!-- ============================================================
+     ░▒▓ GOLDMAN SACHS THEME OVERRIDE ▓▒░
+     Institucional, sóbrio, serif headings, paleta slate-blue.
+     ============================================================ -->
+<style id="goldman-theme">
+:root{
+  /* Paleta Goldman Sachs */
+  --gs-blue:        #7399C6;   /* azul slate da logo GS */
+  --gs-blue-d:      #5C82B0;
+  --gs-blue-l:      #9DB9D9;
+  --gs-blue-deep:   #2E4D72;
+  --gs-ink:         #0D1622;   /* fundo principal */
+  --gs-ink-2:       #131E2D;   /* sidebar */
+  --gs-card:        #182536;
+  --gs-card-2:      #1E2C3F;
+  --gs-input:       #14202F;
+  --gs-border:      #243245;
+  --gs-border-2:    #2C3D54;
+  --gs-text:        #ECF1F8;
+  --gs-text-2:      #B4C2D4;
+  --gs-text-3:      #7E8FA6;
+  --gs-success:     #4F9D7B;
+  --gs-danger:      #C5594F;
+  --gs-warn:        #C8923E;
+
+  /* Override das vars Jarvis existentes */
+  --bg:            var(--gs-ink) !important;
+  --sidebar:       var(--gs-ink-2) !important;
+  --accent:        var(--gs-blue) !important;
+  --accent-l:      var(--gs-blue-l) !important;
+  --accent-d:      var(--gs-blue-d) !important;
+  --accent-glow:   var(--gs-blue-l) !important;
+  --hud-line:      rgba(115,153,198,.22) !important;
+  --text:          var(--gs-text) !important;
+  --text2:         var(--gs-text-2) !important;
+  --text3:         var(--gs-text-3) !important;
+  --border:        var(--gs-border) !important;
+  --card:          var(--gs-card) !important;
+  --card2:         var(--gs-card-2) !important;
+  --input:         var(--gs-input) !important;
+  --green:         var(--gs-success) !important;
+  --red:           var(--gs-danger) !important;
+  --success:       var(--gs-success) !important;
+  --danger:        var(--gs-danger) !important;
+  --warn:          var(--gs-warn) !important;
+
+  /* Tipografia institucional */
+  --font-serif:    'Source Serif Pro', 'Georgia', 'Times New Roman', serif;
+  --font-sans:     'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', ui-monospace, monospace;
+  --font-hud:      var(--font-serif) !important;  /* substitui Orbitron */
+}
+
+/* ===== Body & base ===== */
+body{
+  background: var(--gs-ink) !important;
+  color: var(--gs-text) !important;
+  font-family: var(--font-sans) !important;
+  letter-spacing: 0 !important;
+  cursor: default !important;
+}
+
+/* Desliga o background HUD animado (vinheta, anéis, scan lines) */
+.hud-bg, .hud-core, .hud-rings, .hud-scan, .hud-stream, .hud-grid, .hud-grid-2,
+.main-deco-tl, .main-deco-tr, .sb-deco, .ph-deco, .tbl-query, .card-deco{
+  display: none !important;
+}
+
+/* ===== Sidebar ===== */
+.sidebar{
+  background: var(--gs-ink-2) !important;
+  border-right: 1px solid var(--gs-border) !important;
+  box-shadow: none !important;
+}
+.sb-logo{
+  font-family: var(--font-serif) !important;
+  color: var(--gs-blue-l) !important;
+  font-weight: 700 !important;
+  font-size: 22px !important;
+  letter-spacing: -0.01em !important;
+  text-shadow: none !important;
+  padding: 24px 22px 18px !important;
+  border-bottom: 1px solid var(--gs-border) !important;
+}
+.sb-logo > span{ text-shadow:none !important; }
+.sb-label{
+  font-family: var(--font-sans) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.16em !important;
+  color: var(--gs-text-3) !important;
+  text-transform: uppercase !important;
+  opacity: 1 !important;
+  padding: 18px 22px 6px !important;
+}
+.sb-label::before{ content: '' !important; margin: 0 !important; }
+.sb-item{
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  color: var(--gs-text-2) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 9px 22px !important;
+  border-left: 2px solid transparent !important;
+  transition: background .15s, color .15s, border-color .15s !important;
+}
+.sb-item::before, .sb-item::after{ display:none !important; }
+.sb-item:hover{
+  background: rgba(115,153,198,.06) !important;
+  color: var(--gs-text) !important;
+  padding-left: 22px !important;
+}
+.sb-item:hover .ico{ filter: none !important; transform: none !important; }
+.sb-item.active{
+  background: rgba(115,153,198,.10) !important;
+  color: var(--gs-blue-l) !important;
+  border-left-color: var(--gs-blue) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.sb-item.active::before{ animation:none !important; }
+.sb-item .sep{ display:none !important; }
+
+/* ===== Headers, titles ===== */
+h1, h2, h3{ font-family: var(--font-serif) !important; font-weight: 700 !important; letter-spacing: -0.01em !important; }
+h1{ font-size: 28px !important; color: var(--gs-text) !important; }
+h2{ font-size: 20px !important; }
+h3{ font-size: 16px !important; }
+.ph h1{ font-family: var(--font-serif) !important; }
+.ph p{ color: var(--gs-text-3) !important; font-style: italic !important; font-size: 13px !important; }
+.ph{ border-bottom: 1px solid var(--gs-border) !important; padding-bottom: 14px !important; margin-bottom: 22px !important; }
+.sec-title{
+  font-family: var(--font-serif) !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--gs-text) !important;
+  border-bottom: 1px solid var(--gs-border) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 14px !important;
+  font-weight: 700 !important;
+}
+
+/* ===== Cards ===== */
+.card, .ctrl-single-box, .hud-panel, .oli-status, .oli-sec, .oli-avatar-wrap,
+.port-summary, .saude-section, .cal-sumcard{
+  background: var(--gs-card) !important;
+  border: 1px solid var(--gs-border) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.20) !important;
+}
+/* Tira corner brackets cyan */
+.hud-panel::before, .hud-panel::after,
+.hud-panel > .hud-cnr,
+.oli-status::before, .oli-status::after,
+.oli-sec::before, .oli-sec::after,
+.oli-avatar-wrap::before, .oli-avatar-wrap::after, .oli-avatar-wrap .oli-cnr,
+.ctrl-bars::before, .ctrl-bars::after,
+.hud-corner{
+  display: none !important;
+}
+.card-lbl{
+  font-family: var(--font-sans) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  color: var(--gs-text-3) !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+}
+.card-val{
+  font-family: var(--font-serif) !important;
+  font-weight: 700 !important;
+  color: var(--gs-text) !important;
+  text-shadow: none !important;
+  letter-spacing: -0.01em !important;
+}
+.card-sub{ color: var(--gs-text-3) !important; font-size: 12px !important; }
+
+/* ===== Buttons — Bloomberg-ish institucional ===== */
+.btn{
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  border-radius: 3px !important;
+  padding: 8px 14px !important;
+  border: 1px solid var(--gs-border-2) !important;
+  box-shadow: none !important;
+  transition: background .15s, border-color .15s !important;
+}
+.btn::after, .btn::before{ display:none !important; }
+.btn-p{ background: var(--gs-blue) !important; color: #fff !important; border-color: var(--gs-blue) !important; }
+.btn-p:hover{ background: var(--gs-blue-d) !important; border-color: var(--gs-blue-d) !important; }
+.btn-g{ background: transparent !important; color: var(--gs-text-2) !important; border-color: var(--gs-border-2) !important; }
+.btn-g:hover{ background: rgba(115,153,198,.08) !important; color: var(--gs-text) !important; border-color: var(--gs-blue) !important; }
+.btn-s{ background: var(--gs-card-2) !important; color: var(--gs-text) !important; border-color: var(--gs-border-2) !important; }
+.btn-d{ background: transparent !important; color: var(--gs-danger) !important; border-color: var(--gs-danger) !important; }
+.btn-d:hover{ background: rgba(197,89,79,.12) !important; }
+.hud-mini-btn{
+  font-family: var(--font-sans) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 11px !important;
+  border-radius: 3px !important;
+  border: 1px solid var(--gs-border-2) !important;
+  color: var(--gs-text-2) !important;
+}
+.hud-mini-btn:hover{ border-color: var(--gs-blue) !important; color: var(--gs-text) !important; }
+.hud-mini-btn.active{
+  background: var(--gs-blue) !important;
+  color: #fff !important;
+  border-color: var(--gs-blue) !important;
+  box-shadow: none !important;
+}
+
+/* ===== Inputs ===== */
+input, select, textarea{
+  font-family: var(--font-sans) !important;
+  background: var(--gs-input) !important;
+  border: 1px solid var(--gs-border-2) !important;
+  border-radius: 3px !important;
+  color: var(--gs-text) !important;
+}
+input:focus, select:focus, textarea:focus{
+  border-color: var(--gs-blue) !important;
+  box-shadow: 0 0 0 1px var(--gs-blue) !important;
+  outline: none !important;
+}
+
+/* ===== Tables ===== */
+table{ border-collapse: collapse !important; font-family: var(--font-sans) !important; }
+thead th{
+  font-family: var(--font-sans) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--gs-text-3) !important;
+  background: var(--gs-ink-2) !important;
+  border-bottom: 1px solid var(--gs-border-2) !important;
+  padding: 10px 12px !important;
+}
+tbody tr{ border-bottom: 1px solid var(--gs-border) !important; transition: background .12s !important; }
+tbody tr:hover{ background: rgba(115,153,198,.05) !important; cursor: default !important; }
+tbody td{ padding: 10px 12px !important; font-size: 13px !important; color: var(--gs-text) !important; }
+
+/* ===== Tabs ===== */
+.tab, .cal-tab{
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--gs-text-3) !important;
+  border-radius: 0 !important;
+  padding: 11px 18px !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+}
+.tab:hover, .cal-tab:hover{ color: var(--gs-text) !important; }
+.tab.active, .cal-tab.active{
+  color: var(--gs-blue-l) !important;
+  border-bottom-color: var(--gs-blue) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ===== Sync / status dots ===== */
+.sync-dot.dot-on, .sync-dot.dot-syncing{ background: var(--gs-blue) !important; box-shadow: none !important; }
+.sync-dot.dot-off{ background: var(--gs-text-3) !important; }
+
+/* ===== Progress bars: institucional, sem glow ===== */
+.pb, .pb::before, .pb::after{ box-shadow: none !important; }
+.pb{ background: var(--gs-blue) !important; }
+.ctrl-pb.pb-limit{  background: var(--gs-blue-deep) !important; }
+.ctrl-pb.pb-budget{ background: #8E7BC7 !important; } /* roxo institucional */
+.ctrl-pb.pb-spent.lvl-low{  background: var(--gs-success) !important; }
+.ctrl-pb.pb-spent.lvl-mid{  background: var(--gs-warn) !important; }
+.ctrl-pb.pb-spent.lvl-high{ background: var(--gs-danger) !important; }
+
+/* ===== Tooltips & modais ===== */
+.modal{
+  background: var(--gs-card) !important;
+  border: 1px solid var(--gs-border-2) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5) !important;
+}
+.modal h3{ font-family: var(--font-serif) !important; color: var(--gs-text) !important; }
+#oliv-tip{
+  background: #0A1320 !important;
+  border: 1px solid var(--gs-border-2) !important;
+  border-radius: 3px !important;
+  font-family: var(--font-sans) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,.5) !important;
+}
+#oliv-tip::before, #oliv-tip::after{ display:none !important; }
+
+/* ===== Boot sequence — institucional ===== */
+#oliv-boot{ background: var(--gs-ink) !important; }
+#oliv-boot::before, #oliv-boot::after{ display:none !important; }
+.oliv-boot-logo{
+  font-family: var(--font-serif) !important;
+  font-weight: 900 !important;
+  color: var(--gs-blue-l) !important;
+  text-shadow: none !important;
+  letter-spacing: -0.02em !important;
+  font-size: 56px !important;
+}
+.oliv-boot-sub{
+  font-family: var(--font-sans) !important;
+  letter-spacing: 0.18em !important;
+  color: var(--gs-text-3) !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+}
+.oliv-boot-log{ font-family: var(--font-mono) !important; color: var(--gs-text-2) !important; font-size: 11px !important; }
+.oliv-boot-log .lk{ color: var(--gs-blue-l) !important; }
+.oliv-boot-log .lv{ color: var(--gs-success) !important; text-shadow: none !important; }
+.oliv-boot-bar > i{ background: var(--gs-blue) !important; box-shadow: none !important; }
+.oliv-boot-scan{ display:none !important; }
+
+/* ===== Saude / Heatmap ===== */
+.heatmap-cell.lvl-0{ fill: #1A2535 !important; stroke: rgba(115,153,198,.08) !important; }
+.heatmap-cell.lvl-1{ fill: rgba(115,153,198,.30) !important; }
+.heatmap-cell.lvl-2{ fill: rgba(115,153,198,.60) !important; }
+.heatmap-cell.lvl-3{ fill: var(--gs-blue) !important; filter: none !important; }
+.heatmap-cell:hover{ filter: brightness(1.3) !important; }
+.heatmap-cell.hm-anim{ animation: none !important; }
+
+/* ===== Calendar ===== */
+.cal-cell{ border-radius: 3px !important; }
+.cal-cell:hover{ box-shadow: 0 4px 12px rgba(0,0,0,.4) !important; border-color: var(--gs-blue) !important; }
+.cal-cell.cal-today{ border-color: var(--gs-blue) !important; box-shadow: inset 0 0 0 1px var(--gs-blue) !important; }
+.cal-cell.cal-over{ border-color: var(--gs-danger) !important; box-shadow: inset 0 0 0 1px var(--gs-danger) !important; }
+.cal-cell .cal-val, .cal-cell .cal-d{ font-family: var(--font-sans) !important; color: var(--gs-text) !important; }
+.cal-cell .cal-val{ font-weight: 600 !important; font-size: 13px !important; }
+.cal-cell .cal-bar > div{ background: var(--gs-blue) !important; box-shadow:none !important; }
+.cal-sumcard::before{ display:none !important; }
+.cal-sumcard .lbl{ color: var(--gs-text-3) !important; }
+.cal-sumcard .val{ font-family: var(--font-serif) !important; color: var(--gs-text) !important; font-weight: 700 !important; }
+
+/* ===== Oliver (Game) — modo institucional ===== */
+.oli-avatar-tag{ font-family: var(--font-serif) !important; letter-spacing: 0.18em !important; text-shadow:none !important; color: var(--gs-blue-l) !important; }
+.oli-pedestal{ display:none !important; }
+.oli-scan{ display:none !important; }
+.oli-stat-hd, .oli-sec-hd{
+  font-family: var(--font-serif) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  font-weight: 700 !important;
+  color: var(--gs-text) !important;
+  border-bottom: 1px solid var(--gs-border) !important;
+  padding-bottom: 8px !important;
+}
+.oli-stat-hd::before, .oli-stat-hd::after,
+.oli-sec-hd::before, .oli-sec-hd::after{ display:none !important; }
+.oli-stat-val{ font-family: var(--font-serif) !important; color: var(--gs-text) !important; text-shadow:none !important; font-weight:700 !important; }
+.oli-stat-val.tier-bronze,.oli-stat-val.tier-silver,.oli-stat-val.tier-gold,.oli-stat-val.tier-platinum,.oli-stat-val.tier-diamond{ text-shadow:none !important; }
+.oli-pwbar > div{ background: var(--gs-blue) !important; box-shadow: none !important; }
+.oli-attr .v{ font-family: var(--font-serif) !important; color: var(--gs-text) !important; }
+.oli-shop-card .nm{ font-family: var(--font-serif) !important; color: var(--gs-text) !important; }
+.oli-shop-card .pr{ font-family: var(--font-serif) !important; color: var(--gs-blue-l) !important; }
+.oli-slot.equipped{ box-shadow: inset 0 0 0 1px var(--gs-blue) !important; }
+/* Substitui ciano dos SVGs do avatar */
+#oliver-avatar #layer-body circle,
+#oliver-avatar #layer-body line,
+#oliver-avatar #layer-body path{ stroke: var(--gs-blue) !important; }
+
+/* ===== Boot/HUD panel titles ===== */
+.hud-panel-title{ font-family: var(--font-serif) !important; letter-spacing: 0 !important; text-transform: none !important; font-weight: 700 !important; color: var(--gs-text) !important; }
+.hud-panel-title::before, .hud-panel-title::after{ display:none !important; }
+.hud-source{ font-family: var(--font-mono) !important; letter-spacing: 0.08em !important; }
+
+/* ===== Mata animações ostensivas ===== */
+.oliv-act-pulse, .nav-wave::after, .card-clickable::after, .pageFx,
+.oliv-slot.run, .ctrl-pb::before, .ctrl-pb::after{ animation: none !important; }
+*{ text-shadow: none !important; }
+.card-val, .data-lg{ text-shadow: none !important; }
+
+/* ===== Cursor: nada de crosshair ===== */
+.card-clickable, .sb-item, .tab, .cal-tab, .btn, .hud-mini-btn{ cursor: pointer !important; }
+
+/* ===== Top header bar refinada ===== */
+.top-bar, .topbar{
+  background: var(--gs-ink-2) !important;
+  border-bottom: 1px solid var(--gs-border) !important;
+  box-shadow: none !important;
+}
+
+/* ===== Toast institucional ===== */
+.toast{
+  background: var(--gs-ink-2) !important;
+  border: 1px solid var(--gs-blue) !important;
+  color: var(--gs-text) !important;
+  font-family: var(--font-sans) !important;
+  border-radius: 3px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5) !important;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar{ width: 10px; height: 10px; }
+::-webkit-scrollbar-track{ background: var(--gs-ink); }
+::-webkit-scrollbar-thumb{ background: var(--gs-border-2); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover{ background: var(--gs-blue-d); }
+
+/* ===== Mantém statusbar removida ===== */
+#oliv-statusbar{ display:none !important; }
+
+/* ============================================================
+   ░▒▓ FIX :: icon-buttons compactos (X / 🗑 / ✎)
+   O override .btn institucional engordou demais esses botões.
+   ============================================================ */
+
+/* Botão X do card de meta */
+.gcard{ padding-right: 36px !important; } /* espaço pro X não cobrir o badge */
+.gcard-del{
+  position: absolute !important;
+  top: 6px !important;
+  right: 6px !important;
+  width: 22px !important;
+  height: 22px !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  border-radius: 3px !important;
+  border: 1px solid var(--gs-border-2) !important;
+  background: transparent !important;
+  color: var(--gs-text-3) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.gcard-del:hover{
+  background: rgba(197,89,79,.12) !important;
+  border-color: var(--gs-danger) !important;
+  color: var(--gs-danger) !important;
+}
+
+/* Botões dentro de células de tabela (Backlog, Controling, Portfolio, etc.) */
+tbody td .btn{
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  min-width: 0 !important;
+}
+tbody td .btn.btn-d,
+tbody td .btn.btn-g{
+  background: transparent !important;
+  border: 1px solid var(--gs-border-2) !important;
+  color: var(--gs-text-2) !important;
+}
+tbody td .btn.btn-d:hover{
+  background: rgba(197,89,79,.12) !important;
+  color: var(--gs-danger) !important;
+  border-color: var(--gs-danger) !important;
+}
+tbody td .btn.btn-g:hover{
+  background: rgba(115,153,198,.10) !important;
+  color: var(--gs-blue-l) !important;
+  border-color: var(--gs-blue) !important;
+}
+
+/* Botões inline com style padding override (tasks "✕" pequeno, foto delete) ficam ainda mais discretos */
+.btn.btn-d[title="Excluir"]{ background:transparent !important; color: var(--gs-text-3) !important; }
+.btn.btn-d[title="Excluir"]:hover{ color: var(--gs-danger) !important; border-color: var(--gs-danger) !important; }
+
+/* Inputs do gcard: meta/prazo/status precisam de altura coerente */
+.gcard-row{ display:flex !important; align-items:center !important; gap:8px !important; margin-top:6px !important; }
+.gcard-row label{ font-family: var(--font-sans) !important; font-size: 11px !important; color: var(--gs-text-3) !important; min-width: 60px !important; text-transform: uppercase !important; letter-spacing: .06em !important; font-weight: 600 !important; }
+.gcard-row input, .gcard-row select{
+  flex: 1 !important;
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+  height: 28px !important;
+}
+.gcard-name{ font-family: var(--font-serif) !important; font-size: 15px !important; }
+.gcard-prog-txt{ font-family: var(--font-mono) !important; font-size: 11px !important; color: var(--gs-text-2) !important; }
+.gcard-add{
+  border-radius: 3px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  padding: 9px !important;
+  border-color: var(--gs-border-2) !important;
+}
+.gcard-add:hover{ border-color: var(--gs-blue) !important; color: var(--gs-blue-l) !important; }
+
+/* Header de coluna de goals */
+.goal-col-hd{ border-bottom: 1px solid var(--gs-border) !important; padding-bottom: 8px !important; margin-bottom: 10px !important; }
+.goal-col-title{ font-family: var(--font-serif) !important; font-size: 14px !important; font-weight: 700 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--gs-text) !important; }
+.goal-col-cnt{
+  background: var(--gs-card-2) !important;
+  color: var(--gs-text-2) !important;
+  border: 1px solid var(--gs-border-2) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  padding: 1px 7px !important;
+  border-radius: 10px !important;
+}
+
+/* Tier badges institucionais */
+.tier-badge{ font-family: var(--font-sans) !important; border-radius: 2px !important; padding: 2px 8px !important; font-size: 10px !important; letter-spacing: .04em !important; }
+.tier-1{ background: rgba(197,89,79,.15) !important; color: #E8A39C !important; border: 1px solid rgba(197,89,79,.4) !important; }
+.tier-2{ background: rgba(115,153,198,.12) !important; color: var(--gs-text-2) !important; border: 1px solid var(--gs-border-2) !important; }
+
+/* ============================================================
+   Goal categories — paleta institucional refinada (4 cores)
+   ib = Investment Banking · en = English · ol = Oliver · sq = Side Quests
+   ============================================================ */
+:root{
+  --gcat-ib: #4A8FCC;   /* Goldman blue */
+  --gcat-en: #9B7EDB;   /* Purple sóbrio */
+  --gcat-ol: #4F9D7B;   /* Verde institucional */
+  --gcat-sq: #C8923E;   /* Amber/dourado */
+}
+
+/* Borda lateral de cada card */
+.gcard.cat-ib{ border-left-color: var(--gcat-ib) !important; }
+.gcard.cat-en{ border-left-color: var(--gcat-en) !important; }
+.gcard.cat-ol{ border-left-color: var(--gcat-ol) !important; }
+.gcard.cat-sq{ border-left-color: var(--gcat-sq) !important; }
+
+/* Progress bar dentro do card por categoria */
+.gcard .pw{ background: var(--gs-card-2) !important; border: 1px solid var(--gs-border) !important; height: 6px !important; border-radius: 3px !important; }
+.gcard.cat-ib .pb{ background: var(--gcat-ib) !important; box-shadow:none !important; }
+.gcard.cat-en .pb{ background: var(--gcat-en) !important; box-shadow:none !important; }
+.gcard.cat-ol .pb{ background: var(--gcat-ol) !important; box-shadow:none !important; }
+.gcard.cat-sq .pb{ background: var(--gcat-sq) !important; box-shadow:none !important; }
+
+/* Header da coluna: título + faixa inferior na cor da categoria */
+.goal-col{ background: var(--gs-card) !important; border: 1px solid var(--gs-border) !important; border-radius: 4px !important; padding: 14px !important; box-shadow: 0 1px 2px rgba(0,0,0,.2) !important; border-top: 2px solid var(--gs-border) !important; }
+.goal-col.cat-ib{ border-top-color: var(--gcat-ib) !important; }
+.goal-col.cat-en{ border-top-color: var(--gcat-en) !important; }
+.goal-col.cat-ol{ border-top-color: var(--gcat-ol) !important; }
+.goal-col.cat-sq{ border-top-color: var(--gcat-sq) !important; }
+
+.goal-col.cat-ib .goal-col-title{ color: var(--gcat-ib) !important; }
+.goal-col.cat-en .goal-col-title{ color: var(--gcat-en) !important; }
+.goal-col.cat-ol .goal-col-title{ color: var(--gcat-ol) !important; }
+.goal-col.cat-sq .goal-col-title{ color: var(--gcat-sq) !important; }
+
+.goal-col.cat-ib .goal-col-hd{ border-bottom-color: var(--gcat-ib) !important; }
+.goal-col.cat-en .goal-col-hd{ border-bottom-color: var(--gcat-en) !important; }
+.goal-col.cat-ol .goal-col-hd{ border-bottom-color: var(--gcat-ol) !important; }
+.goal-col.cat-sq .goal-col-hd{ border-bottom-color: var(--gcat-sq) !important; }
+
+.goal-col-hd::after{ display:none !important; }
+
+/* Counter no header da categoria pega a cor */
+.goal-col.cat-ib .goal-col-cnt{ color: var(--gcat-ib) !important; border-color: var(--gcat-ib) !important; }
+.goal-col.cat-en .goal-col-cnt{ color: var(--gcat-en) !important; border-color: var(--gcat-en) !important; }
+.goal-col.cat-ol .goal-col-cnt{ color: var(--gcat-ol) !important; border-color: var(--gcat-ol) !important; }
+.goal-col.cat-sq .goal-col-cnt{ color: var(--gcat-sq) !important; border-color: var(--gcat-sq) !important; }
+
+/* Tags de categoria no Backlog */
+.bl-cat-tag.cat-ib{ background: rgba(74,143,204,.15) !important;  color: var(--gcat-ib) !important; border: 1px solid rgba(74,143,204,.4) !important; }
+.bl-cat-tag.cat-en{ background: rgba(155,126,219,.15) !important; color: var(--gcat-en) !important; border: 1px solid rgba(155,126,219,.4) !important; }
+.bl-cat-tag.cat-ol{ background: rgba(79,157,123,.15) !important;  color: var(--gcat-ol) !important; border: 1px solid rgba(79,157,123,.4) !important; }
+.bl-cat-tag.cat-sq{ background: rgba(200,146,62,.15) !important;  color: var(--gcat-sq) !important; border: 1px solid rgba(200,146,62,.4) !important; }
 </style>
 </head>
 <body>
