@@ -3395,9 +3395,10 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
       <div class="sb-item" data-p="processos"><span class="ico">📋</span><span class="sep">|</span>Entrevistas</div>
     </div>
 
-    <div class="sb-label sb-toggle" style="margin-top:14px">🌐 Web<span class="sb-caret">▾</span></div>
+    <div class="sb-label sb-toggle" style="margin-top:14px">🎓 Personal<span class="sb-caret">▾</span></div>
     <div class="sb-group-items">
-      <div class="sb-item" data-p="oliverweb"><span class="ico">🌐</span><span class="sep">|</span>Oliver</div>
+      <div class="sb-item" data-p="english"><span class="ico">🇬🇧</span><span class="sep">|</span>English</div>
+      <div class="sb-item" data-p="oliverweb"><span class="ico">🎮</span><span class="sep">|</span>Oliver</div>
     </div>
   </div>
 
@@ -3617,9 +3618,16 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   </div>
 
   <!-- OLIVER (Web) -->
+  <!-- ENGLISH — TOEFL Prep -->
+  <div class="page" id="page-english">
+    <div class="ph"><h1>🇬🇧 English — TOEFL Prep</h1><p>Sua central de estudos para o TOEFL iBT</p></div>
+    <div id="english-root"></div>
+  </div>
+
+  <!-- OLIVER — Personagem -->
   <div class="page" id="page-oliverweb">
-    <div class="ph"><h1>🌐 Oliver</h1><p>Espaço livre — conteúdo a definir</p></div>
-    <div id="oliverweb-root"></div>
+    <div class="ph"><h1>🎮 Oliver</h1><p>Seu personagem — evolui conforme seu patrimônio e suas conquistas</p></div>
+    <div id="oliver-root"></div>
   </div>
 
 </main>
@@ -3820,7 +3828,7 @@ window.testSupa = async function() {
 
 // Re-renderiza a página ativa atual
 function refreshPage() {
-  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null) };
+  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
   fn[curPage]?.();
 }
 
@@ -4104,7 +4112,7 @@ function goto(page) {
   // Para auto-refresh do BTC quando sai da página Portfolio
   if (curPage === 'portfolio' && page !== 'portfolio') { try{ stopPortfolioAutoRefresh(); }catch(_){} }
   curPage = page;
-  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null) };
+  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
   fn[page]?.();
 }
 
@@ -8736,6 +8744,188 @@ function delAporte(aid, pid){
   LS.dreams.set(list);
   renderAssets();
 }
+</script>
+
+<!-- =====================================================================
+     ENGLISH (TOEFL) — página de estudos nova
+     + religação da página OLIVER (engine de personagem já existente)
+     Persiste via LS + Supabase, mesmo padrão do app. Sem alterar lógica.
+     ===================================================================== -->
+<style>
+#english-root .eng-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px}
+#english-root .eng-card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+#english-root .eng-card h3{font-family:var(--font-hud);font-size:13px;letter-spacing:.1em;color:var(--accent-l);margin-bottom:12px;text-transform:uppercase}
+#english-root .eng-score-big{font-family:var(--font-hud);font-size:46px;font-weight:700;color:var(--text);line-height:1}
+#english-root .eng-score-big small{font-size:18px;color:var(--text3)}
+#english-root .eng-skill{display:grid;grid-template-columns:84px 1fr 56px;align-items:center;gap:10px;margin:9px 0}
+#english-root .eng-skill .lbl,#english-root .eng-row .lbl{font-size:13px;color:var(--text2)}
+#english-root .eng-bar{height:8px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden}
+#english-root .eng-bar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-l));transition:width .4s}
+#english-root .eng-skill input{width:52px;text-align:center;background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px;font-family:var(--font-mono)}
+#english-root .eng-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+#english-root .eng-row input,#english-root .eng-row select{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-size:14px}
+#english-root .eng-row input.grow{flex:1;min-width:120px}
+#english-root .eng-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+#english-root .eng-item{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+#english-root .eng-item .x{margin-left:auto;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 2px}
+#english-root .eng-item .x:hover{color:var(--red)}
+#english-root .eng-chk{width:22px;height:22px;border-radius:5px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;color:var(--green);font-weight:700;font-size:13px}
+#english-root .eng-chk.on{background:rgba(16,185,129,.15);border-color:var(--green)}
+#english-root .eng-vocab-term{font-weight:600;color:var(--text)}
+#english-root .eng-vocab-def{color:var(--text2);font-size:13px;line-height:1.4}
+#english-root .eng-count{font-family:var(--font-mono);color:var(--accent-l);font-size:12px}
+#english-root .eng-res a{color:var(--accent-l);text-decoration:none}
+#english-root .eng-res a:hover{text-decoration:underline}
+#english-root .eng-muted{color:var(--text3);font-size:12px}
+</style>
+<script>
+(function(){
+  if (typeof LS === 'undefined') return;
+
+  function _engDefault(){
+    return {
+      examDate:'', target:100,
+      scores:{reading:0,listening:0,speaking:0,writing:0},
+      vocab:[], sessions:[],
+      tasks:[
+        {id:'t1',label:'30 min de Reading (artigo acadêmico)',done:false},
+        {id:'t2',label:'1 exercício de Listening + anotações',done:false},
+        {id:'t3',label:'Speaking: 2 respostas gravadas (45s cada)',done:false},
+        {id:'t4',label:'Writing: 1 parágrafo argumentativo',done:false},
+        {id:'t5',label:'Revisar 10 palavras novas',done:false}
+      ]
+    };
+  }
+
+  if (!LS.english) LS.english = {
+    get(){
+      try { return JSON.parse(localStorage.getItem('lo_english') || 'null') || _engDefault(); }
+      catch(e){ return _engDefault(); }
+    },
+    set(v){ localStorage.setItem('lo_english', JSON.stringify(v)); try{ pushSupa('english', v); }catch(e){} }
+  };
+
+  const SKILLS = [['reading','Reading'],['listening','Listening'],['speaking','Speaking'],['writing','Writing']];
+  const eg = () => LS.english.get();
+  const es = (v) => LS.english.set(v);
+  const _esc = (s) => (typeof esc==='function' ? esc(s) : String(s==null?'':s));
+  const _toast = (m) => { try{ if(typeof toast==='function') toast(m); }catch(e){} };
+
+  window.engSetScore = function(skill, val){ const d=eg(); let n=parseInt(val)||0; d.scores[skill]=Math.max(0,Math.min(30,n)); es(d); renderEnglish(); };
+  window.engSetTarget = function(val){ const d=eg(); d.target=Math.max(0,Math.min(120,parseInt(val)||0)); es(d); renderEnglish(); };
+  window.engSetExam = function(val){ const d=eg(); d.examDate=val||''; es(d); renderEnglish(); };
+
+  window.engToggleTask = function(id){ const d=eg(); const t=d.tasks.find(x=>x.id===id); if(t){ t.done=!t.done; es(d); renderEnglish(); } };
+  window.engAddTask = function(){ const el=document.getElementById('eng-new-task'); const v=(el&&el.value||'').trim(); if(!v)return; const d=eg(); d.tasks.push({id:'t'+Date.now().toString(36),label:v,done:false}); es(d); renderEnglish(); };
+  window.engDelTask = function(id){ const d=eg(); d.tasks=d.tasks.filter(x=>x.id!==id); es(d); renderEnglish(); };
+  window.engResetTasks = function(){ const d=eg(); d.tasks.forEach(t=>t.done=false); es(d); renderEnglish(); _toast('✓ Checklist do dia reiniciado'); };
+
+  window.engAddVocab = function(){
+    const t=document.getElementById('eng-voc-term'), df=document.getElementById('eng-voc-def');
+    const term=(t&&t.value||'').trim(), def=(df&&df.value||'').trim();
+    if(!term) return;
+    const d=eg(); d.vocab.unshift({id:'v'+Date.now().toString(36),term,def}); es(d); renderEnglish();
+  };
+  window.engDelVocab = function(id){ const d=eg(); d.vocab=d.vocab.filter(x=>x.id!==id); es(d); renderEnglish(); };
+
+  window.engAddSession = function(){
+    const dt=document.getElementById('eng-ses-date'), sk=document.getElementById('eng-ses-skill'), mn=document.getElementById('eng-ses-min'), nt=document.getElementById('eng-ses-note');
+    const mins=parseInt(mn&&mn.value)||0; if(mins<=0) return;
+    const d=eg();
+    d.sessions.unshift({ id:'s'+Date.now().toString(36), date:(dt&&dt.value)||new Date().toISOString().slice(0,10), skill:(sk&&sk.value)||'reading', mins, note:(nt&&nt.value||'').trim() });
+    es(d); renderEnglish();
+  };
+  window.engDelSession = function(id){ const d=eg(); d.sessions=d.sessions.filter(x=>x.id!==id); es(d); renderEnglish(); };
+
+  window.renderEnglish = function renderEnglish(){
+    const root=document.getElementById('english-root'); if(!root) return;
+    const d=eg();
+    const total=SKILLS.reduce((a,[k])=>a+(parseInt(d.scores[k])||0),0);
+
+    let cd='';
+    if(d.examDate){
+      const today=new Date(); today.setHours(0,0,0,0);
+      const ex=new Date(d.examDate+'T00:00:00');
+      const days=Math.round((ex-today)/86400000);
+      cd = days>=0 ? `faltam <b style="color:var(--accent-l)">${days}</b> dia(s)` : `há ${Math.abs(days)} dia(s)`;
+    }
+
+    const skillRows=SKILLS.map(([k,name])=>{
+      const v=parseInt(d.scores[k])||0, pct=Math.round(v/30*100);
+      return `<div class="eng-skill"><span class="lbl">${name}</span><div class="eng-bar"><i style="width:${pct}%"></i></div><input type="number" min="0" max="30" value="${v}" onchange="engSetScore('${k}',this.value)"></div>`;
+    }).join('');
+
+    const doneCount=d.tasks.filter(t=>t.done).length;
+    const tasksHtml=d.tasks.length ? d.tasks.map(t=>`<div class="eng-item"><span class="eng-chk ${t.done?'on':''}" onclick="engToggleTask('${t.id}')">${t.done?'✓':''}</span><span style="${t.done?'opacity:.55;text-decoration:line-through':''}">${_esc(t.label)}</span><span class="x" onclick="engDelTask('${t.id}')" title="Remover">×</span></div>`).join('') : '<div class="eng-muted">Nenhuma tarefa. Adicione acima.</div>';
+
+    const vocHtml=d.vocab.length ? d.vocab.map(v=>`<div class="eng-item"><div><div class="eng-vocab-term">${_esc(v.term)}</div>${v.def?`<div class="eng-vocab-def">${_esc(v.def)}</div>`:''}</div><span class="x" onclick="engDelVocab('${v.id}')" title="Remover">×</span></div>`).join('') : '<div class="eng-muted">Nenhuma palavra ainda.</div>';
+
+    const totalMins=d.sessions.reduce((a,s)=>a+(parseInt(s.mins)||0),0);
+    const sesHtml=d.sessions.length ? d.sessions.slice(0,12).map(s=>{
+      const skn=(SKILLS.find(x=>x[0]===s.skill)||['','—'])[1];
+      return `<div class="eng-item"><div><div class="eng-vocab-term">${skn} · ${s.mins} min</div><div class="eng-vocab-def">${_esc(s.date)}${s.note?' · '+_esc(s.note):''}</div></div><span class="x" onclick="engDelSession('${s.id}')" title="Remover">×</span></div>`;
+    }).join('') : '<div class="eng-muted">Nenhuma sessão registrada.</div>';
+
+    const today=new Date().toISOString().slice(0,10);
+
+    root.innerHTML=`
+      <div class="eng-grid">
+        <div class="eng-card">
+          <h3>Score TOEFL</h3>
+          <div class="eng-score-big">${total}<small> / 120</small></div>
+          <div class="eng-muted" style="margin:6px 0 12px">Meta: <b style="color:var(--accent-l)">${d.target}</b> · ${cd||'defina a data do exame'}</div>
+          ${skillRows}
+        </div>
+        <div class="eng-card">
+          <h3>Configuração</h3>
+          <div class="eng-row"><span class="lbl" style="width:84px">Meta (/120)</span><input type="number" min="0" max="120" value="${d.target}" onchange="engSetTarget(this.value)"></div>
+          <div class="eng-row"><span class="lbl" style="width:84px">Data exame</span><input type="date" value="${d.examDate||''}" onchange="engSetExam(this.value)"></div>
+          <div class="eng-muted" style="margin-top:10px">Cada seção vale 0–30. O total é a soma de Reading, Listening, Speaking e Writing.</div>
+        </div>
+        <div class="eng-card">
+          <h3>Checklist de hoje · ${doneCount}/${d.tasks.length}</h3>
+          <div class="eng-row"><input class="grow" id="eng-new-task" placeholder="Nova tarefa de estudo..." onkeydown="if(event.key==='Enter')engAddTask()"><button class="btn btn-p" onclick="engAddTask()">+ Add</button></div>
+          <div class="eng-list">${tasksHtml}</div>
+          <div style="margin-top:10px"><button class="btn" onclick="engResetTasks()">↻ Reiniciar dia</button></div>
+        </div>
+      </div>
+
+      <div class="eng-grid">
+        <div class="eng-card">
+          <h3>Vocabulário <span class="eng-count">(${d.vocab.length})</span></h3>
+          <div class="eng-row"><input id="eng-voc-term" placeholder="Palavra / expressão"><input class="grow" id="eng-voc-def" placeholder="Significado / exemplo" onkeydown="if(event.key==='Enter')engAddVocab()"><button class="btn btn-p" onclick="engAddVocab()">+ Add</button></div>
+          <div class="eng-list">${vocHtml}</div>
+        </div>
+        <div class="eng-card">
+          <h3>Sessões de estudo <span class="eng-count">(${Math.floor(totalMins/60)}h ${totalMins%60}min)</span></h3>
+          <div class="eng-row">
+            <input type="date" id="eng-ses-date" value="${today}">
+            <select id="eng-ses-skill">${SKILLS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select>
+            <input type="number" id="eng-ses-min" placeholder="min" style="width:72px">
+          </div>
+          <div class="eng-row"><input class="grow" id="eng-ses-note" placeholder="Nota (opcional)" onkeydown="if(event.key==='Enter')engAddSession()"><button class="btn btn-p" onclick="engAddSession()">+ Registrar</button></div>
+          <div class="eng-list">${sesHtml}</div>
+        </div>
+      </div>
+
+      <div class="eng-card eng-res">
+        <h3>Recursos TOEFL</h3>
+        <div class="eng-list">
+          <div class="eng-item">📘 <a href="https://www.ets.org/toefl" target="_blank" rel="noopener">ETS TOEFL — site oficial</a></div>
+          <div class="eng-item">📝 <a href="https://www.ets.org/toefl/test-takers/ibt/prepare/" target="_blank" rel="noopener">Materiais de preparação oficiais (ETS)</a></div>
+          <div class="eng-item">🎧 <a href="https://www.youtube.com/c/TSTPrepTOEFL" target="_blank" rel="noopener">TST Prep — estratégias (YouTube)</a></div>
+          <div class="eng-item">🗣️ <a href="https://www.youtube.com/@NoteFull" target="_blank" rel="noopener">NoteFull TOEFL (YouTube)</a></div>
+        </div>
+        <div class="eng-muted" style="margin-top:10px">Dica: faça um simulado completo a cada 2 semanas e registre o score acima pra acompanhar a evolução.</div>
+      </div>
+    `;
+  };
+
+  // Religa a página OLIVER (engine de personagem já existente) ao menu/dispatch
+  if (typeof window.renderOliver === 'function' && typeof window.renderOliverWeb !== 'function'){
+    window.renderOliverWeb = function(){ try{ window.renderOliver(); }catch(e){} };
+  }
+})();
 </script>
 </body>
 </html>
