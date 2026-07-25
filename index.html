@@ -3416,11 +3416,18 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
-    <div class="ph"><h1>Dashboard</h1><p>Visão geral do seu progresso</p></div>
-    <div id="db-note"></div>
-    <div id="db-highlights"></div>
-    <div class="cards" id="db-cards"></div>
-    <div id="db-detail"></div>
+    <div class="dash-viewmode">
+      <span class="dvm-lbl">Visualização</span>
+      <button class="dvm-btn on" data-m="desktop" onclick="setDashView('desktop')">🖥️ Desktop</button>
+      <button class="dvm-btn" data-m="mobile" onclick="setDashView('mobile')">📱 Mobile</button>
+    </div>
+    <div id="dash-viewport">
+      <div class="ph"><h1>Dashboard</h1><p>Visão geral do seu progresso</p></div>
+      <div id="db-note"></div>
+      <div id="db-highlights"></div>
+      <div class="cards" id="db-cards"></div>
+      <div id="db-detail"></div>
+    </div>
   </div>
 
   <!-- GOALS -->
@@ -8925,6 +8932,88 @@ function delAporte(aid, pid){
   if (typeof window.renderOliver === 'function' && typeof window.renderOliverWeb !== 'function'){
     window.renderOliverWeb = function(){ try{ window.renderOliver(); }catch(e){} };
   }
+})();
+</script>
+
+<!-- =====================================================================
+     DASHBOARD — seletor de visualização Desktop/Mobile (preview na página)
+     + responsividade real por CONTAINER QUERIES (o mesmo código serve para
+     o celular real e para o preview mobile). Não altera lógica nem dados.
+     ===================================================================== -->
+<style>
+/* Seletor de visualização */
+.dash-viewmode{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.dvm-lbl{font-family:var(--font-hud);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-right:2px}
+.dvm-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 14px;font-family:var(--font-hud);font-size:12px;letter-spacing:.04em;cursor:pointer;transition:border-color .18s,color .18s,background .18s,box-shadow .18s;min-height:40px}
+.dvm-btn:hover{border-color:var(--accent-l);color:var(--text)}
+.dvm-btn.on{background:linear-gradient(180deg,rgba(0,168,255,.18),rgba(0,168,255,.06));border-color:var(--accent);color:var(--accent-l);box-shadow:0 0 0 1px rgba(0,212,255,.3),0 0 16px rgba(0,212,255,.18)}
+
+/* Container de responsividade do dashboard */
+#dash-viewport{container-type:inline-size;container-name:dashvp}
+
+/* Modo PREVIEW mobile dentro da própria página — moldura de smartphone */
+#dash-viewport.dash-view-mobile{
+  max-width:412px;margin:0 auto 12px;
+  padding:30px 14px calc(18px + env(safe-area-inset-bottom));
+  border:1px solid var(--border);border-radius:30px;
+  background:linear-gradient(180deg,rgba(8,16,28,.55),rgba(8,16,28,.20));
+  box-shadow:0 26px 70px rgba(0,0,0,.55),inset 0 0 0 6px rgba(0,0,0,.35),0 0 0 1px rgba(0,212,255,.15);
+  position:relative;
+}
+#dash-viewport.dash-view-mobile::before{
+  content:'';position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:64px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);
+}
+
+/* ===== Regras mobile do dashboard — dirigidas pela LARGURA DO CONTAINER.
+   Disparam tanto no celular real quanto no preview mobile; nunca no desktop
+   largo (o container fica > 560px). Sem duplicar implementação. ===== */
+@container dashvp (max-width:560px){
+  .ph{margin-bottom:16px}
+  .ph h1{font-size:20px;line-height:1.15}
+  .ph p{font-size:12px}
+
+  /* KPIs em coluna única, números reescalados, toque confortável */
+  .cards{grid-template-columns:1fr;gap:12px;margin-bottom:20px}
+  .card{padding:15px 16px}
+  .card-ico{font-size:20px;margin-bottom:8px}
+  .card-val{font-size:24px}
+  .dash-streak{font-size:26px}
+  .card-sub{font-size:11.5px;line-height:1.45}
+
+  /* Destaques empilhados (objetivos + goals) */
+  .hl-wrap{grid-template-columns:1fr;gap:14px;margin-bottom:18px}
+  .hl-sec{padding:14px}
+  .hl-sec-hd{flex-wrap:wrap;gap:4px}
+  .hl-title,.hl-obj .hl-title{font-size:15px}
+
+  /* Nota livre do topo */
+  .db-note-box{padding:14px}
+
+  /* Goals prioritários: cabeçalho quebra sem cortar badges */
+  .sec-title{font-size:12px}
+  #db-detail .card{padding:14px}
+  #db-detail .flex.ai{flex-wrap:wrap;gap:6px}
+  #db-detail .badge,#db-detail .tier-badge{font-size:10px}
+}
+</style>
+<script>
+(function(){
+  // Alterna o modo de visualização do dashboard (preview na própria página)
+  window.setDashView = function(mode){
+    const vp = document.getElementById('dash-viewport');
+    const m = (mode === 'mobile') ? 'mobile' : 'desktop';
+    if (vp) vp.classList.toggle('dash-view-mobile', m === 'mobile');
+    document.querySelectorAll('.dvm-btn').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+    try { localStorage.setItem('lo_dashview', m); } catch(e){}
+  };
+  function initDashView(){
+    let saved = 'desktop';
+    try { saved = localStorage.getItem('lo_dashview') || 'desktop'; } catch(e){}
+    window.setDashView(saved);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDashView);
+  else initDashView();
 })();
 </script>
 </body>
