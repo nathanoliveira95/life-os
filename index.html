@@ -1851,6 +1851,25 @@ body.is-mobile .cal-grid{grid-auto-rows:64px}
 body.is-mobile .cal-cell .cal-val{font-size:11px}
 body.is-mobile .cal-summary{grid-template-columns:repeat(2,1fr)}
 
+/* Faixa semanal de Dieta/Treino: no mobile as 7 colunas não cabem, então
+   vira um scroll horizontal controlado (com barra visível e snap) para
+   alcançar todos os dias, inclusive domingo. */
+body.is-mobile .saude-grid{
+  grid-template-columns:repeat(7,76px);
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;
+  padding-bottom:8px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--accent) rgba(255,255,255,.06);
+  scroll-padding-left:2px;
+}
+body.is-mobile .saude-day{scroll-snap-align:start;min-height:88px}
+body.is-mobile .saude-grid::-webkit-scrollbar{height:7px}
+body.is-mobile .saude-grid::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:4px}
+body.is-mobile .saude-grid::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
+
 /* ============================================================
    ░▒▓ OLIVER (Game) — avatar · inventory · shop ▓▒░
    ============================================================ */
