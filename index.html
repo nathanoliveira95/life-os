@@ -1870,6 +1870,16 @@ body.is-mobile .saude-grid::-webkit-scrollbar{height:7px}
 body.is-mobile .saude-grid::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:4px}
 body.is-mobile .saude-grid::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
 
+/* Kanban de Tasks (To Do/In Progress/Done): no mobile empilha em coluna
+   única, em vez de 3 colunas espremidas que estouravam a largura. */
+body.is-mobile .kanban{grid-template-columns:1fr !important;gap:12px}
+body.is-mobile .kcol{min-height:0}
+
+/* Rede de segurança: a PÁGINA nunca rola horizontalmente. Os containers
+   que precisam de scroll lateral (tabelas, faixa semanal de saúde, heatmap)
+   têm overflow-x próprio e continuam rolando internamente. */
+body.is-mobile .main{overflow-x:hidden}
+
 /* ============================================================
    ░▒▓ OLIVER (Game) — avatar · inventory · shop ▓▒░
    ============================================================ */
