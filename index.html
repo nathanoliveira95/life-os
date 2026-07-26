@@ -3483,9 +3483,7 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   <!-- BACKLOG -->
   <div class="page" id="page-backlog">
     <div class="ph"><h1>Backlog</h1><p>Registre o que você fez em cada dia — os totais vão direto para o Goals</p></div>
-    <div class="flex ai g8 mb16">
-      <button class="btn btn-p" onclick="openBacklogModal()">+ Nova Entrada</button>
-    </div>
+    <div class="bl-toolbar" id="backlog-toolbar"></div>
     <div class="tw">
       <table>
         <thead><tr>
@@ -3677,6 +3675,17 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   </div>
 
 </main>
+
+<!-- PAINEL DIREITO — Próximos prazos (visão derivada de Goals/Objetivos/Tarefas/Calendário) -->
+<aside class="rightbar" id="rightbar">
+  <div class="rb-head">
+    <span class="rb-title">⚑ Próximos Prazos</span>
+    <button class="rb-collapse" onclick="toggleRightbar()" title="Recolher painel" aria-label="Recolher painel">›</button>
+  </div>
+  <div class="rb-body" id="dl-panel"></div>
+</aside>
+<button id="rbReopen" onclick="toggleRightbar()" title="Próximos prazos" aria-label="Abrir prazos">⚑</button>
+<div id="rbBackdrop" class="rb-backdrop" onclick="toggleRightbar(false)"></div>
 
 <!-- Container de modais -->
 <div id="mc"></div>
@@ -4714,16 +4723,24 @@ function renderGoals() {
           <span class="obj-box-sub">o "porquê" — direção qualitativa</span>
         </div>
         ${catObjs.map((o,i) => `
-          <div class="obj-row">
-            <span class="obj-num">${i+1}</span>
-            <input class="obj-inp" value="${esc(o.txt)}" placeholder="Objetivo ${i+1}…"
-              onchange="upObjective('${catKeyEsc}',${i},'txt',this.value)">
-            <input type="number" class="obj-prog" min="0" max="100" value="${o.progress||0}" title="Progresso % (opcional)"
-              onchange="upObjective('${catKeyEsc}',${i},'progress',this.value)">
-            <input type="date" class="obj-date" value="${esc(o.deadline||'')}" title="Prazo (opcional)"
-              onchange="upObjective('${catKeyEsc}',${i},'deadline',this.value)">
-            <button class="obj-photo ${o.image?'has-img':''}" title="${o.image?'Remover foto':'Adicionar foto'}"
-              onclick="${o.image?`clearObjPhoto('${catKeyEsc}',${i})`:`pickObjPhoto('${catKeyEsc}',${i})`}">${o.image?'🖼':'📷'}</button>
+          <div class="obj-row ${o.image?'has-img':''}">
+            <div class="gx-thumb ${cat.slug} ${o.image?'has-img':'is-empty'}" title="${o.image?'Trocar foto':'Adicionar foto'}"
+              onclick="pickObjPhoto('${catKeyEsc}',${i})">
+              ${o.image
+                ? `<img src="${o.image}" alt="" loading="lazy"><button class="gx-thumb-x" title="Remover foto" onclick="event.stopPropagation();clearObjPhoto('${catKeyEsc}',${i})">✕</button>`
+                : `<span class="obj-num">${i+1}</span>`}
+            </div>
+            <div class="obj-main">
+              <input class="obj-inp" value="${esc(o.txt)}" placeholder="Objetivo ${i+1}…"
+                onchange="upObjective('${catKeyEsc}',${i},'txt',this.value)">
+              <div class="obj-sub">
+                <span class="obj-sub-lbl">Prog</span>
+                <input type="number" class="obj-prog" min="0" max="100" value="${o.progress||0}" title="Progresso %"
+                  onchange="upObjective('${catKeyEsc}',${i},'progress',this.value)"><span class="obj-prog-u">%</span>
+                <input type="date" class="obj-date" value="${esc(o.deadline||'')}" title="Prazo"
+                  onchange="upObjective('${catKeyEsc}',${i},'deadline',this.value)">
+              </div>
+            </div>
             <button class="obj-pin ${isObjPinned(cat.key,i)?'is-pinned':''}" title="Fixar no Dashboard"
               onclick="toggleObjPin('${catKeyEsc}',${i})">★</button>
           </div>
@@ -4988,10 +5005,11 @@ function gcard(g, slug, isCompleted) {
       <input id="gn-${g.id}" class="gcard-name" value="${esc(g.name)}" placeholder="Nome da meta"
         onchange="upGoal('${g.id}','name',this.value)">
 
-      <div class="gcard-img-row">
+      <div class="gx-img gx-banner ${slug} ${g.image?'has-img':'is-empty'}"
+           onclick="${g.image?'':`pickGoalPhoto('${g.id}')`}" ${g.image?'':'title="Adicionar foto"'}>
         ${g.image
-          ? `<div class="gcard-img"><img src="${g.image}" alt=""><button class="gcard-img-x" title="Remover foto" onclick="clearGoalPhoto('${g.id}')">✕</button></div>`
-          : `<button class="gcard-img-add" onclick="pickGoalPhoto('${g.id}')">＋ Adicionar foto</button>`}
+          ? `<img src="${g.image}" alt="" loading="lazy"><div class="gx-img-ctrls"><button class="gx-img-btn" title="Trocar foto" onclick="event.stopPropagation();pickGoalPhoto('${g.id}')">⟳</button><button class="gx-img-btn" title="Remover foto" onclick="event.stopPropagation();clearGoalPhoto('${g.id}')">✕</button></div>`
+          : `<span class="gx-ph-ico">🎯</span><span class="gx-ph-txt">＋ Adicionar foto</span>`}
       </div>
 
       <div class="gcard-row">
@@ -5051,27 +5069,82 @@ function renderCompleted() {
    MÓDULO 2.5 — BACKLOG (entradas diárias)
    ========================================= */
 
-function renderBacklog() {
-  const entries = LS.backlog.get().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-  const goals   = LS.goals.get();
-  // Mapa id → meta para lookup rápido
-  const goalMap = Object.fromEntries(goals.map(g => [g.id, g]));
+// Estado de visualização do Backlog (filtros + histórico) — persiste na sessão
+let blView = { q:'', cat:'all', goal:'all', histOpen:false };
+try { const s = JSON.parse(sessionStorage.getItem('lo_bl_view')||'null'); if (s) blView = Object.assign(blView, s); } catch(e){}
+function blSaveView(){ try { sessionStorage.setItem('lo_bl_view', JSON.stringify(blView)); } catch(e){} }
+function setBlFilter(field, val){ blView[field] = val; blSaveView(); renderBacklog(); }
+function blSearch(val){ blView.q = val; blSaveView(); renderBacklogBody(); }   // só o corpo → mantém foco no campo
+function toggleBlHist(){ blView.histOpen = !blView.histOpen; blSaveView(); renderBacklogBody(); }
+function blClearFilters(){ blView.q=''; blView.cat='all'; blView.goal='all'; blSaveView(); renderBacklog(); }
+function editBacklog(id){ const e = LS.backlog.get().find(x => x.id === id); if (e) openBacklogModal(e); }
 
-  document.getElementById('backlog-body').innerHTML = entries.length === 0
-    ? `<tr><td colspan="6" class="empty">Nenhuma entrada. Clique em "+ Nova Entrada" para registrar.</td></tr>`
-    : entries.map(e => {
-        const g = goalMap[e.goalId];
-        const slug = g ? catSlug(g.category) : 'cat-sq';
-        return `
-          <tr>
-            <td class="bl-date">${fmtD(e.date)}</td>
-            <td>${g ? `<span class="bl-cat-tag ${slug}">${esc(g.category)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
-            <td style="font-weight:500">${g ? esc(g.name || '(sem nome)') : '<span style="color:var(--red)">meta removida</span>'}</td>
-            <td style="text-align:right;font-weight:600;color:var(--accent-l)">${e.amount}</td>
-            <td style="color:var(--text2)">${esc(e.notes||'')}</td>
-            <td><button class="btn btn-d" onclick="delBacklog('${e.id}')">✕</button></td>
-          </tr>`;
-      }).join('');
+function blFiltered(){
+  const all = LS.backlog.get().slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const goalMap = Object.fromEntries(LS.goals.get().map(g => [g.id, g]));
+  const q = (blView.q||'').trim().toLowerCase();
+  const filtered = all.filter(e => {
+    const g = goalMap[e.goalId];
+    if (blView.cat !== 'all' && (!g || g.category !== blView.cat)) return false;
+    if (blView.goal !== 'all' && e.goalId !== blView.goal) return false;
+    if (q){
+      const hay = ((g?g.name:'')+' '+(g?g.category:'')+' '+(e.notes||'')+' '+(e.amount||'')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  return { all, filtered, goalMap };
+}
+
+function renderBacklog(){
+  // Toolbar (recriada aqui pois selects dependem das metas atuais)
+  const goals = LS.goals.get();
+  const catOpts  = CATS.map(c => `<option value="${c.key}" ${blView.cat===c.key?'selected':''}>${esc(c.key)}</option>`).join('');
+  const goalOpts = goals.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||''))
+    .map(g => `<option value="${g.id}" ${blView.goal===g.id?'selected':''}>${esc(g.name||'(sem nome)')}</option>`).join('');
+  const hasFilter = (blView.q||'').trim() || blView.cat!=='all' || blView.goal!=='all';
+  const tb = document.getElementById('backlog-toolbar');
+  if (tb) tb.innerHTML = `
+    <button class="btn btn-p" onclick="openBacklogModal()">+ Nova Entrada</button>
+    <div class="bl-search"><span class="bl-search-ico">🔍</span><input id="bl-q" placeholder="Buscar meta, categoria, nota…" value="${esc(blView.q)}" oninput="blSearch(this.value)"></div>
+    <select class="bl-fsel" onchange="setBlFilter('cat',this.value)"><option value="all">Todas categorias</option>${catOpts}</select>
+    <select class="bl-fsel" onchange="setBlFilter('goal',this.value)"><option value="all">Todas as metas</option>${goalOpts}</select>
+    ${hasFilter?`<button class="bl-clear" onclick="blClearFilters()">✕ limpar</button>`:''}
+    <span class="bl-count" id="bl-count"></span>`;
+  renderBacklogBody();
+}
+
+function renderBacklogBody(){
+  const body = document.getElementById('backlog-body'); if (!body) return;
+  const { all, filtered, goalMap } = blFiltered();
+  const cnt = document.getElementById('bl-count');
+  if (cnt) cnt.textContent = filtered.length === all.length ? `${all.length} ${all.length===1?'entrada':'entradas'}` : `${filtered.length} de ${all.length}`;
+
+  if (!filtered.length){
+    body.innerHTML = `<tr><td colspan="6" class="empty">${all.length ? 'Nenhum resultado para o filtro atual.' : 'Nenhuma entrada. Clique em "+ Nova Entrada" para registrar.'}</td></tr>`;
+    return;
+  }
+  const row = e => {
+    const g = goalMap[e.goalId];
+    const slug = g ? catSlug(g.category) : 'cat-sq';
+    return `
+      <tr class="bl-row">
+        <td class="bl-date">${fmtD(e.date)}</td>
+        <td>${g ? `<span class="bl-cat-tag ${slug}">${esc(g.category)}</span>` : '<span style="color:var(--gs-text-3)">—</span>'}</td>
+        <td style="font-weight:500">${g ? esc(g.name || '(sem nome)') : '<span style="color:var(--gs-danger)">meta removida</span>'}</td>
+        <td style="text-align:right;font-weight:700;color:var(--gs-blue-l);font-family:var(--font-mono)">${esc(String(e.amount))}</td>
+        <td style="color:var(--gs-text-2)">${esc(e.notes||'')}</td>
+        <td class="bl-actions"><button class="bl-ic" title="Editar" onclick="editBacklog('${e.id}')">✎</button><button class="bl-ic bl-ic-d" title="Excluir" onclick="delBacklog('${e.id}')">✕</button></td>
+      </tr>`;
+  };
+  const recent = filtered.slice(0,3);
+  const older  = filtered.slice(3);
+  let html = recent.map(row).join('');
+  if (older.length){
+    html += `<tr class="bl-hist-row"><td colspan="6"><button class="bl-hist-btn" onclick="toggleBlHist()">${blView.histOpen?'▾':'▸'} Histórico — ${older.length} ${older.length===1?'item anterior':'itens anteriores'}</button></td></tr>`;
+    if (blView.histOpen) html += older.map(row).join('');
+  }
+  body.innerHTML = html;
 }
 
 function openBacklogModal(entry) {
@@ -9894,5 +9967,252 @@ body.is-mobile .dcar-slide{flex-basis:260px}
   }catch(e){}
 })();
 </script>
+
+<!-- ============================================================
+     ░▒▓ RIGHTBAR — Próximos Prazos (derivado) ▓▒░
+     ============================================================ -->
+<style id="rightbar-style">
+.rightbar{width:312px;flex:0 0 312px;background:var(--gs-ink-2);border-left:1px solid var(--gs-border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:2}
+.rb-head{display:flex;align-items:center;justify-content:space-between;padding:16px 15px 12px;border-bottom:1px solid var(--gs-hair)}
+.rb-title{font-family:var(--font-hud);font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gs-text-2)}
+.rb-collapse{width:26px;height:26px;border-radius:6px;border:1px solid var(--gs-border-2);background:transparent;color:var(--gs-text-3);cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s}
+.rb-collapse:hover{border-color:var(--gs-blue);color:var(--gs-blue-l)}
+.rb-body{flex:1;overflow-y:auto;padding:12px 12px 24px}
+.dl-glbl{font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-text-3);margin:12px 4px 7px}
+.dl-glbl:first-child{margin-top:2px}
+.dl-item{display:flex;gap:10px;align-items:flex-start;padding:10px 11px;border-radius:9px;border:1px solid var(--gs-border);background:linear-gradient(180deg,rgba(255,255,255,.014),transparent 50%),var(--gs-card);margin-bottom:7px;cursor:pointer;transition:border-color .15s,transform .1s,background .15s}
+.dl-item:hover{border-color:var(--gs-border-2);transform:translateX(-2px)}
+.dl-dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:5px}
+.dl-main{flex:1;min-width:0}
+.dl-title{font-size:13px;font-weight:600;color:var(--gs-text);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dl-meta{display:flex;align-items:center;gap:7px;margin-top:4px;font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);flex-wrap:wrap}
+.dl-type{letter-spacing:.03em;text-transform:uppercase;opacity:.85}
+.dl-cat{color:var(--gs-blue-l);opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}
+.dl-when{font-weight:700;margin-left:auto}
+.dl-star{color:var(--gs-warn);font-size:11px}
+.dl-item.st-overdue .dl-dot{background:var(--gs-danger);box-shadow:0 0 7px rgba(240,82,75,.55)}
+.dl-item.st-overdue .dl-when{color:var(--gs-danger)}
+.dl-item.st-today .dl-dot{background:var(--gs-warn);box-shadow:0 0 7px rgba(224,160,40,.5)}
+.dl-item.st-today .dl-when{color:var(--gs-warn)}
+.dl-item.st-soon .dl-dot{background:var(--gs-blue-l)}
+.dl-item.st-soon .dl-when{color:var(--gs-blue-l)}
+.dl-item.st-later .dl-dot{background:var(--gs-text-3)}
+.dl-item.st-done{opacity:.5}
+.dl-item.st-done .dl-dot{background:var(--gs-success)}
+.dl-item.st-done .dl-title{text-decoration:line-through}
+.dl-empty{text-align:center;color:var(--gs-text-3);font-size:12px;padding:44px 18px;line-height:1.6}
+.dl-empty-ico{font-size:30px;opacity:.35;display:block;margin-bottom:10px}
+/* Colapso desktop */
+body:not(.is-mobile) .rightbar{transition:width .26s cubic-bezier(.4,0,.2,1),opacity .2s}
+body:not(.is-mobile).rb-collapsed .rightbar{width:0;flex-basis:0;border-left:0;opacity:0;pointer-events:none}
+#rbReopen{position:fixed;top:14px;right:14px;z-index:60;width:34px;height:34px;border-radius:8px;border:1px solid var(--gs-border-2);background:var(--gs-glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--gs-text-2);cursor:pointer;font-size:15px;line-height:1;display:none;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.5);transition:border-color .15s,color .15s}
+#rbReopen:hover{border-color:var(--gs-blue);color:var(--gs-blue-l)}
+body:not(.is-mobile).rb-collapsed #rbReopen{display:flex}
+/* desloca elementos fixos do topo-direito quando o painel está aberto */
+body:not(.is-mobile):not(.rb-collapsed) .hud-clock{right:384px}
+body:not(.is-mobile):not(.rb-collapsed) .main-deco-tr{right:330px}
+/* Drawer mobile */
+.rb-backdrop{display:none}
+body.is-mobile #rbReopen{display:flex}
+body.is-mobile .rightbar{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:86vw;max-width:340px;flex-basis:auto;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:1000;border-left:1px solid var(--gs-border-2);box-shadow:-6px 0 32px rgba(0,0,0,.7);padding-bottom:env(safe-area-inset-bottom)}
+body.is-mobile.rb-open .rightbar{transform:translateX(0)}
+body.is-mobile .rb-backdrop{display:block;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .28s}
+body.is-mobile.rb-open .rb-backdrop{opacity:1;pointer-events:auto}
+body.is-mobile.rb-open #rbReopen{display:none}
+</style>
+
+<script id="rightbar-script">
+(function(){
+  if (typeof LS === 'undefined') return;
+  const esct = s => (typeof esc==='function') ? esc(s) : String(s==null?'':s);
+
+  window.toggleRightbar = function(force){
+    if (document.body.classList.contains('is-mobile')){
+      const open = (typeof force==='boolean') ? force : !document.body.classList.contains('rb-open');
+      document.body.classList.toggle('rb-open', open);
+    } else {
+      const collapse = (typeof force==='boolean') ? !force : !document.body.classList.contains('rb-collapsed');
+      document.body.classList.toggle('rb-collapsed', collapse);
+      try{ localStorage.setItem('lo_rb_col', collapse?'1':'0'); }catch(e){}
+    }
+  };
+  window.dlGo = function(page){
+    if(!page) return;
+    const pg = document.getElementById('page-'+page);
+    if (pg && typeof goto==='function') goto(page);
+    if (document.body.classList.contains('is-mobile')) window.toggleRightbar(false);
+  };
+
+  function daysUntil(dateStr){
+    if(!dateStr) return null;
+    try{
+      const today = new Date((typeof dk==='function'?dk(new Date()):new Date().toISOString().slice(0,10))+'T00:00:00');
+      const d = new Date(dateStr+'T00:00:00');
+      if(isNaN(d.getTime())) return null;
+      return Math.round((d - today)/86400000);
+    }catch(e){ return null; }
+  }
+  function statusOf(days, done){
+    if(done) return 'done';
+    if(days==null) return 'later';
+    if(days<0) return 'overdue';
+    if(days===0) return 'today';
+    if(days<=7) return 'soon';
+    return 'later';
+  }
+  function whenLabel(days, done){
+    if(done) return 'concluído';
+    if(days==null) return '';
+    if(days<0) return Math.abs(days)+'d atrás';
+    if(days===0) return 'hoje';
+    if(days===1) return 'amanhã';
+    if(days<=30) return 'em '+days+'d';
+    if(days<=60) return 'em ~1 mês';
+    return 'em '+Math.round(days/30)+' meses';
+  }
+
+  function collect(){
+    const items=[];
+    let pins={goals:[],objectives:[]};
+    try{ if(LS.dashPins) pins=LS.dashPins.get(); }catch(e){}
+    try{ (LS.goals.get()||[]).forEach(g=>{
+      if(!g.deadline) return;
+      const done=(typeof isGoalDone==='function')?isGoalDone(g):(g.status==='Done');
+      items.push({title:g.name||'(sem nome)',type:'Goal',page:'goals',date:g.deadline,marked:(pins.goals||[]).includes(g.id),done,slug:(typeof catSlug==='function'?catSlug(g.category):'cat-sq'),cat:g.category||''});
+    }); }catch(e){}
+    try{ const objs=LS.objectives.get()||{}; (typeof CATS!=='undefined'?CATS:[]).forEach(c=>{
+      normalizeObjectives(objs[c.key]).forEach((o,idx)=>{
+        if(!o.deadline||!o.txt) return;
+        const marked=(pins.objectives||[]).some(p=>p.cat===c.key&&p.idx===idx);
+        items.push({title:o.txt,type:'Objetivo',page:'goals',date:o.deadline,marked,done:(parseInt(o.progress)||0)>=100,slug:c.slug,cat:c.key});
+      });
+    }); }catch(e){}
+    try{ if(LS.calEvents){ (LS.calEvents.get()||[]).forEach(e=>{
+      if(!e.date) return;
+      items.push({title:e.title||'(evento)',type:'Evento',page:'calendar',date:e.date,marked:false,done:false,slug:'cat-ev',cat:'Calendário'});
+    }); } }catch(e){}
+    try{ (LS.tasks.get()||[]).forEach(t=>{
+      if(!t||!t.deadline) return;
+      items.push({title:t.title||'(tarefa)',type:'Tarefa',page:'tasks',date:t.deadline,marked:t.priority==='High',done:t.status==='Done',slug:'cat-sq',cat:t.project||''});
+    }); }catch(e){}
+    items.forEach(it=>{ it.days=daysUntil(it.date); it.status=statusOf(it.days,it.done); });
+    // ranking: não-concluídos primeiro; marcados no topo; depois por prazo mais próximo (atrasado = negativo → sobe)
+    items.sort((a,b)=>{
+      if((a.done?1:0)!==(b.done?1:0)) return (a.done?1:0)-(b.done?1:0);
+      if((a.marked?0:1)!==(b.marked?0:1)) return (a.marked?0:1)-(b.marked?0:1);
+      const da=a.days==null?9e9:a.days, db=b.days==null?9e9:b.days;
+      return da-db;
+    });
+    return items;
+  }
+
+  window.renderDeadlines = function(){
+    const host=document.getElementById('dl-panel'); if(!host) return;
+    const items=collect();
+    if(!items.length){
+      host.innerHTML=`<div class="dl-empty"><span class="dl-empty-ico">🗓️</span>Sem prazos futuros.<br>Defina prazos em <strong>Goals</strong> ou crie eventos no <strong>Calendário</strong>.</div>`;
+      return;
+    }
+    const active=items.filter(i=>!i.done), done=items.filter(i=>i.done);
+    const row=it=>`<div class="dl-item st-${it.status}" onclick="dlGo('${it.page}')" title="${esct(it.title)}">
+      <span class="dl-dot"></span>
+      <div class="dl-main">
+        <div class="dl-title">${it.marked?'<span class="dl-star">★</span> ':''}${esct(it.title)}</div>
+        <div class="dl-meta"><span class="dl-type">${it.type}</span>${it.cat?`<span class="dl-cat">${esct(it.cat)}</span>`:''}<span class="dl-when">${whenLabel(it.days,it.done)}</span></div>
+      </div>
+    </div>`;
+    let html='';
+    if(active.length){ html+=`<div class="dl-glbl">Ativos · ${active.length}</div>`+active.map(row).join(''); }
+    if(done.length){ html+=`<div class="dl-glbl">Concluídos · ${done.length}</div>`+done.slice(0,8).map(row).join(''); }
+    host.innerHTML=html;
+  };
+
+  // Refresh: no load + sempre que páginas com prazos re-renderizam
+  try{ if(localStorage.getItem('lo_rb_col')==='1') document.body.classList.add('rb-collapsed'); }catch(e){}
+  ['renderGoals','renderCalendarPage','renderDash','renderBacklog','renderCompleted'].forEach(fn=>{
+    if(typeof window[fn]==='function' && !window[fn]._dlWrapped){
+      const o=window[fn]; window[fn]=function(){ const r=o.apply(this,arguments); try{window.renderDeadlines();}catch(e){} return r; }; window[fn]._dlWrapped=true;
+    }
+  });
+  try{ window.renderDeadlines(); }catch(e){}
+})();
+</script>
+
+<!-- ============================================================
+     ░▒▓ GOALS v2 — cards consistentes + imagens robustas ▓▒░
+     ============================================================ -->
+<style id="goals-v2-style">
+/* Imagem robusta compartilhada (Missões + Objetivos). Fonte única: g.image / objective.image */
+.gx-img{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1px solid var(--gs-border);margin:2px 0 12px;background:var(--gs-card-2)}
+.gx-img img{width:100%;height:100%;object-fit:cover;display:block}
+.gx-img.is-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border-style:dashed;border-color:var(--gs-border-2);
+  background:radial-gradient(120% 100% at 50% 0%, rgba(10,132,255,.10), transparent 60%), linear-gradient(180deg, var(--gs-card-2), var(--gs-card));transition:border-color .15s,background .15s}
+.gx-img.is-empty:hover{border-color:var(--gs-blue)}
+.gx-ph-ico{font-size:26px;opacity:.5}
+.gx-ph-txt{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;color:var(--gs-text-3)}
+.gx-img.gx-banner.cat-ib{box-shadow:inset 0 2px 0 var(--gcat-ib)}
+.gx-img.gx-banner.cat-en{box-shadow:inset 0 2px 0 var(--gcat-en)}
+.gx-img.gx-banner.cat-ol{box-shadow:inset 0 2px 0 var(--gcat-ol)}
+.gx-img.gx-banner.cat-sq{box-shadow:inset 0 2px 0 var(--gcat-sq)}
+.gx-img-ctrls{position:absolute;top:6px;right:6px;display:flex;gap:5px;opacity:0;transition:opacity .15s}
+.gx-img:hover .gx-img-ctrls{opacity:1}
+.gx-img-btn{width:24px;height:24px;border-radius:5px;border:none;background:rgba(3,5,9,.72);color:#fff;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background .15s}
+.gx-img-btn:hover{background:var(--gs-blue)}
+.gx-img-btn:last-child:hover{background:var(--gs-danger)}
+
+/* Thumb dos Objetivos — mesmo tratamento de imagem, menor (distinção de hierarquia) */
+.obj-row{display:flex !important;align-items:flex-start !important;gap:10px !important;padding:8px 0 !important;border-bottom:1px solid var(--gs-hair) !important;margin-top:0 !important}
+.obj-row:last-child{border-bottom:none !important}
+.gx-thumb{position:relative;width:38px;height:38px;flex:none;border-radius:7px;overflow:hidden;border:1px solid var(--gs-border);cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--gs-card-2);transition:border-color .15s}
+.gx-thumb:hover{border-color:var(--gs-blue-l)}
+.gx-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.gx-thumb.is-empty{border-style:dashed;border-color:var(--gs-border-2)}
+.gx-thumb-x{position:absolute;top:1px;right:1px;width:15px;height:15px;border-radius:4px;border:none;background:rgba(3,5,9,.75);color:#fff;font-size:9px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center}
+.gx-thumb:hover .gx-thumb-x{display:flex}
+.obj-row .obj-num{width:auto !important;height:auto !important;background:transparent !important;border:none !important;font-family:var(--font-mono) !important;font-size:13px !important;font-weight:700 !important;color:var(--gs-text-3) !important;box-shadow:none !important}
+.obj-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.obj-inp{width:100% !important;background:transparent !important;border:none !important;border-bottom:1px dashed var(--gs-border-2) !important;border-radius:0 !important;padding:2px 0 !important;font-size:13px !important;color:var(--gs-text) !important}
+.obj-inp:focus{border-bottom-color:var(--gs-blue) !important;box-shadow:none !important}
+.obj-sub{display:flex;align-items:center;gap:6px}
+.obj-sub-lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-text-3)}
+.obj-prog{width:44px !important;text-align:center;padding:3px 4px !important;font-family:var(--font-mono) !important;font-size:12px !important}
+.obj-prog-u{font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3);margin-left:-2px}
+.obj-date{flex:1;min-width:92px;padding:3px 6px !important;font-size:11px !important;color:var(--gs-text-2) !important}
+.obj-pin{flex:none;align-self:center}
+
+/* Mission cards — proporção previsível, progresso alinhado embaixo */
+.goal-missions .gcard{display:flex;flex-direction:column}
+.gcard-prog{margin-top:auto}
+.gcard-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Responsivo */
+body.is-mobile .gx-img{aspect-ratio:16/10}
+@media(max-width:640px){ .obj-date{min-width:0} }
+</style>
+
+<!-- ============================================================
+     ░▒▓ BACKLOG — densidade: recentes + histórico + filtros ▓▒░
+     ============================================================ -->
+<style id="backlog-v2-style">
+.bl-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.bl-search{position:relative;flex:1 1 200px;min-width:170px;max-width:360px}
+.bl-search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.5;pointer-events:none}
+.bl-search input{padding-left:30px !important}
+.bl-fsel{width:auto !important;min-width:148px;flex:0 0 auto}
+.bl-clear{background:transparent;border:1px solid var(--gs-border-2);color:var(--gs-text-3);border-radius:6px;padding:7px 10px;font-size:11px;cursor:pointer;transition:border-color .15s,color .15s}
+.bl-clear:hover{border-color:var(--gs-danger);color:var(--gs-danger)}
+.bl-count{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3);letter-spacing:.03em;white-space:nowrap}
+.bl-hist-row td{padding:0 !important;background:transparent !important;border:none !important}
+.bl-hist-btn{width:100%;text-align:left;background:transparent;border:none;border-top:1px dashed var(--gs-border-2);color:var(--gs-text-2);font-family:var(--font-hud);font-size:12px;letter-spacing:.02em;padding:11px 14px;cursor:pointer;transition:color .15s,background .15s}
+.bl-hist-btn:hover{color:var(--gs-blue-l);background:rgba(10,132,255,.04)}
+.bl-actions{white-space:nowrap;text-align:right}
+.bl-ic{background:transparent;border:1px solid var(--gs-border);color:var(--gs-text-3);border-radius:5px;width:26px;height:26px;font-size:12px;line-height:1;cursor:pointer;transition:border-color .15s,color .15s;margin-left:4px}
+.bl-ic:hover{border-color:var(--gs-blue);color:var(--gs-blue-l)}
+.bl-ic-d:hover{border-color:var(--gs-danger);color:var(--gs-danger)}
+body.is-mobile .bl-toolbar{gap:8px}
+body.is-mobile .bl-search{max-width:100%;flex-basis:100%}
+body.is-mobile .bl-fsel{flex:1 1 auto;min-width:0}
+body.is-mobile .bl-count{margin-left:0}
+</style>
 </body>
 </html>
