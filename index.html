@@ -3445,6 +3445,7 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
       <div id="db-note"></div>
       <div id="db-highlights"></div>
       <div class="cards" id="db-cards"></div>
+      <div id="dash-goals-heatmap" class="ghm-wrap"></div>
       <div id="db-detail"></div>
     </div>
   </div>
@@ -4356,6 +4357,61 @@ function renderDashHighlights() {
     ${secBlock}`;
 }
 
+/* ===== Mapa de progresso das metas (heatmap) — fonte única: LS.goals ===== */
+let goalsHmFilter = 'all';
+function ghmLevel(pct){
+  if (pct >= 100) return 5;
+  if (pct >= 76)  return 4;
+  if (pct >= 51)  return 3;
+  if (pct >= 26)  return 2;
+  if (pct >= 1)   return 1;
+  return 0;
+}
+function goalPct(g){
+  const target = parseFloat(g.target) || 0;
+  const done   = goalDone(g.id);
+  let pct = target > 0 ? Math.min(100, Math.round(done / target * 100)) : 0;
+  if (isGoalDone(g)) pct = 100;
+  return pct;
+}
+function setGoalsHmFilter(f){ goalsHmFilter = f; renderGoalsHeatmap(); }
+function renderGoalsHeatmap(){
+  const host = document.getElementById('dash-goals-heatmap');
+  if (!host) return;
+  const goals = LS.goals.get();
+  if (!goals.length){
+    host.innerHTML = `<div class="ghm-empty">Nenhuma meta ainda. Crie metas em <strong>Goals</strong> para ver o mapa de progresso.</div>`;
+    return;
+  }
+  const shownCats = CATS.filter(c => goalsHmFilter === 'all' || c.key === goalsHmFilter);
+  const filters = `<button class="ghm-f ${goalsHmFilter==='all'?'on':''}" onclick="setGoalsHmFilter('all')">Todos</button>` +
+    CATS.map(c => `<button class="ghm-f ${goalsHmFilter===c.key?'on':''}" onclick="setGoalsHmFilter('${c.key.replace(/'/g,"\\'")}')">${esc(c.key)}</button>`).join('');
+
+  let rows = '';
+  shownCats.forEach(c => {
+    const gs = goals.filter(g => g.category === c.key);
+    const cells = gs.length ? gs.map(g => {
+      const pct = goalPct(g);
+      const tip = JSON.stringify({ title: g.name || '(sem nome)', rows: [
+        ['CATEGORIA', c.key],
+        ['PROGRESSO', pct + '%'],
+        ['PRAZO', g.deadline ? fmtD(g.deadline) : '—']
+      ]});
+      return `<div class="ghm-cell lvl-${ghmLevel(pct)}" data-tooltip='${escapeAttr(tip)}'></div>`;
+    }).join('') : `<span class="ghm-none">sem metas</span>`;
+    rows += `<div class="ghm-row"><span class="ghm-rlbl ${c.slug}">${esc(c.key)}</span><div class="ghm-cells">${cells}</div></div>`;
+  });
+
+  const legend = `<div class="ghm-legend"><span>0%</span>${[0,1,2,3,4,5].map(l=>`<span class="ghm-sq lvl-${l}"></span>`).join('')}<span>100%</span></div>`;
+  host.innerHTML = `
+    <div class="ghm-hd">
+      <span class="ghm-title">Mapa de Progresso das Metas</span>
+      ${legend}
+    </div>
+    <div class="ghm-filters">${filters}</div>
+    <div class="ghm-grid">${rows}</div>`;
+}
+
 // Bloco de anotação livre no topo do Dashboard.
 // Auto-save com debounce de 600ms (não interrompe digitação).
 function renderDashNote() {
@@ -4390,6 +4446,7 @@ function renderDashNote() {
 function renderDash() {
   renderDashNote();
   renderDashHighlights();
+  renderGoalsHeatmap();
   const goals = LS.goals.get();
   const tasks = LS.tasks.get();
   const saude = LS.saude.get();
@@ -9098,6 +9155,35 @@ body:not(.is-mobile).sb-collapsed .sync-status span{display:none}
   .hl2-hero-row{grid-template-columns:1fr;gap:12px}
   .hl2-sec-wrap{grid-template-columns:1fr;gap:12px}
   .hl2-title{font-size:17px}
+}
+
+/* ===== Mapa de progresso das metas (heatmap) ===== */
+.ghm-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:24px}
+.ghm-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ghm-title{font-family:var(--font-hud);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
+.ghm-legend{display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:.1em}
+.ghm-sq{width:14px;height:14px;border-radius:3px;display:inline-block}
+.ghm-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ghm-f{background:var(--card2);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 11px;font-size:11px;font-family:var(--font-hud);letter-spacing:.03em;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+.ghm-f:hover{border-color:var(--accent-l);color:var(--text)}
+.ghm-f.on{background:linear-gradient(180deg,rgba(0,168,255,.18),rgba(0,168,255,.05));border-color:var(--accent);color:var(--accent-l)}
+.ghm-grid{display:flex;flex-direction:column;gap:10px}
+.ghm-row{display:grid;grid-template-columns:132px 1fr;align-items:center;gap:12px}
+.ghm-rlbl{font-family:var(--font-hud);font-size:11px;letter-spacing:.06em;color:var(--text2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ghm-cells{display:flex;flex-wrap:wrap;gap:5px;min-height:14px}
+.ghm-cell{width:14px;height:14px;border-radius:3px;cursor:pointer;transition:transform .12s,box-shadow .12s;border:1px solid rgba(255,255,255,.04)}
+.ghm-cell:hover{transform:scale(1.28);box-shadow:0 0 0 1px var(--accent)}
+.ghm-none{font-family:var(--font-mono);font-size:10px;color:var(--text3);opacity:.5}
+.ghm-empty{padding:30px;text-align:center;color:var(--text3);font-size:13px}
+.ghm-cell.lvl-0,.ghm-sq.lvl-0{background:#1A2332;border-color:rgba(56,189,248,.10)}
+.ghm-cell.lvl-1,.ghm-sq.lvl-1{background:rgba(0,168,255,.22)}
+.ghm-cell.lvl-2,.ghm-sq.lvl-2{background:rgba(0,168,255,.42)}
+.ghm-cell.lvl-3,.ghm-sq.lvl-3{background:rgba(0,168,255,.64)}
+.ghm-cell.lvl-4,.ghm-sq.lvl-4{background:rgba(0,168,255,.88)}
+.ghm-cell.lvl-5,.ghm-sq.lvl-5{background:#00D4FF;box-shadow:0 0 6px rgba(0,212,255,.5)}
+@container dashvp (max-width:560px){
+  .ghm-row{grid-template-columns:1fr;gap:5px}
+  .ghm-rlbl{text-align:left}
 }
 
 /* ===== Regras mobile do dashboard — dirigidas pela LARGURA DO CONTAINER.
