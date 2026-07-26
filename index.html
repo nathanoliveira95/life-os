@@ -2011,24 +2011,27 @@ body.is-mobile .oli-attrs{grid-template-columns:1fr 1fr}
      ============================================================ -->
 <style id="goldman-theme">
 :root{
-  /* Paleta Goldman Sachs */
-  --gs-blue:        #7399C6;   /* azul slate da logo GS */
-  --gs-blue-d:      #5C82B0;
-  --gs-blue-l:      #9DB9D9;
-  --gs-blue-deep:   #2E4D72;
-  --gs-ink:         #0D1622;   /* fundo principal */
-  --gs-ink-2:       #131E2D;   /* sidebar */
-  --gs-card:        #182536;
-  --gs-card-2:      #1E2C3F;
-  --gs-input:       #14202F;
-  --gs-border:      #243245;
-  --gs-border-2:    #2C3D54;
-  --gs-text:        #ECF1F8;
-  --gs-text-2:      #B4C2D4;
-  --gs-text-3:      #7E8FA6;
-  --gs-success:     #4F9D7B;
-  --gs-danger:      #C5594F;
-  --gs-warn:        #C8923E;
+  /* Paleta STARK — deep-black / graphite / electric-blue (command center) */
+  --gs-blue:        #0A84FF;   /* electric blue — accent + information signal */
+  --gs-blue-d:      #0060DF;
+  --gs-blue-l:      #4FB4FF;
+  --gs-blue-deep:   #06345E;
+  --gs-blue-glow:   #35C6FF;   /* cyan-blue para brilho HUD seletivo */
+  --gs-ink:         #05070B;   /* fundo principal — near-black */
+  --gs-ink-2:       #080B11;   /* sidebar — grafite mais escuro */
+  --gs-card:        #0C121A;   /* painel grafite */
+  --gs-card-2:      #121A24;   /* painel elevado */
+  --gs-input:       #090D13;   /* poço de input (mais escuro que card) */
+  --gs-border:      #18222E;   /* borda de baixo contraste */
+  --gs-border-2:    #23303F;   /* borda de destaque sutil */
+  --gs-hair:        rgba(150,182,214,.07);  /* divisória interna quase invisível */
+  --gs-glass:       rgba(14,20,28,.72);     /* superfície de vidro translúcida */
+  --gs-text:        #EAF2FB;
+  --gs-text-2:      #A3B5C9;
+  --gs-text-3:      #63788E;
+  --gs-success:     #10B981;
+  --gs-danger:      #F0524B;
+  --gs-warn:        #E0A028;
 
   /* Override das vars Jarvis existentes */
   --bg:            var(--gs-ink) !important;
@@ -2036,8 +2039,8 @@ body.is-mobile .oli-attrs{grid-template-columns:1fr 1fr}
   --accent:        var(--gs-blue) !important;
   --accent-l:      var(--gs-blue-l) !important;
   --accent-d:      var(--gs-blue-d) !important;
-  --accent-glow:   var(--gs-blue-l) !important;
-  --hud-line:      rgba(115,153,198,.22) !important;
+  --accent-glow:   var(--gs-blue-glow) !important;
+  --hud-line:      rgba(10,132,255,.24) !important;
   --text:          var(--gs-text) !important;
   --text2:         var(--gs-text-2) !important;
   --text3:         var(--gs-text-3) !important;
@@ -2051,11 +2054,11 @@ body.is-mobile .oli-attrs{grid-template-columns:1fr 1fr}
   --danger:        var(--gs-danger) !important;
   --warn:          var(--gs-warn) !important;
 
-  /* Tipografia institucional */
-  --font-serif:    'Source Serif Pro', 'Georgia', 'Times New Roman', serif;
-  --font-sans:     'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  /* Tipografia — command center futurista: Space Grotesk (títulos/HUD) + Inter (corpo) + JetBrains Mono (números) */
+  --font-serif:    'Space Grotesk', 'Inter', system-ui, sans-serif;  /* nome mantido; agora é o display font */
+  --font-sans:     'Inter', 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono:     'JetBrains Mono', ui-monospace, monospace;
-  --font-hud:      var(--font-serif) !important;  /* substitui Orbitron */
+  --font-hud:      'Space Grotesk', 'Inter', sans-serif !important;
 }
 
 /* ===== Body & base ===== */
@@ -3384,6 +3387,9 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   <span></span><span></span><span></span>
 </button>
 <div id="mobBackdrop" class="mob-backdrop" onclick="toggleMobNav(false)"></div>
+
+<!-- Botão flutuante para reabrir a sidebar quando recolhida (desktop) -->
+<button id="sb-reopen" onclick="toggleSidebar()" title="Abrir menu" aria-label="Abrir menu">»</button>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -9108,17 +9114,16 @@ function delAporte(aid, pid){
 .sb-min-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
 body.sb-collapsed .sb-min-btn{transform:rotate(180deg)}
 body.is-mobile .sb-min-btn{display:none}
-body:not(.is-mobile).sb-collapsed .sidebar{width:66px;min-width:66px}
-body:not(.is-mobile).sb-collapsed .sb-logo{align-items:center;padding:16px 0 12px}
-body:not(.is-mobile).sb-collapsed .sb-logo span{font-size:0}
-body:not(.is-mobile).sb-collapsed .sb-logo::after{display:none}
-body:not(.is-mobile).sb-collapsed .sb-min-btn{position:static;margin:0 auto}
-body:not(.is-mobile).sb-collapsed .sb-label{display:none}
-body:not(.is-mobile).sb-collapsed .sb-item{display:flex;font-size:0;gap:0;justify-content:center;padding:12px 0}
-body:not(.is-mobile).sb-collapsed .sb-item .ico{font-size:19px}
-body:not(.is-mobile).sb-collapsed .sb-item .sep{display:none}
-body:not(.is-mobile).sb-collapsed .sb-footer{padding:14px 6px}
-body:not(.is-mobile).sb-collapsed .sync-status span{display:none}
+/* Recolher = ESCONDER por completo (sem faixa/rail residual). O conteúdo recupera toda a largura. */
+body:not(.is-mobile) .sidebar{transition:width .28s cubic-bezier(.4,0,.2,1), padding .28s cubic-bezier(.4,0,.2,1), opacity .2s ease !important}
+body:not(.is-mobile).sb-collapsed .sidebar{width:0 !important;min-width:0 !important;padding:0 !important;border-right:0 !important;box-shadow:none !important;overflow:hidden !important;opacity:0 !important;pointer-events:none !important}
+body:not(.is-mobile) .main{transition:padding .28s cubic-bezier(.4,0,.2,1)}
+body:not(.is-mobile).sb-collapsed .main{padding-left:56px}
+/* Botão flutuante para reabrir — só aparece quando recolhido (desktop) */
+#sb-reopen{position:fixed;top:14px;left:14px;z-index:60;width:34px;height:34px;border-radius:8px;border:1px solid var(--gs-border-2);background:var(--gs-glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--gs-text-2);cursor:pointer;font-size:17px;line-height:1;display:none;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.5);transition:border-color .15s,color .15s,transform .15s}
+#sb-reopen:hover{border-color:var(--gs-blue);color:var(--gs-blue-l);transform:translateX(1px)}
+body:not(.is-mobile).sb-collapsed #sb-reopen{display:flex}
+body.is-mobile #sb-reopen{display:none !important}
 
 /* ===== Fotos em Goals / Objetivos ===== */
 .gcard-img-row{margin:2px 0 10px}
@@ -9382,5 +9387,148 @@ body.is-mobile .cal2-ev{font-size:9px;padding:1px 4px}
   };
 })();
 </script>
+
+<!-- ============================================================
+     ░▒▓ STARK REFINE — camada final do sistema visual ▓▒░
+     Profundidade de superfície, vidro, bordas hairline, sombras
+     refinadas, foco elétrico, numéricos fortes, motion contido.
+     É o último bloco → vence os anteriores em empates.
+     ============================================================ -->
+<style id="stark-refine">
+:root{
+  /* Escala reutilizável — raio, sombra, borda, transição, espaçamento */
+  --r-xs:4px; --r-sm:6px; --r:9px; --r-lg:13px; --r-xl:18px;
+  --sh-1:0 1px 2px rgba(0,0,0,.5);
+  --sh-2:0 6px 22px rgba(0,0,0,.5);
+  --sh-3:0 18px 50px rgba(0,0,0,.62);
+  --edge:inset 0 1px 0 rgba(255,255,255,.045);          /* realce superior interno */
+  --edge-strong:inset 0 1px 0 rgba(255,255,255,.07);
+  --glow-blue:0 0 0 1px rgba(10,132,255,.45), 0 0 18px rgba(53,198,255,.16);
+  --accent-fill:rgba(10,132,255,.12);                    /* preenchimento de estado ativo */
+  --t-fast:.12s ease; --t:.18s cubic-bezier(.2,.7,.2,1); --t-slow:.34s cubic-bezier(.2,.8,.2,1);
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
+}
+
+/* ---------- Base / ambiente ---------- */
+body{
+  background:
+    radial-gradient(1200px 620px at 82% -8%, rgba(10,132,255,.10), transparent 60%),
+    radial-gradient(900px 520px at 8% 108%, rgba(53,198,255,.06), transparent 62%),
+    var(--gs-ink) !important;
+  color:var(--gs-text) !important;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+::selection{ background:rgba(10,132,255,.30); color:#fff; }
+
+/* ---------- Superfícies: profundidade grafite + realce + sombra ---------- */
+.card, .ctrl-single-box, .hud-panel, .oli-status, .oli-sec, .oli-avatar-wrap,
+.port-summary, .saude-section, .cal-sumcard, .goal-col, .kcol, .exc, .hist-item,
+.setup-step, .ctrl-bars, .ctrl-month, .db-note-box{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,0) 42%),
+    var(--gs-card) !important;
+  border:1px solid var(--gs-border) !important;
+  border-radius:var(--r) !important;
+  box-shadow:var(--edge), var(--sh-1) !important;
+  transition:border-color var(--t), box-shadow var(--t), transform var(--t) !important;
+}
+/* Elevação/realce elétrico ao interagir com superfícies clicáveis */
+.card-clickable:hover, .goal-col:hover, .kcol:hover, .ctrl-month:hover{
+  border-color:var(--gs-border-2) !important;
+  box-shadow:var(--edge-strong), var(--sh-2), 0 0 0 1px rgba(10,132,255,.12) !important;
+  transform:translateY(-2px) !important;
+}
+/* Painéis "importantes" ganham fio elétrico sutil no topo */
+.ctrl-bars, .hud-panel{ box-shadow:var(--edge), var(--sh-1) !important; }
+
+/* ---------- Cabeçalhos / hierarquia tipográfica ---------- */
+h1,h2,h3,.ph h1,.sec-title,.hl-sec-title{ font-family:var(--font-hud) !important; letter-spacing:-.01em !important; }
+.ph{ border-bottom:1px solid var(--gs-hair) !important; }
+.ph h1{ font-size:26px !important; font-weight:600 !important; color:var(--gs-text) !important; text-shadow:0 0 20px rgba(10,132,255,.16) !important; }
+.ph p{ color:var(--gs-text-3) !important; font-style:normal !important; letter-spacing:.01em !important; }
+.card-lbl{ color:var(--gs-text-3) !important; letter-spacing:.1em !important; font-weight:600 !important; }
+
+/* ---------- Numéricos fortes (métrica premium) ---------- */
+.card-val{
+  font-family:var(--font-mono) !important;
+  font-weight:700 !important;
+  letter-spacing:-.02em !important;
+  color:var(--gs-text) !important;
+  text-shadow:none !important;
+}
+
+/* ---------- Botões ---------- */
+.btn{ border-radius:var(--r-sm) !important; transition:background var(--t), border-color var(--t), box-shadow var(--t), transform var(--t-fast) !important; }
+.btn:active{ transform:translateY(1px) !important; }
+.btn-p{
+  background:linear-gradient(180deg, var(--gs-blue-l), var(--gs-blue)) !important;
+  color:#04121f !important; border:1px solid rgba(10,132,255,.9) !important;
+  box-shadow:var(--edge-strong), 0 2px 10px rgba(10,132,255,.28) !important; font-weight:700 !important;
+}
+.btn-p:hover{ background:linear-gradient(180deg, #6cc2ff, var(--gs-blue-l)) !important; box-shadow:var(--edge-strong), 0 4px 16px rgba(10,132,255,.40) !important; }
+.btn-g:hover{ border-color:var(--gs-blue) !important; color:var(--gs-text) !important; box-shadow:0 0 0 1px rgba(10,132,255,.18) !important; }
+
+/* ---------- Inputs + anel de foco elétrico ---------- */
+input,select,textarea{ background:var(--gs-input) !important; border:1px solid var(--gs-border-2) !important; border-radius:var(--r-sm) !important; transition:border-color var(--t), box-shadow var(--t) !important; }
+input:focus,select:focus,textarea:focus{ border-color:var(--gs-blue) !important; box-shadow:0 0 0 3px rgba(10,132,255,.22) !important; outline:none !important; }
+:focus-visible{ outline:2px solid rgba(10,132,255,.6); outline-offset:2px; }
+.sb-item:focus-visible, .btn:focus-visible{ outline-offset:1px; }
+
+/* ---------- Scrollbars ---------- */
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:var(--gs-border-2) !important; border-radius:100px; border:2px solid var(--gs-ink); box-shadow:none !important; }
+::-webkit-scrollbar-thumb:hover{ background:var(--gs-blue-d) !important; box-shadow:none !important; }
+
+/* ---------- Sidebar — estado ativo elétrico ---------- */
+.sidebar{ border-right:1px solid var(--gs-border) !important; box-shadow:inset -1px 0 0 var(--gs-hair) !important; }
+.sb-logo{ font-family:var(--font-hud) !important; color:var(--gs-text) !important; border-bottom:1px solid var(--gs-hair) !important; letter-spacing:.02em !important; }
+.sb-item{ transition:background var(--t), color var(--t), border-color var(--t) !important; }
+.sb-item:hover{ background:rgba(255,255,255,.035) !important; }
+.sb-item.active{
+  background:linear-gradient(90deg, var(--accent-fill), rgba(10,132,255,.02)) !important;
+  color:var(--gs-blue-l) !important;
+  border-left-color:var(--gs-blue) !important;
+  box-shadow:inset 2px 0 0 var(--gs-blue), inset 0 0 22px rgba(10,132,255,.06) !important;
+}
+.sb-item.active .ico{ filter:drop-shadow(0 0 6px rgba(53,198,255,.5)); }
+
+/* ---------- Barras de progresso — gradiente elétrico ---------- */
+.pb, .hl2-pb, .hl-pb{ background:linear-gradient(90deg, var(--gs-blue), var(--gs-blue-l)) !important; }
+.pw{ background:rgba(255,255,255,.06) !important; }
+
+/* ---------- Modal — vidro + sombra profunda ---------- */
+.overlay{ background:rgba(3,5,9,.66) !important; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+.modal{
+  background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 30%), var(--gs-glass) !important;
+  backdrop-filter:blur(20px) saturate(1.1); -webkit-backdrop-filter:blur(20px) saturate(1.1);
+  border:1px solid var(--gs-border-2) !important; border-radius:var(--r-lg) !important;
+  box-shadow:var(--edge-strong), var(--sh-3), 0 0 0 1px rgba(10,132,255,.06) !important;
+}
+.modal h3{ font-family:var(--font-hud) !important; letter-spacing:-.01em; }
+
+/* ---------- Tabelas ---------- */
+thead th{ background:var(--gs-ink-2) !important; color:var(--gs-text-3) !important; border-bottom:1px solid var(--gs-border-2) !important; }
+tbody tr{ border-bottom:1px solid var(--gs-hair) !important; transition:background var(--t-fast) !important; }
+tbody tr:hover{ background:rgba(10,132,255,.05) !important; }
+
+/* ---------- Badges — bordas sutis ---------- */
+.badge{ border:1px solid rgba(255,255,255,.06); }
+
+/* ---------- Tokens hardcoded remanescentes → superfícies grafite ---------- */
+.toast{ background:var(--gs-glass) !important; border:1px solid var(--gs-border-2) !important; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:var(--gs-text) !important; box-shadow:var(--sh-2) !important; border-radius:var(--r-sm) !important; }
+.code-block{ background:#06090e !important; border:1px solid var(--gs-border) !important; color:var(--gs-blue-l) !important; }
+select option{ background:#0a0e14 !important; }
+
+/* ---------- Motion contido ---------- */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+}
+
+/* ---------- Responsivo — hierarquia preservada, não só encolher ---------- */
+@media (max-width:900px){ .main{ padding:24px 22px !important; } }
+body.is-mobile .ph h1{ font-size:20px !important; }
+body.is-mobile .card{ border-radius:var(--r-sm) !important; }
+</style>
 </body>
 </html>
