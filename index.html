@@ -3391,9 +3391,9 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   <div class="sb-group" data-g="home">
     <div class="sb-label sb-toggle">💻 Home<span class="sb-caret">▾</span></div>
     <div class="sb-group-items">
-      <div class="sb-item" data-p="dashboard2"><span class="ico">🧬</span><span class="sep">|</span>Dashboard 2</div>
       <div class="sb-item active" data-p="dashboard"><span class="ico">📊</span><span class="sep">|</span>Dashboard</div>
       <div class="sb-item" data-p="goals"><span class="ico">🎯</span><span class="sep">|</span>Goals</div>
+      <div class="sb-item" data-p="calendar"><span class="ico">📅</span><span class="sep">|</span>Calendário</div>
       <div class="sb-item" data-p="backlog"><span class="ico">📖</span><span class="sep">|</span>Backlog</div>
       <div class="sb-item" data-p="notediario"><span class="ico">📝</span><span class="sep">|</span>Note Diário</div>
       <div class="sb-item" data-p="completed"><span class="ico">🏆</span><span class="sep">|</span>Goals Completados</div>
@@ -3424,12 +3424,6 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
       <div class="sb-item" data-p="assets"><span class="ico">🏛️</span><span class="sep">|</span>Assets</div>
       <div class="sb-item" data-p="processos"><span class="ico">📋</span><span class="sep">|</span>Entrevistas</div>
     </div>
-
-    <div class="sb-label sb-toggle" style="margin-top:14px">🎓 Personal<span class="sb-caret">▾</span></div>
-    <div class="sb-group-items">
-      <div class="sb-item" data-p="english"><span class="ico">🇬🇧</span><span class="sep">|</span>English</div>
-      <div class="sb-item" data-p="oliverweb"><span class="ico">🎮</span><span class="sep">|</span>Oliver</div>
-    </div>
   </div>
 
   <!-- Rodapé: status de sync e botão de configuração -->
@@ -3445,17 +3439,6 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 <main class="main">
 
   <!-- DASHBOARD -->
-  <!-- DASHBOARD 2 (novo — a construir) -->
-  <div class="page" id="page-dashboard2">
-    <div class="ph"><h1>Dashboard 2</h1><p>Seu novo painel — vamos montar algo legal aqui 🚧</p></div>
-    <div id="dash2-root">
-      <div style="padding:44px 24px;text-align:center;color:var(--text3);background:var(--card);border:1px dashed var(--border);border-radius:12px">
-        Espaço reservado pro <strong style="color:var(--accent-l)">Dashboard 2</strong>.<br>
-        Me diga o que você quer ver aqui (gráficos, resumos, metas, patrimônio…) que eu construo.
-      </div>
-    </div>
-  </div>
-
   <div class="page active" id="page-dashboard">
     <div id="dash-viewport">
       <div class="ph"><h1>Dashboard</h1><p>Visão geral do seu progresso</p></div>
@@ -3871,7 +3854,7 @@ window.testSupa = async function() {
 
 // Re-renderiza a página ativa atual
 function refreshPage() {
-  const fn = { dashboard:renderDash, dashboard2:(typeof renderDashboard2==='function'?renderDashboard2:null), goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
+  const fn = { dashboard:renderDash, goals:renderGoals, calendar:(typeof renderCalendarPage==='function'?renderCalendarPage:null), completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null) };
   fn[curPage]?.();
 }
 
@@ -4155,7 +4138,7 @@ function goto(page) {
   // Para auto-refresh do BTC quando sai da página Portfolio
   if (curPage === 'portfolio' && page !== 'portfolio') { try{ stopPortfolioAutoRefresh(); }catch(_){} }
   curPage = page;
-  const fn = { dashboard:renderDash, dashboard2:(typeof renderDashboard2==='function'?renderDashboard2:null), goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
+  const fn = { dashboard:renderDash, goals:renderGoals, calendar:(typeof renderCalendarPage==='function'?renderCalendarPage:null), completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null) };
   fn[page]?.();
 }
 
@@ -4266,13 +4249,72 @@ function renderDashHighlights() {
     .filter(o => o.txt.trim().length > 0)
     .slice(0,3);
 
-  const goalCards = pinnedGoals.length ? pinnedGoals.map(g => {
-    const target = parseFloat(g.target) || 0;
-    const done   = goalDone(g.id);
+  // Enriquece objetivos com progresso (%) e imagem
+  const objsFull = pinnedObjs.map(p => {
+    const list = normalizeObjectives(objs[p.cat]);
+    const item = list[p.idx] || { progress:0, image:'' };
+    return { ...p, progress: parseInt(item.progress)||0, image: item.image||'' };
+  });
+
+  const heroObj  = objsFull[0];
+  const heroGoal = pinnedGoals[0];
+  const restObjs  = objsFull.slice(1);
+  const restGoals = pinnedGoals.slice(1);
+
+  const imgBlock = (src, ph) => src
+    ? `<div class="hl2-img" style="background-image:url('${src}')"></div>`
+    : `<div class="hl2-img hl2-img-ph"><span>${ph}</span></div>`;
+
+  // ---- HERO: Objetivo principal ----
+  const objHero = heroObj ? (() => {
+    const slug = catSlug(heroObj.cat);
+    const pct  = Math.max(0, Math.min(100, parseInt(heroObj.progress)||0));
+    const hasP = pct > 0;
+    return `
+      <div class="hl2-hero ${slug}" onclick="goto('goals')" title="Abrir Goals">
+        ${imgBlock(heroObj.image,'◆')}
+        <div class="hl2-body">
+          <div class="hl2-tag">◆ Objetivo Principal · ${esc(heroObj.cat)}</div>
+          <div class="hl2-title">${esc(heroObj.txt)}</div>
+          <div class="hl2-progline">
+            <div class="hl2-pw"><div class="hl2-pb" style="width:${pct}%"></div></div>
+            <span class="hl2-pct${hasP?'':' muted'}">${hasP?pct+'%':'—'}</span>
+          </div>
+          <div class="hl2-sub">${hasP?'Progresso':'Defina o progresso em Goals'}${heroObj.deadline?` · Prazo: ${fmtD(heroObj.deadline)}`:''}</div>
+        </div>
+      </div>`;
+  })() : `<div class="hl2-hero hl2-empty" onclick="goto('goals')"><div class="hl2-empty-in"><div class="hl2-empty-ico">◆</div><div>Fixe seu <strong>Objetivo principal</strong> em Goals (★) para destacá-lo aqui.</div></div></div>`;
+
+  // ---- HERO: Goal principal ----
+  const goalHero = heroGoal ? (() => {
+    const slug   = catSlug(heroGoal.category);
+    const target = parseFloat(heroGoal.target) || 0;
+    const done   = goalDone(heroGoal.id);
     const pct    = target > 0 ? Math.min(100, Math.round(done/target*100)) : 0;
-    const slug   = catSlug(g.category);
+    return `
+      <div class="hl2-hero ${slug}" onclick="goto('goals')" title="Abrir Goals">
+        ${imgBlock(heroGoal.image,'🎯')}
+        <div class="hl2-body">
+          <div class="hl2-tag">🎯 Goal Principal · ${esc(heroGoal.category||'')}</div>
+          <div class="hl2-title">${esc(heroGoal.name)||'(sem nome)'}</div>
+          <div class="hl2-progline">
+            <div class="hl2-pw"><div class="hl2-pb" style="width:${pct}%"></div></div>
+            <span class="hl2-pct">${pct}%</span>
+          </div>
+          <div class="hl2-sub">${done} / ${target||'—'}${heroGoal.deadline?` · Prazo: ${fmtD(heroGoal.deadline)}`:''}</div>
+        </div>
+      </div>`;
+  })() : `<div class="hl2-hero hl2-empty" onclick="goto('goals')"><div class="hl2-empty-in"><div class="hl2-empty-ico">🎯</div><div>Fixe seu <strong>Goal principal</strong> em Goals (★) para destacá-lo aqui.</div></div></div>`;
+
+  // ---- Secundários (cards compactos) ----
+  const secGoalCards = restGoals.map(g => {
+    const target = parseFloat(g.target)||0, done = goalDone(g.id);
+    const pct = target>0?Math.min(100,Math.round(done/target*100)):0;
+    const slug = catSlug(g.category);
+    const thumb = g.image?`<div class="hl-thumb" style="background-image:url('${g.image}')"></div>`:'';
     return `
       <div class="hl-card hl-goal ${slug}" onclick="goto('goals')" title="Abrir Goals">
+        ${thumb}
         <div class="hl-tag">${esc(g.category||'')}</div>
         <div class="hl-title">${esc(g.name)||'(sem nome)'}</div>
         <div class="hl-meta">
@@ -4282,45 +4324,36 @@ function renderDashHighlights() {
         <div class="hl-pw"><div class="hl-pb" style="width:${pct}%"></div></div>
         <div class="hl-sub">${done} / ${target||'—'} · Prazo: ${fmtD(g.deadline)}</div>
       </div>`;
-  }).join('') : `
-    <div class="hl-empty" onclick="goto('goals')">
-      <div class="hl-empty-ico">🎯</div>
-      <div class="hl-empty-txt">Nenhum <strong>goal</strong> fixado. Vá em <strong>Goals</strong> e clique em <strong>★ fixar</strong> nos goals que você quer destacar aqui (até 3).</div>
-    </div>`;
+  }).join('');
 
-  const objCards = pinnedObjs.length ? pinnedObjs.map(o => {
+  const secObjCards = restObjs.map(o => {
     const slug = catSlug(o.cat);
+    const pct  = Math.max(0,Math.min(100,parseInt(o.progress)||0));
+    const thumb = o.image?`<div class="hl-thumb" style="background-image:url('${o.image}')"></div>`:'';
     const dl = o.deadline ? `<div class="hl-sub">Prazo: ${fmtD(o.deadline)}</div>` : '';
     return `
       <div class="hl-card hl-obj ${slug}" onclick="goto('goals')" title="Abrir Goals">
+        ${thumb}
         <div class="hl-tag">${esc(o.cat)} · Objetivo ${o.idx+1}</div>
         <div class="hl-title">${esc(o.txt)}</div>
+        ${pct>0?`<div class="hl-pw"><div class="hl-pb" style="width:${pct}%"></div></div>`:''}
         ${dl}
         <div class="hl-obj-mark">◆</div>
       </div>`;
-  }).join('') : `
-    <div class="hl-empty" onclick="goto('goals')">
-      <div class="hl-empty-ico">◆</div>
-      <div class="hl-empty-txt">Nenhum <strong>objetivo</strong> fixado. Vá em <strong>Goals</strong>, escreva nos 3 campos de objetivos de cada categoria e clique em <strong>★</strong> pra fixar aqui (até 3).</div>
-    </div>`;
+  }).join('');
+
+  const secBlock = (restObjs.length || restGoals.length) ? `
+    <div class="hl2-sec-wrap">
+      ${restObjs.length?`<div class="hl-sec"><div class="hl-sec-hd"><span class="hl-sec-title">◆ Outros Objetivos</span></div><div class="hl-grid">${secObjCards}</div></div>`:''}
+      ${restGoals.length?`<div class="hl-sec"><div class="hl-sec-hd"><span class="hl-sec-title">🔥 Outros Goals</span></div><div class="hl-grid">${secGoalCards}</div></div>`:''}
+    </div>` : '';
 
   host.innerHTML = `
-    <div class="hl-wrap">
-      <div class="hl-sec">
-        <div class="hl-sec-hd">
-          <span class="hl-sec-title">◆ Objetivos em Destaque</span>
-          <span class="hl-sec-cnt">${pinnedObjs.length}/3 fixados</span>
-        </div>
-        <div class="hl-grid">${objCards}</div>
-      </div>
-      <div class="hl-sec">
-        <div class="hl-sec-hd">
-          <span class="hl-sec-title">🔥 Goals em Destaque</span>
-          <span class="hl-sec-cnt">${pinnedGoals.length}/3 fixados</span>
-        </div>
-        <div class="hl-grid">${goalCards}</div>
-      </div>
-    </div>`;
+    <div class="hl2-hero-row">
+      ${objHero}
+      ${goalHero}
+    </div>
+    ${secBlock}`;
 }
 
 // Bloco de anotação livre no topo do Dashboard.
@@ -4520,7 +4553,8 @@ function addGoal(category) {
     status: 'Not Started',
     priority: 'Tier 2º',
     target: 0,
-    notes: ''
+    notes: '',
+    image: ''
   });
   LS.goals.set(goals);
   renderGoals();
@@ -4598,8 +4632,12 @@ function renderGoals() {
             <span class="obj-num">${i+1}</span>
             <input class="obj-inp" value="${esc(o.txt)}" placeholder="Objetivo ${i+1}…"
               onchange="upObjective('${catKeyEsc}',${i},'txt',this.value)">
+            <input type="number" class="obj-prog" min="0" max="100" value="${o.progress||0}" title="Progresso % (opcional)"
+              onchange="upObjective('${catKeyEsc}',${i},'progress',this.value)">
             <input type="date" class="obj-date" value="${esc(o.deadline||'')}" title="Prazo (opcional)"
               onchange="upObjective('${catKeyEsc}',${i},'deadline',this.value)">
+            <button class="obj-photo ${o.image?'has-img':''}" title="${o.image?'Remover foto':'Adicionar foto'}"
+              onclick="${o.image?`clearObjPhoto('${catKeyEsc}',${i})`:`pickObjPhoto('${catKeyEsc}',${i})`}">${o.image?'🖼':'📷'}</button>
             <button class="obj-pin ${isObjPinned(cat.key,i)?'is-pinned':''}" title="Fixar no Dashboard"
               onclick="toggleObjPin('${catKeyEsc}',${i})">★</button>
           </div>
@@ -4770,13 +4808,27 @@ function renderGoalsCalendar() {
 // Normaliza objetivos pro novo formato {txt, deadline}. Aceita formato legacy (string).
 function normalizeObjectives(arr) {
   const out = (arr || []).slice(0,3).map(o => {
-    if (typeof o === 'string') return { txt: o, deadline: '' };
-    if (o && typeof o === 'object') return { txt: o.txt || '', deadline: o.deadline || '' };
-    return { txt: '', deadline: '' };
+    if (typeof o === 'string') return { txt: o, deadline: '', progress: 0, image: '' };
+    if (o && typeof o === 'object') return { txt: o.txt || '', deadline: o.deadline || '', progress: Math.max(0, Math.min(100, parseInt(o.progress)||0)), image: o.image || '' };
+    return { txt: '', deadline: '', progress: 0, image: '' };
   });
-  while (out.length < 3) out.push({ txt:'', deadline:'' });
+  while (out.length < 3) out.push({ txt:'', deadline:'', progress:0, image:'' });
   return out;
 }
+
+// ---- Fotos de Goals/Objetivos (reaproveita o resizeImage do app) ----
+function pickGoalPhoto(id){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=e=>{ const f=e.target.files[0]; if(!f)return; resizeImage(f,1000,d=>{ upGoal(id,'image',d); renderGoals(); }); };
+  inp.click();
+}
+function clearGoalPhoto(id){ upGoal(id,'image',''); renderGoals(); }
+function pickObjPhoto(cat,idx){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=e=>{ const f=e.target.files[0]; if(!f)return; resizeImage(f,1000,d=>{ upObjective(cat,idx,'image',d); renderGoals(); }); };
+  inp.click();
+}
+function clearObjPhoto(cat,idx){ upObjective(cat,idx,'image',''); renderGoals(); }
 
 // Atualiza um objetivo da categoria (index 0..2, field='txt'|'deadline').
 // Compat: aceita chamada legada upObjective(cat, idx, val) tratando val como txt.
@@ -4849,6 +4901,12 @@ function gcard(g, slug, isCompleted) {
       </div>
       <input id="gn-${g.id}" class="gcard-name" value="${esc(g.name)}" placeholder="Nome da meta"
         onchange="upGoal('${g.id}','name',this.value)">
+
+      <div class="gcard-img-row">
+        ${g.image
+          ? `<div class="gcard-img"><img src="${g.image}" alt=""><button class="gcard-img-x" title="Remover foto" onclick="clearGoalPhoto('${g.id}')">✕</button></div>`
+          : `<button class="gcard-img-add" onclick="pickGoalPhoto('${g.id}')">＋ Adicionar foto</button>`}
+      </div>
 
       <div class="gcard-row">
         <label>Meta</label>
@@ -8997,6 +9055,50 @@ body:not(.is-mobile).sb-collapsed .sb-item .ico{font-size:19px}
 body:not(.is-mobile).sb-collapsed .sb-item .sep{display:none}
 body:not(.is-mobile).sb-collapsed .sb-footer{padding:14px 6px}
 body:not(.is-mobile).sb-collapsed .sync-status span{display:none}
+
+/* ===== Fotos em Goals / Objetivos ===== */
+.gcard-img-row{margin:2px 0 10px}
+.gcard-img{position:relative;height:120px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.gcard-img img{width:100%;height:100%;object-fit:cover;display:block}
+.gcard-img-x{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:5px;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.gcard-img-x:hover{background:var(--red)}
+.gcard-img-add{width:100%;padding:9px;border:1px dashed var(--border);background:transparent;color:var(--text3);border-radius:6px;cursor:pointer;font-size:12px;transition:border-color .15s,color .15s}
+.gcard-img-add:hover{border-color:var(--accent-l);color:var(--accent-l)}
+.obj-prog{width:44px;text-align:center;background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 2px;font-family:var(--font-mono);font-size:12px}
+.obj-photo,.obj-pin{flex:0 0 auto}
+.obj-photo{width:30px;height:30px;border-radius:5px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:border-color .15s}
+.obj-photo:hover,.obj-photo.has-img{border-color:var(--accent-l)}
+
+/* ===== Dashboard — destaques v2 (Objetivo + Goal principais) ===== */
+.hl2-hero-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.hl2-hero{position:relative;display:flex;flex-direction:column;min-height:210px;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .18s,transform .12s,box-shadow .2s}
+.hl2-hero:hover{border-color:var(--accent-l);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.38)}
+.hl2-hero.cat-ib{border-top:2px solid var(--gcat-ib)}
+.hl2-hero.cat-en{border-top:2px solid var(--gcat-en)}
+.hl2-hero.cat-ol{border-top:2px solid var(--gcat-ol)}
+.hl2-hero.cat-sq{border-top:2px solid var(--gcat-sq)}
+.hl2-img{height:132px;background-size:cover;background-position:center;border-bottom:1px solid var(--border)}
+.hl2-img-ph{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--card2),var(--card))}
+.hl2-img-ph span{font-size:44px;opacity:.3}
+.hl2-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.hl2-tag{font-family:var(--font-hud);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-l)}
+.hl2-title{font-family:var(--font-hud);font-size:19px;font-weight:700;line-height:1.22;color:var(--text)}
+.hl2-progline{display:flex;align-items:center;gap:10px;margin-top:auto}
+.hl2-pw{flex:1;height:8px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.hl2-pb{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-l));transition:width .4s}
+.hl2-pct{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--accent-l);min-width:46px;text-align:right}
+.hl2-pct.muted{color:var(--text3)}
+.hl2-sub{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.03em}
+.hl2-empty{align-items:stretch;justify-content:center}
+.hl2-empty-in{margin:auto;text-align:center;color:var(--text3);font-size:13px;padding:24px;max-width:260px;line-height:1.5}
+.hl2-empty-ico{font-size:34px;opacity:.4;margin-bottom:8px}
+.hl2-sec-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.hl-thumb{height:74px;background-size:cover;background-position:center;border-radius:4px;margin:0 0 8px;border:1px solid var(--border)}
+@container dashvp (max-width:640px){
+  .hl2-hero-row{grid-template-columns:1fr;gap:12px}
+  .hl2-sec-wrap{grid-template-columns:1fr;gap:12px}
+  .hl2-title{font-size:17px}
+}
 
 /* ===== Regras mobile do dashboard — dirigidas pela LARGURA DO CONTAINER.
    Disparam tanto no celular real quanto no preview mobile; nunca no desktop
