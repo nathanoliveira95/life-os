@@ -3387,10 +3387,11 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sb-logo"><span>◇ OLIVER</span></div>
+  <div class="sb-logo"><span>◇ OLIVER</span><button class="sb-min-btn" onclick="toggleSidebar()" title="Recolher / expandir menu" aria-label="Recolher menu">«</button></div>
   <div class="sb-group" data-g="home">
     <div class="sb-label sb-toggle">💻 Home<span class="sb-caret">▾</span></div>
     <div class="sb-group-items">
+      <div class="sb-item" data-p="dashboard2"><span class="ico">🧬</span><span class="sep">|</span>Dashboard 2</div>
       <div class="sb-item active" data-p="dashboard"><span class="ico">📊</span><span class="sep">|</span>Dashboard</div>
       <div class="sb-item" data-p="goals"><span class="ico">🎯</span><span class="sep">|</span>Goals</div>
       <div class="sb-item" data-p="backlog"><span class="ico">📖</span><span class="sep">|</span>Backlog</div>
@@ -3444,12 +3445,18 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 <main class="main">
 
   <!-- DASHBOARD -->
-  <div class="page active" id="page-dashboard">
-    <div class="dash-viewmode">
-      <span class="dvm-lbl">Visualização</span>
-      <button class="dvm-btn on" data-m="desktop" onclick="setDashView('desktop')">🖥️ Desktop</button>
-      <button class="dvm-btn" data-m="mobile" onclick="setDashView('mobile')">📱 Mobile</button>
+  <!-- DASHBOARD 2 (novo — a construir) -->
+  <div class="page" id="page-dashboard2">
+    <div class="ph"><h1>Dashboard 2</h1><p>Seu novo painel — vamos montar algo legal aqui 🚧</p></div>
+    <div id="dash2-root">
+      <div style="padding:44px 24px;text-align:center;color:var(--text3);background:var(--card);border:1px dashed var(--border);border-radius:12px">
+        Espaço reservado pro <strong style="color:var(--accent-l)">Dashboard 2</strong>.<br>
+        Me diga o que você quer ver aqui (gráficos, resumos, metas, patrimônio…) que eu construo.
+      </div>
     </div>
+  </div>
+
+  <div class="page active" id="page-dashboard">
     <div id="dash-viewport">
       <div class="ph"><h1>Dashboard</h1><p>Visão geral do seu progresso</p></div>
       <div id="db-note"></div>
@@ -3864,7 +3871,7 @@ window.testSupa = async function() {
 
 // Re-renderiza a página ativa atual
 function refreshPage() {
-  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
+  const fn = { dashboard:renderDash, dashboard2:(typeof renderDashboard2==='function'?renderDashboard2:null), goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
   fn[curPage]?.();
 }
 
@@ -4148,7 +4155,7 @@ function goto(page) {
   // Para auto-refresh do BTC quando sai da página Portfolio
   if (curPage === 'portfolio' && page !== 'portfolio') { try{ stopPortfolioAutoRefresh(); }catch(_){} }
   curPage = page;
-  const fn = { dashboard:renderDash, goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
+  const fn = { dashboard:renderDash, dashboard2:(typeof renderDashboard2==='function'?renderDashboard2:null), goals:renderGoals, completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null), oliverweb:(typeof renderOliverWeb==='function'?renderOliverWeb:null), english:(typeof renderEnglish==='function'?renderEnglish:null) };
   fn[page]?.();
 }
 
@@ -8970,29 +8977,26 @@ function delAporte(aid, pid){
      o celular real e para o preview mobile). Não altera lógica nem dados.
      ===================================================================== -->
 <style>
-/* Seletor de visualização */
-.dash-viewmode{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
-.dvm-lbl{font-family:var(--font-hud);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-right:2px}
-.dvm-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 14px;font-family:var(--font-hud);font-size:12px;letter-spacing:.04em;cursor:pointer;transition:border-color .18s,color .18s,background .18s,box-shadow .18s;min-height:40px}
-.dvm-btn:hover{border-color:var(--accent-l);color:var(--text)}
-.dvm-btn.on{background:linear-gradient(180deg,rgba(0,168,255,.18),rgba(0,168,255,.06));border-color:var(--accent);color:var(--accent-l);box-shadow:0 0 0 1px rgba(0,212,255,.3),0 0 16px rgba(0,212,255,.18)}
-
-/* Container de responsividade do dashboard */
+/* Container de responsividade do dashboard — adapta sozinho pela largura
+   (celular = coluna única automaticamente; desktop = layout normal) */
 #dash-viewport{container-type:inline-size;container-name:dashvp}
 
-/* Modo PREVIEW mobile dentro da própria página — moldura de smartphone */
-#dash-viewport.dash-view-mobile{
-  max-width:412px;margin:0 auto 12px;
-  padding:30px 14px calc(18px + env(safe-area-inset-bottom));
-  border:1px solid var(--border);border-radius:30px;
-  background:linear-gradient(180deg,rgba(8,16,28,.55),rgba(8,16,28,.20));
-  box-shadow:0 26px 70px rgba(0,0,0,.55),inset 0 0 0 6px rgba(0,0,0,.35),0 0 0 1px rgba(0,212,255,.15);
-  position:relative;
-}
-#dash-viewport.dash-view-mobile::before{
-  content:'';position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  width:64px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);
-}
+/* ===== Sidebar minimizável (desktop) ===== */
+.sb-min-btn{position:absolute;top:14px;right:12px;z-index:3;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:rgba(8,16,28,.6);color:var(--text3);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s,transform .2s}
+.sb-min-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
+body.sb-collapsed .sb-min-btn{transform:rotate(180deg)}
+body.is-mobile .sb-min-btn{display:none}
+body:not(.is-mobile).sb-collapsed .sidebar{width:66px;min-width:66px}
+body:not(.is-mobile).sb-collapsed .sb-logo{align-items:center;padding:16px 0 12px}
+body:not(.is-mobile).sb-collapsed .sb-logo span{font-size:0}
+body:not(.is-mobile).sb-collapsed .sb-logo::after{display:none}
+body:not(.is-mobile).sb-collapsed .sb-min-btn{position:static;margin:0 auto}
+body:not(.is-mobile).sb-collapsed .sb-label{display:none}
+body:not(.is-mobile).sb-collapsed .sb-item{display:flex;font-size:0;gap:0;justify-content:center;padding:12px 0}
+body:not(.is-mobile).sb-collapsed .sb-item .ico{font-size:19px}
+body:not(.is-mobile).sb-collapsed .sb-item .sep{display:none}
+body:not(.is-mobile).sb-collapsed .sb-footer{padding:14px 6px}
+body:not(.is-mobile).sb-collapsed .sync-status span{display:none}
 
 /* ===== Regras mobile do dashboard — dirigidas pela LARGURA DO CONTAINER.
    Disparam tanto no celular real quanto no preview mobile; nunca no desktop
@@ -9028,21 +9032,13 @@ function delAporte(aid, pid){
 </style>
 <script>
 (function(){
-  // Alterna o modo de visualização do dashboard (preview na própria página)
-  window.setDashView = function(mode){
-    const vp = document.getElementById('dash-viewport');
-    const m = (mode === 'mobile') ? 'mobile' : 'desktop';
-    if (vp) vp.classList.toggle('dash-view-mobile', m === 'mobile');
-    document.querySelectorAll('.dvm-btn').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-    try { localStorage.setItem('lo_dashview', m); } catch(e){}
+  // Sidebar minimizável (desktop): recolhe pra só ícones e lembra do estado
+  window.toggleSidebar = function(){
+    const on = !document.body.classList.contains('sb-collapsed');
+    document.body.classList.toggle('sb-collapsed', on);
+    try { localStorage.setItem('lo_sb_min', on ? '1' : '0'); } catch(e){}
   };
-  function initDashView(){
-    let saved = 'desktop';
-    try { saved = localStorage.getItem('lo_dashview') || 'desktop'; } catch(e){}
-    window.setDashView(saved);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDashView);
-  else initDashView();
+  try { if (localStorage.getItem('lo_sb_min') === '1') document.body.classList.add('sb-collapsed'); } catch(e){}
 })();
 </script>
 </body>
