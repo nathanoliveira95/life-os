@@ -4150,6 +4150,12 @@ function esc(s) {
   return String(s || '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// Escapa conteúdo para caber num atributo com aspas simples (ex.: data-tooltip='...').
+// Global — o heatmap do Dashboard usa fora do IIFE de charts, que tem seu próprio escapeAttr.
+function escapeAttr(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;');
+}
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
