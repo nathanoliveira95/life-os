@@ -10214,5 +10214,243 @@ body.is-mobile .bl-search{max-width:100%;flex-basis:100%}
 body.is-mobile .bl-fsel{flex:1 1 auto;min-width:0}
 body.is-mobile .bl-count{margin-left:0}
 </style>
+
+<!-- ============================================================
+     ░▒▓ DAILY NOTE v2 — semana persistente + tarefas c/ XP ▓▒░
+     Fundação compartilhada para o módulo de XP (Prompt 9).
+     ============================================================ -->
+<style id="dailynote-v2-style">
+/* Lista de tarefas do dia (Note Diário) */
+.ndt-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.ndt-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--gs-border);border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.012),transparent 50%),var(--gs-card);transition:border-color .15s,opacity .15s}
+.ndt-item:hover{border-color:var(--gs-border-2)}
+.ndt-item.done{opacity:.6}
+.ndt-check{flex:none;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--gs-border-2);background:transparent;color:#04121f;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ndt-check:hover{border-color:var(--gs-blue)}
+.ndt-item.done .ndt-check{background:linear-gradient(180deg,var(--gs-blue-l),var(--gs-blue));border-color:var(--gs-blue);box-shadow:0 0 8px rgba(10,132,255,.4)}
+.ndt-title{flex:1;min-width:0;background:transparent !important;border:none !important;border-bottom:1px dashed transparent !important;border-radius:0 !important;color:var(--gs-text) !important;font-size:13px !important;padding:2px 0 !important}
+.ndt-title:focus{border-bottom-color:var(--gs-blue) !important;box-shadow:none !important}
+.ndt-item.done .ndt-title{text-decoration:line-through;color:var(--gs-text-3) !important}
+.ndt-xp{display:flex;align-items:center;gap:3px;flex:none}
+.ndt-xp-inp{width:52px !important;text-align:center;padding:3px 4px !important;font-family:var(--font-mono) !important;font-size:11px !important;color:var(--gs-blue-l) !important}
+.ndt-xp span{font-family:var(--font-mono);font-size:9px;color:var(--gs-text-3);letter-spacing:.06em}
+.ndt-del{flex:none;width:24px;height:24px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--gs-text-3);cursor:pointer;font-size:12px;transition:all .15s}
+.ndt-del:hover{border-color:var(--gs-danger);color:var(--gs-danger)}
+.ndt-add{display:flex;gap:8px;margin-top:8px}
+.ndt-add-inp{flex:1}
+.ndt-xp-sum{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--gs-blue-l);letter-spacing:.05em;font-weight:400}
+.ndt-empty{color:var(--gs-text-3);font-size:12px;padding:10px 2px}
+
+/* Dashboard — tarefas de hoje (compacto) */
+.dtoday-tasks{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.dtt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;border:1px solid var(--gs-border);background:var(--gs-card);transition:border-color .15s,opacity .15s}
+.dtt:hover{border-color:var(--gs-border-2)}
+.dtt.done{opacity:.55}
+.dtt-check{flex:none;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--gs-border-2);background:transparent;color:#04121f;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.dtt-check:hover{border-color:var(--gs-blue)}
+.dtt.done .dtt-check{background:linear-gradient(180deg,var(--gs-blue-l),var(--gs-blue));border-color:var(--gs-blue)}
+.dtt-title{flex:1;min-width:0;font-size:13px;color:var(--gs-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dtt.done .dtt-title{text-decoration:line-through;color:var(--gs-text-3)}
+.dtt-xp{flex:none;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--gs-blue-l);background:var(--accent-fill);border:1px solid rgba(10,132,255,.25);border-radius:100px;padding:1px 7px}
+.dtt-empty{color:var(--gs-text-3);font-size:12px;padding:8px 2px}
+.dtt-empty span{color:var(--gs-blue-l);cursor:pointer}
+.dtoday-add-inp{width:100%;font-size:12px !important;padding:7px 10px !important}
+.dtoday-week{margin-top:9px;padding-top:9px;border-top:1px solid var(--gs-hair);font-size:11px;color:var(--gs-text-3);line-height:1.45}
+.dtoday-week-lbl{font-family:var(--font-hud);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-2);margin-right:5px}
+
+/* Pulse "+N XP" ao concluir */
+#xp-pulse{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(10px);z-index:1200;font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--gs-blue-l);background:var(--gs-glass);border:1px solid rgba(10,132,255,.4);border-radius:100px;padding:8px 18px;box-shadow:0 8px 26px rgba(0,0,0,.5),0 0 20px rgba(10,132,255,.25);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .28s,transform .28s}
+#xp-pulse.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion: reduce){#xp-pulse{transition:opacity .01s}}
+</style>
+
+<script id="dailynote-v2-script">
+(function(){
+  if (typeof LS === 'undefined') return;
+
+  // ---- Stores anexadas (mesmo padrão de LS.calEvents) ----
+  if (!LS.weeknotes) LS.weeknotes = {
+    get(){ try { return JSON.parse(localStorage.getItem('lo_weeknotes')||'{}'); } catch(e){ return {}; } },
+    set(v){ localStorage.setItem('lo_weeknotes', JSON.stringify(v)); try{ pushSupa('weeknotes', v); }catch(e){} }
+  };
+  if (!LS.daytasks) LS.daytasks = {
+    get(){ try { return JSON.parse(localStorage.getItem('lo_daytasks')||'{}'); } catch(e){ return {}; } },
+    set(v){ localStorage.setItem('lo_daytasks', JSON.stringify(v)); try{ pushSupa('daytasks', v); }catch(e){} }
+  };
+
+  const esct = s => (typeof esc==='function') ? esc(s) : String(s==null?'':s);
+  const nowISO = () => { try { return new Date().toISOString(); } catch(e){ return ''; } };
+
+  // ---- Chave de semana determinística (segunda-feira, sem deriva de fuso) ----
+  window.weekKeyOf = function(dateStr){
+    if(!dateStr) return '';
+    const p = String(dateStr).split('-').map(Number);
+    const d = new Date(Date.UTC(p[0], (p[1]||1)-1, p[2]||1));
+    const dow = (d.getUTCDay()+6)%7;            // segunda=0
+    d.setUTCDate(d.getUTCDate()-dow);
+    const mm=String(d.getUTCMonth()+1).padStart(2,'0'), da=String(d.getUTCDate()).padStart(2,'0');
+    return `${d.getUTCFullYear()}-${mm}-${da}`;
+  };
+
+  // ---- Nota semanal (migra .week legado do notediario, não-destrutivo) ----
+  window.wnGet = function(weekKey){
+    const wn = LS.weeknotes.get();
+    if (weekKey in wn) return wn[weekKey];
+    try{
+      const nd = LS.notediario.get();
+      for (const d in nd){
+        if (window.weekKeyOf(d)===weekKey){
+          const w = (typeof ndNormalize==='function'? ndNormalize(nd[d]).week : (nd[d]&&nd[d].week)) || '';
+          if (w && w.trim()){ wn[weekKey]=w; LS.weeknotes.set(wn); return w; }
+        }
+      }
+    }catch(e){}
+    return '';
+  };
+  window.wnSet = function(weekKey, val){
+    const wn = LS.weeknotes.get();
+    if (val && val.trim()) wn[weekKey]=val; else delete wn[weekKey];
+    LS.weeknotes.set(wn);
+  };
+  window.weekNoteInput = function(weekKey, val){ window.wnSet(weekKey, val); };
+
+  // ---- Tarefas do dia (com XP). Fonte única: LS.daytasks[dateKey] ----
+  window.dtGet = function(dateKey){
+    const s = LS.daytasks.get();
+    if (Array.isArray(s[dateKey])) return s[dateKey];
+    // migração: converte texto livre "today" do notediario em tarefas
+    try{
+      const nd = LS.notediario.get();
+      const raw = nd[dateKey] && (typeof ndNormalize==='function'?ndNormalize(nd[dateKey]).today:(nd[dateKey].today||''));
+      if (raw && raw.trim()){
+        const tasks = raw.split('\n').map(l=>l.trim()).filter(Boolean).map(t=>({id:uid(),title:t,done:false,xp:0,doneAt:null,goalId:''}));
+        s[dateKey]=tasks; LS.daytasks.set(s);
+        nd[dateKey] = Object.assign((typeof ndNormalize==='function'?ndNormalize(nd[dateKey]):nd[dateKey]), {today:''});
+        LS.notediario.set(nd);
+        return tasks;
+      }
+    }catch(e){}
+    return [];
+  };
+  function dtWrite(dateKey, arr){ const s=LS.daytasks.get(); if(arr && arr.length) s[dateKey]=arr; else delete s[dateKey]; LS.daytasks.set(s); }
+  window.dtAdd = function(dateKey, title){ const arr=window.dtGet(dateKey).slice(); arr.push({id:uid(),title:title,done:false,xp:0,doneAt:null,goalId:''}); dtWrite(dateKey,arr); dtRefresh(); };
+  window.dtAddFromInput = function(dateKey, inp){ const v=(inp.value||'').trim(); if(!v) return; window.dtAdd(dateKey, v); inp.value=''; setTimeout(()=>{ const el=document.querySelector('[data-dtadd="'+dateKey+'"]'); if(el) el.focus(); },30); };
+  window.dtToggle = function(dateKey, id){ const arr=window.dtGet(dateKey).slice(); const t=arr.find(x=>x.id===id); if(!t) return; t.done=!t.done; t.doneAt=t.done?nowISO():null; dtWrite(dateKey,arr); if(t.done && (parseInt(t.xp)||0)>0) xpPulse(parseInt(t.xp)||0); dtRefresh(); };
+  window.dtSetTitle = function(dateKey, id, val){ const arr=window.dtGet(dateKey).slice(); const t=arr.find(x=>x.id===id); if(!t) return; t.title=val; dtWrite(dateKey,arr); };
+  window.dtSetXP = function(dateKey, id, val){ const arr=window.dtGet(dateKey).slice(); const t=arr.find(x=>x.id===id); if(!t) return; t.xp=Math.max(0,parseInt(val)||0); dtWrite(dateKey,arr); dtRefresh(); };
+  window.dtDel = function(dateKey, id){ const arr=window.dtGet(dateKey).filter(x=>x.id!==id); dtWrite(dateKey,arr); dtRefresh(); };
+
+  // ---- XP das tarefas concluídas (recomputado do estado → sem dupla contagem) ----
+  window.xpFromTasks = function(){
+    let xp=0; try{ const s=LS.daytasks.get(); Object.values(s).forEach(arr=>{ (arr||[]).forEach(t=>{ if(t.done) xp+=Math.max(0,parseInt(t.xp)||0); }); }); }catch(e){} return xp;
+  };
+  // integra XP das tarefas ao total do HUD (dashXP original vira baseline)
+  if (typeof window.dashXP === 'function' && !window.dashXP._xpWrapped){
+    const _baseXP = window.dashXP;
+    window.dashXP = function(){ return (_baseXP()||0) + window.xpFromTasks(); };
+    window.dashXP._xpWrapped = true;
+  }
+
+  function xpPulse(n){
+    let el=document.getElementById('xp-pulse');
+    if(!el){ el=document.createElement('div'); el.id='xp-pulse'; document.body.appendChild(el); }
+    el.textContent='+'+n+' XP';
+    el.classList.add('show');
+    clearTimeout(window._xpPulseT);
+    window._xpPulseT=setTimeout(()=>el.classList.remove('show'), 1100);
+  }
+
+  function dtRefresh(){
+    try{ if(typeof window.renderDashHud==='function' && document.getElementById('db-hud')) window.renderDashHud(); }catch(e){}
+    try{ if(document.getElementById('db-today')) window.renderDashToday(); }catch(e){}
+    try{ if(typeof curPage!=='undefined' && curPage==='notediario') window.renderNoteDiario(); }catch(e){}
+    try{ if(typeof window.renderXPPage==='function' && typeof curPage!=='undefined' && curPage==='xp') window.renderXPPage(); }catch(e){}
+  }
+  window.dtRefresh = dtRefresh;
+
+  // ---- Dashboard: componente compacto de tarefas de hoje ----
+  window.renderDashToday = function(){
+    const host=document.getElementById('db-today'); if(!host) return;
+    const key = (typeof dk==='function') ? dk(new Date()) : new Date().toISOString().slice(0,10);
+    const tasks = window.dtGet(key);
+    const weekTxt = window.wnGet(window.weekKeyOf(key));
+    const done = tasks.filter(t=>t.done).length;
+    const list = tasks.length
+      ? tasks.map(t=>`<div class="dtt ${t.done?'done':''}">
+          <button class="dtt-check" onclick="dtToggle('${key}','${t.id}')">${t.done?'✓':''}</button>
+          <span class="dtt-title" onclick="dtToggle('${key}','${t.id}')" title="${esct(t.title)}">${esct(t.title)}</span>
+          ${(parseInt(t.xp)||0)>0?`<span class="dtt-xp">+${parseInt(t.xp)}</span>`:''}
+        </div>`).join('')
+      : `<div class="dtt-empty">Sem tarefas hoje. <span onclick="goto('notediario')">Adicionar →</span></div>`;
+    host.innerHTML = `
+      <div class="dtoday">
+        <div class="dtoday-hd"><span class="dtoday-t">📋 Tarefas de Hoje ${tasks.length?`<span class="ndt-xp-sum">${done}/${tasks.length}</span>`:''}</span><span class="dtoday-link" onclick="goto('notediario')">Note Diário ›</span></div>
+        <div class="dtoday-tasks">${list}</div>
+        <input class="dtoday-add-inp" data-dtadd="${key}" placeholder="+ tarefa rápida (Enter)" onkeydown="if(event.key==='Enter'){dtAddFromInput('${key}',this)}">
+        ${weekTxt?`<div class="dtoday-week"><span class="dtoday-week-lbl">Foco da semana</span>${esct(weekTxt).slice(0,140)}${weekTxt.length>140?'…':''}</div>`:''}
+      </div>`;
+  };
+
+  // ---- Note Diário: tarefas (hoje) + nota semanal persistente + gerais ----
+  window.renderNoteDiario = function(){
+    const key = (typeof ndCurrentKey==='function') ? ndCurrentKey() : ((typeof dk==='function')?dk(new Date()):new Date().toISOString().slice(0,10));
+    const weekKey = window.weekKeyOf(key);
+    const notes = LS.notediario.get();
+    const entry = (typeof ndNormalize==='function') ? ndNormalize(notes[key]) : {general:(notes[key]&&notes[key].general)||''};
+    const tasks = window.dtGet(key);
+    const weekTxt = window.wnGet(weekKey);
+
+    // Label do dia (mantém a nav)
+    try{
+      const dt = new Date(key + 'T12:00:00');
+      const dateLabel = dt.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+      const dowLabel  = dt.toLocaleDateString('pt-BR', { weekday:'long' });
+      let relLabel=''; if(ndOff===0)relLabel=' · HOJE'; else if(ndOff===-1)relLabel=' · ONTEM'; else if(ndOff===1)relLabel=' · AMANHÃ';
+      const has = tasks.length || (weekTxt&&weekTxt.trim()) || (entry.general&&entry.general.trim());
+      const navEl=document.getElementById('nd-nav-date');
+      if(navEl) navEl.innerHTML=`${has?'<span class="nd-dot" title="Dia com conteúdo"></span>':''}<span>${dateLabel}${relLabel}</span><span class="nd-nav-dow">${dowLabel}</span>`;
+    }catch(e){}
+
+    const doneXP = tasks.filter(t=>t.done).reduce((s,t)=>s+(parseInt(t.xp)||0),0);
+    const totXP  = tasks.reduce((s,t)=>s+(parseInt(t.xp)||0),0);
+    const taskRows = tasks.map(t=>`
+      <div class="ndt-item ${t.done?'done':''}">
+        <button class="ndt-check" onclick="dtToggle('${key}','${t.id}')">${t.done?'✓':''}</button>
+        <input class="ndt-title" value="${esct(t.title)}" placeholder="Tarefa…" onchange="dtSetTitle('${key}','${t.id}',this.value)">
+        <div class="ndt-xp"><input type="number" min="0" class="ndt-xp-inp" value="${parseInt(t.xp)||0}" title="XP da tarefa" onchange="dtSetXP('${key}','${t.id}',this.value)"><span>XP</span></div>
+        <button class="ndt-del" title="Remover" onclick="dtDel('${key}','${t.id}')">✕</button>
+      </div>`).join('');
+
+    document.getElementById('nd-card').innerHTML = `
+      <div class="nd-sec">
+        <div class="nd-sec-hd">🎯 O que precisa ser feito hoje ${tasks.length?`<span class="ndt-xp-sum">${doneXP}/${totXP} XP · ${tasks.filter(t=>t.done).length}/${tasks.length}</span>`:''}</div>
+        <div class="ndt-list">${taskRows || '<div class="ndt-empty">Nenhuma tarefa. Adicione abaixo — cada uma pode valer XP.</div>'}</div>
+        <div class="ndt-add">
+          <input class="ndt-add-inp" data-dtadd="${key}" placeholder="+ Nova tarefa (Enter)" onkeydown="if(event.key==='Enter'){dtAddFromInput('${key}',this)}">
+          <button class="btn btn-p" onclick="dtAddFromInput('${key}',this.previousElementSibling)">Adicionar</button>
+        </div>
+      </div>
+      <div class="nd-sec">
+        <div class="nd-sec-hd">📅 O que precisa ser feito essa semana <span class="ndt-xp-sum" style="color:var(--gs-text-3)">persiste a semana toda</span></div>
+        <textarea placeholder="Metas e compromissos da semana (vale de segunda a domingo)…" oninput="weekNoteInput('${weekKey}',this.value)">${esct(weekTxt)}</textarea>
+      </div>
+      <div class="nd-sec">
+        <div class="nd-sec-hd">💭 Anotações gerais <span class="nd-save-status" id="nd-status-general"></span></div>
+        <textarea data-nd-field="general" data-nd-key="${key}" placeholder="Livre pra qualquer anotação...">${esct(entry.general)}</textarea>
+      </div>`;
+
+    const gen = document.querySelector('#nd-card textarea[data-nd-field="general"]');
+    if (gen && typeof ndOnInput==='function') gen.addEventListener('input', ndOnInput);
+  };
+
+  // Repinta se já estivermos numa página afetada
+  try{
+    if(typeof curPage!=='undefined'){
+      if(curPage==='notediario') window.renderNoteDiario();
+      if(curPage==='dashboard' && typeof renderDash==='function') renderDash();
+    }
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
