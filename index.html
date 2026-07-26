@@ -3453,12 +3453,13 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   <!-- GOALS -->
   <div class="page" id="page-goals">
     <div class="ph"><h1>Goals</h1><p>Metas organizadas por categoria — progresso calculado automaticamente do Backlog</p></div>
-    <div class="goals-tabs">
-      <div class="goals-tab active" id="goals-tab-cards" onclick="setGoalsView('cards')">📋 CARDS</div>
-      <div class="goals-tab" id="goals-tab-calendar" onclick="setGoalsView('calendar')">📅 CALENDÁRIO</div>
-    </div>
     <div id="goals-cols" class="goal-cols"></div>
-    <div id="goals-calendar" style="display:none"></div>
+  </div>
+
+  <!-- CALENDÁRIO — seção própria (nível de Home/Goals) -->
+  <div class="page" id="page-calendar">
+    <div class="ph"><h1>📅 Calendário</h1><p>Prazos de metas e objetivos + seus próprios eventos — clique num dia para adicionar</p></div>
+    <div id="calendar-root"></div>
   </div>
 
   <!-- BACKLOG -->
@@ -4730,8 +4731,8 @@ function setGoalsView(v) {
   goalsView = v;
   document.getElementById('goals-tab-cards')?.classList.toggle('active', v==='cards');
   document.getElementById('goals-tab-calendar')?.classList.toggle('active', v==='calendar');
-  document.getElementById('goals-cols').style.display     = (v==='cards')    ? '' : 'none';
-  document.getElementById('goals-calendar').style.display = (v==='calendar') ? '' : 'none';
+  const gcCols = document.getElementById('goals-cols');   if (gcCols) gcCols.style.display = (v==='cards') ? '' : 'none';
+  const gcCal  = document.getElementById('goals-calendar'); if (gcCal) gcCal.style.display = (v==='calendar') ? '' : 'none';
   if (v === 'calendar') renderGoalsCalendar();
 }
 function gcalNav(d) {
@@ -9227,6 +9228,152 @@ body:not(.is-mobile).sb-collapsed .sync-status span{display:none}
     try { localStorage.setItem('lo_sb_min', on ? '1' : '0'); } catch(e){}
   };
   try { if (localStorage.getItem('lo_sb_min') === '1') document.body.classList.add('sb-collapsed'); } catch(e){}
+})();
+</script>
+
+<!-- =====================================================================
+     CALENDÁRIO — seção própria, estilo Google Calendar.
+     Mostra prazos de Goals/Objetivos (derivados, ligados às metas) + eventos
+     próprios (novo store lo_calevents). Criar/editar via modal. Sync padrão.
+     ===================================================================== -->
+<style>
+.cal2-bar{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.cal2-nav{display:flex;align-items:center;gap:6px}
+.cal2-btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s}
+.cal2-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
+.cal2-today{height:34px;padding:0 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;font-family:var(--font-hud);font-size:12px;letter-spacing:.04em;transition:border-color .15s,color .15s}
+.cal2-today:hover{border-color:var(--accent-l);color:var(--accent-l)}
+.cal2-mtitle{font-family:var(--font-hud);font-size:20px;font-weight:700;color:var(--text);letter-spacing:.02em}
+.cal2-mtitle span{color:var(--text3);font-weight:500}
+.cal2-add{height:34px;margin-left:auto;padding:0 14px;font-size:12px}
+.cal2-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.cal2-head>div{font-family:var(--font-hud);font-size:10px;letter-spacing:.1em;color:var(--text3);text-align:center;padding:6px 0}
+.cal2-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;grid-auto-rows:minmax(96px,auto)}
+.cal2-cell{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 6px 4px;cursor:pointer;display:flex;flex-direction:column;gap:3px;overflow:hidden;transition:border-color .12s}
+.cal2-cell:hover{border-color:var(--accent-l)}
+.cal2-cell.out{background:transparent;border-color:transparent;cursor:default}
+.cal2-cell.is-today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cal2-dnum{font-family:var(--font-mono);font-size:12px;color:var(--text2);font-weight:600;align-self:flex-start}
+.cal2-cell.is-today .cal2-dnum{background:var(--accent);color:#04121f;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cal2-evs{display:flex;flex-direction:column;gap:2px}
+.cal2-ev{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text);background:var(--card2);border-left:3px solid var(--accent);border-radius:3px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.cal2-ev.is-user{cursor:pointer}
+.cal2-ev.is-user:hover{background:rgba(0,168,255,.16)}
+.cal2-ev-ic{font-size:9px;flex:0 0 auto}
+.cal2-ev.cat-ib{border-left-color:var(--gcat-ib)}
+.cal2-ev.cat-en{border-left-color:var(--gcat-en)}
+.cal2-ev.cat-ol{border-left-color:var(--gcat-ol)}
+.cal2-ev.cat-sq{border-left-color:var(--gcat-sq)}
+.cal2-ev.cat-ev{border-left-color:var(--accent)}
+.cal2-more{font-family:var(--font-mono);font-size:9px;color:var(--text3)}
+.cal2-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.04em}
+.cal2-lg{display:inline-flex;align-items:center;gap:5px}
+.cal2-dot{width:9px;height:9px;border-radius:2px;display:inline-block;background:var(--accent)}
+body.is-mobile .cal2-grid{grid-auto-rows:minmax(72px,auto);gap:3px}
+body.is-mobile .cal2-mtitle{font-size:17px}
+body.is-mobile .cal2-add{margin-left:0}
+body.is-mobile .cal2-ev{font-size:9px;padding:1px 4px}
+</style>
+<script>
+(function(){
+  if (typeof LS === 'undefined') return;
+  if (!LS.calEvents) LS.calEvents = {
+    get(){ try { return JSON.parse(localStorage.getItem('lo_calevents')||'[]'); } catch(e){ return []; } },
+    set(v){ localStorage.setItem('lo_calevents', JSON.stringify(v)); try { pushSupa('calevents', v); } catch(e){} }
+  };
+  let calY = new Date().getFullYear();
+  let calM = new Date().getMonth();
+  window.calPgNav   = function(d){ calM+=d; if(calM<0){calM=11;calY--;} if(calM>11){calM=0;calY++;} renderCalendarPage(); };
+  window.calPgToday = function(){ const t=new Date(); calY=t.getFullYear(); calM=t.getMonth(); renderCalendarPage(); };
+
+  window.openCalEvent = function(dateKey, id){
+    const events = LS.calEvents.get();
+    const ev = id ? events.find(e=>e.id===id) : null;
+    const date = ev ? ev.date : dateKey;
+    document.getElementById('mc').innerHTML = `
+      <div class="overlay" onclick="if(event.target===this)closeMC()">
+        <div class="modal">
+          <h3>${ev?'✎ Editar evento':'＋ Novo evento'}</h3>
+          <div class="fg"><label>Título</label><input id="ce-title" value="${ev?esc(ev.title):''}" placeholder="Ex: Reunião, entrega, prova..."></div>
+          <div class="fg"><label>Data</label><input id="ce-date" type="date" value="${date||''}"></div>
+          <div class="fg"><label>Nota (opcional)</label><textarea id="ce-note" placeholder="Detalhes...">${ev?esc(ev.note||''):''}</textarea></div>
+          <div class="mf">
+            ${ev?`<button class="btn btn-d" onclick="delCalEvent('${ev.id}')">Excluir</button>`:''}
+            <button class="btn btn-g" onclick="closeMC()">Cancelar</button>
+            <button class="btn btn-p" onclick="saveCalEvent('${ev?ev.id:''}')">Salvar</button>
+          </div>
+        </div>
+      </div>`;
+    setTimeout(()=>{ const el=document.getElementById('ce-title'); if(el) el.focus(); }, 30);
+  };
+  window.saveCalEvent = function(id){
+    const title=(document.getElementById('ce-title').value||'').trim();
+    const date =document.getElementById('ce-date').value;
+    const note =(document.getElementById('ce-note').value||'').trim();
+    if(!title||!date){ try{ toast('⚠ Preencha título e data'); }catch(e){} return; }
+    const events=LS.calEvents.get();
+    if(id){ const e=events.find(x=>x.id===id); if(e){ e.title=title; e.date=date; e.note=note; } }
+    else { events.push({ id: uid(), date, title, note }); }
+    LS.calEvents.set(events);
+    closeMC(); renderCalendarPage();
+  };
+  window.delCalEvent = function(id){
+    LS.calEvents.set(LS.calEvents.get().filter(e=>e.id!==id));
+    closeMC(); renderCalendarPage();
+  };
+
+  window.renderCalendarPage = function renderCalendarPage(){
+    const host=document.getElementById('calendar-root'); if(!host) return;
+    const pad=n=>String(n).padStart(2,'0');
+    const monthKey=`${calY}-${pad(calM+1)}`;
+    const goals=LS.goals.get().filter(g=>!isGoalDone(g));
+    const objs =LS.objectives.get();
+    const byDay={};
+    const push=(date,o)=>{ if(!date) return; (byDay[date]=byDay[date]||[]).push(o); };
+    goals.forEach(g=>{ if(g.deadline) push(g.deadline,{type:'goal',title:g.name||'(sem nome)',slug:catSlug(g.category)}); });
+    (typeof CATS!=='undefined'?CATS:[]).forEach(cat=>{ normalizeObjectives(objs[cat.key]).forEach(o=>{ if(o.deadline&&o.txt) push(o.deadline,{type:'obj',title:o.txt,slug:cat.slug}); }); });
+    LS.calEvents.get().forEach(e=>{ push(e.date,{type:'event',title:e.title,id:e.id,slug:'cat-ev'}); });
+
+    const daysInMonth=new Date(calY,calM+1,0).getDate();
+    const firstDow=new Date(calY,calM,1).getDay();
+    const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const t=new Date(); const isCM=t.getFullYear()===calY&&t.getMonth()===calM; const td=t.getDate();
+
+    let cells='';
+    for(let i=0;i<42;i++){
+      const dn=i-firstDow+1;
+      if(dn<1||dn>daysInMonth){ cells+=`<div class="cal2-cell out"></div>`; continue; }
+      const key=`${monthKey}-${pad(dn)}`;
+      const evs=byDay[key]||[];
+      const isToday=isCM&&td===dn;
+      const evHtml=evs.slice(0,4).map(e=>{
+        const ic = e.type==='goal'?'🎯':e.type==='obj'?'◆':'•';
+        const click = e.type==='event'?` onclick="event.stopPropagation();openCalEvent('${key}','${e.id}')"`:'';
+        return `<div class="cal2-ev ${e.slug} ${e.type==='event'?'is-user':''}"${click} title="${esc(e.title)}"><span class="cal2-ev-ic">${ic}</span>${esc(e.title)}</div>`;
+      }).join('');
+      const more=evs.length>4?`<div class="cal2-more">+${evs.length-4} mais</div>`:'';
+      cells+=`<div class="cal2-cell ${isToday?'is-today':''}" onclick="openCalEvent('${key}')"><div class="cal2-dnum">${dn}</div><div class="cal2-evs">${evHtml}${more}</div></div>`;
+    }
+
+    const addDay = `${monthKey}-${pad(isCM?td:1)}`;
+    host.innerHTML=`
+      <div class="cal2-bar">
+        <div class="cal2-nav">
+          <button class="cal2-btn" onclick="calPgNav(-1)" aria-label="Mês anterior">‹</button>
+          <button class="cal2-today" onclick="calPgToday()">Hoje</button>
+          <button class="cal2-btn" onclick="calPgNav(1)" aria-label="Próximo mês">›</button>
+        </div>
+        <div class="cal2-mtitle">${MN[calM]} <span>${calY}</span></div>
+        <button class="btn btn-p cal2-add" onclick="openCalEvent('${addDay}')">＋ Evento</button>
+      </div>
+      <div class="cal2-head"><div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div></div>
+      <div class="cal2-grid">${cells}</div>
+      <div class="cal2-legend">
+        <span class="cal2-lg"><span class="cal2-dot cat-ev"></span> Seu evento</span>
+        <span class="cal2-lg">🎯 Prazo de Goal</span>
+        <span class="cal2-lg">◆ Prazo de Objetivo</span>
+      </div>`;
+  };
 })();
 </script>
 </body>
