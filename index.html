@@ -3447,12 +3447,24 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div id="dash-viewport">
-      <div class="ph"><h1>Dashboard</h1><p>Visão geral do seu progresso</p></div>
-      <div id="db-note"></div>
-      <div id="db-highlights"></div>
+      <div class="ph"><h1>Dashboard</h1><p>Central de comando</p></div>
+      <!-- 1 · Player HUD -->
+      <div id="db-hud"></div>
+      <!-- 2 · Objetivos (topo, carrossel) -->
+      <div id="db-objectives"></div>
+      <!-- 3 · Goals (abaixo, carrossel) -->
+      <div id="db-goals"></div>
+      <!-- 4 · Tarefas do dia (Note Diário compacto) -->
+      <div id="db-today"></div>
+      <!-- 5 · Heatmap de atividade diária -->
+      <div id="dash-activity-heatmap" class="dah-wrap"></div>
+      <!-- 6 · Info secundária (dieta / treino / notas) -->
       <div class="cards" id="db-cards"></div>
-      <div id="dash-goals-heatmap" class="ghm-wrap"></div>
       <div id="db-detail"></div>
+      <!-- containers legados (não usados — mantidos para no-op seguro) -->
+      <div id="db-note" hidden></div>
+      <div id="db-highlights" hidden></div>
+      <div id="dash-goals-heatmap" hidden></div>
     </div>
   </div>
 
@@ -4457,9 +4469,13 @@ function renderDashNote() {
 }
 
 function renderDash() {
-  renderDashNote();
-  renderDashHighlights();
-  renderGoalsHeatmap();
+  // Dashboard v3 — guardas typeof: se ainda não definidos no primeiro load, não quebram;
+  // o script apendado no fim repinta assim que as definições existem.
+  if (typeof renderDashHud === 'function') renderDashHud();
+  if (typeof renderDashObjectives === 'function') renderDashObjectives();
+  if (typeof renderDashGoals === 'function') renderDashGoals();
+  if (typeof renderDashToday === 'function') renderDashToday();
+  if (typeof renderActivityHeatmap === 'function') renderActivityHeatmap();
   const goals = LS.goals.get();
   const tasks = LS.tasks.get();
   const saude = LS.saude.get();
@@ -4912,7 +4928,7 @@ function upObjective(cat, idx, fieldOrVal, val) {
   LS.objectives.set(objs);
   // Re-render do calendário se estiver visível
   if (typeof curPage !== 'undefined' && curPage === 'goals' && goalsView === 'calendar') renderGoalsCalendar();
-  if (typeof curPage !== 'undefined' && curPage === 'dashboard') renderDashHighlights();
+  if (typeof curPage !== 'undefined' && curPage === 'dashboard' && typeof renderDashObjectives === 'function') renderDashObjectives();
 }
 
 // Pin/unpin objetivos e goals pro dashboard
@@ -9530,5 +9546,353 @@ select option{ background:#0a0e14 !important; }
 body.is-mobile .ph h1{ font-size:20px !important; }
 body.is-mobile .card{ border-radius:var(--r-sm) !important; }
 </style>
+
+<!-- ============================================================
+     ░▒▓ DASHBOARD v3 — HUD · carrosséis · note · heatmap ▓▒░
+     ============================================================ -->
+<style id="dash-v3-style">
+/* ===== Player HUD ===== */
+#db-hud{margin-bottom:20px}
+.dhud{display:flex;align-items:stretch;gap:14px;flex-wrap:wrap;
+  background:linear-gradient(180deg,rgba(10,132,255,.06),rgba(10,132,255,.01) 40%),var(--gs-card);
+  border:1px solid var(--gs-border-2);border-radius:var(--r-lg);padding:16px 18px;
+  box-shadow:var(--edge),0 0 0 1px rgba(10,132,255,.05),var(--sh-2)}
+.dhud-seg{display:flex;flex-direction:column;justify-content:center;gap:6px;padding-right:16px;border-right:1px solid var(--gs-hair);min-width:0}
+.dhud-seg:last-child{border-right:none;padding-right:0}
+.dhud-lvlseg{flex:1;min-width:240px;flex-direction:row;align-items:center;gap:14px}
+.dhud-lvl{display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:64px;border-radius:14px;flex:none;
+  background:radial-gradient(circle at 50% 35%,rgba(53,198,255,.28),rgba(10,132,255,.09));
+  border:1px solid rgba(53,198,255,.4);box-shadow:0 0 18px rgba(10,132,255,.24),var(--edge-strong)}
+.dhud-lvl-k{font-family:var(--font-hud);font-size:8px;letter-spacing:.22em;color:var(--gs-blue-l)}
+.dhud-lvl-n{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1;color:#fff;text-shadow:0 0 12px rgba(53,198,255,.7)}
+.dhud-xp{flex:1;min-width:0}
+.dhud-xpbar{height:9px;border-radius:100px;background:rgba(255,255,255,.07);overflow:hidden;border:1px solid rgba(255,255,255,.05)}
+.dhud-xpfill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gs-blue),var(--gs-blue-glow));box-shadow:0 0 10px rgba(53,198,255,.5);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.dhud-xptext{font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);letter-spacing:.04em;margin-top:6px}
+.dhud-k{font-family:var(--font-hud);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gs-text-3)}
+.dhud-v{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--gs-text);letter-spacing:-.01em;white-space:nowrap}
+.dhud-money{color:var(--gs-blue-l)}
+.dhud-u{font-size:12px;color:var(--gs-text-3);font-weight:500}
+.dhud-status{flex-direction:row;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--gs-text-3)}
+.dhud-dot{width:7px;height:7px;border-radius:50%;background:var(--gs-success);box-shadow:0 0 8px var(--gs-success);animation:dhud-pulse 2.4s ease-in-out infinite}
+@keyframes dhud-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ===== Carrossel (Objetivos / Goals) ===== */
+#db-objectives,#db-goals{margin-bottom:22px}
+.dcar-hd{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.dcar-title{font-family:var(--font-hud);font-size:15px;font-weight:600;letter-spacing:.01em;color:var(--gs-text)}
+.dcar-count{font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3);background:var(--gs-card-2);border:1px solid var(--gs-border);border-radius:100px;padding:1px 9px}
+.dcar-nav{margin-left:auto;display:flex;gap:6px}
+.dcar-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--gs-border-2);background:var(--gs-card);color:var(--gs-text-2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s,background .15s}
+.dcar-btn:hover{border-color:var(--gs-blue);color:var(--gs-blue-l);background:var(--accent-fill)}
+.dcar-track{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 10px;scrollbar-width:thin}
+.dcar-track::-webkit-scrollbar{height:8px}
+.dcar-slide{scroll-snap-align:start;flex:0 0 340px;max-width:88vw;position:relative;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 42%),var(--gs-card);
+  border:1px solid var(--gs-border);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;
+  box-shadow:var(--edge),var(--sh-1);transition:border-color .18s,transform .14s,box-shadow .2s}
+.dcar-slide:hover{border-color:var(--gs-border-2);transform:translateY(-3px);box-shadow:var(--edge-strong),var(--sh-2),0 0 0 1px rgba(10,132,255,.12)}
+.dcar-slide.cat-ib{border-top:2px solid var(--gcat-ib)}
+.dcar-slide.cat-en{border-top:2px solid var(--gcat-en)}
+.dcar-slide.cat-ol{border-top:2px solid var(--gcat-ol)}
+.dcar-slide.cat-sq{border-top:2px solid var(--gcat-sq)}
+.dcar-img{height:120px;background-size:cover;background-position:center;border-bottom:1px solid var(--gs-border)}
+.dcar-img-ph{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--gs-card-2),var(--gs-card))}
+.dcar-img-ph span{font-size:40px;opacity:.22}
+.dcar-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px;flex:1}
+.dcar-tag{font-family:var(--font-hud);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gs-blue-l)}
+.dcar-tier{color:var(--gs-warn);font-weight:700}
+.dcar-name{font-family:var(--font-hud);font-size:18px;font-weight:600;line-height:1.24;color:var(--gs-text);min-height:44px}
+.dcar-prog{display:flex;align-items:center;gap:10px;margin-top:auto}
+.dcar-pw{flex:1;height:8px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.dcar-pb{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--gs-blue),var(--gs-blue-l))}
+.dcar-pct{font-family:var(--font-mono);font-size:17px;font-weight:700;color:var(--gs-blue-l);min-width:44px;text-align:right}
+.dcar-pct.muted{color:var(--gs-text-3)}
+.dcar-sub{font-family:var(--font-mono);font-size:10.5px;color:var(--gs-text-3);letter-spacing:.02em}
+.dcar-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
+  color:var(--gs-text-3);font-size:13px;padding:32px;background:var(--gs-card);border:1px dashed var(--gs-border-2);border-radius:var(--r-lg);cursor:pointer;min-height:150px;width:100%}
+.dcar-empty-ico{font-size:32px;opacity:.4}
+
+/* ===== Note compacto (Hoje & Semana) ===== */
+#db-today{margin-bottom:22px}
+.dtoday{background:linear-gradient(180deg,rgba(255,255,255,.015),transparent 40%),var(--gs-card);border:1px solid var(--gs-border);border-left:3px solid var(--gs-blue);border-radius:var(--r-lg);padding:14px 16px 16px;box-shadow:var(--edge),var(--sh-1)}
+.dtoday-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.dtoday-t{font-family:var(--font-hud);font-size:14px;font-weight:600;color:var(--gs-text)}
+.dtoday-link{font-family:var(--font-mono);font-size:11px;color:var(--gs-blue-l);cursor:pointer;letter-spacing:.02em}
+.dtoday-link:hover{text-decoration:underline}
+.dtoday-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dtoday-lbl{font-family:var(--font-hud);font-size:11px;letter-spacing:.06em;color:var(--gs-text-2);margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.dtoday-lbl .nd-save-status{font-family:var(--font-mono);font-size:9px;color:var(--gs-success)}
+.dtoday-ta{width:100%;background:var(--gs-input) !important;border:1px solid var(--gs-border) !important;border-radius:var(--r-sm) !important;color:var(--gs-text) !important;font-family:var(--font-sans) !important;font-size:13px;line-height:1.55;padding:9px 11px;resize:vertical;min-height:74px}
+
+/* ===== Heatmap de atividade diária ===== */
+.dah-wrap{background:linear-gradient(180deg,rgba(255,255,255,.015),transparent 40%),var(--gs-card);border:1px solid var(--gs-border);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:24px;box-shadow:var(--edge),var(--sh-1)}
+.dah-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.dah-title{font-family:var(--font-hud);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-text-2)}
+.dah-legend{display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:9px;color:var(--gs-text-3);letter-spacing:.08em}
+.dah-lg-t{margin:0 2px}
+.dah-sq{width:12px;height:12px;border-radius:3px;display:inline-block}
+.dah-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.dah-f{background:var(--gs-card-2);border:1px solid var(--gs-border);color:var(--gs-text-3);border-radius:var(--r-sm);padding:4px 11px;font-size:11px;font-family:var(--font-hud);letter-spacing:.03em;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+.dah-f:hover{border-color:var(--gs-blue);color:var(--gs-text)}
+.dah-f.on{background:var(--accent-fill);border-color:var(--gs-blue);color:var(--gs-blue-l)}
+.dah-scroll{overflow-x:auto;padding-bottom:6px}
+.dah-inner{display:inline-block;min-width:min-content}
+.dah-months{display:grid;gap:3px;margin-bottom:4px;height:12px}
+.dah-mo{font-family:var(--font-mono);font-size:9px;color:var(--gs-text-3);grid-row:1;white-space:nowrap}
+.dah-grid{display:grid;gap:3px}
+.dah-cell{width:13px;height:13px;border-radius:3px;border:1px solid rgba(255,255,255,.03);transition:transform .1s}
+.dah-cell:hover{transform:scale(1.3);box-shadow:0 0 0 1px var(--gs-blue)}
+.dah-cell.is-future{background:transparent;border-color:transparent}
+.dah-cell.lvl-0,.dah-sq.lvl-0{background:#111a24}
+.dah-cell.lvl-1,.dah-sq.lvl-1{background:rgba(10,132,255,.28)}
+.dah-cell.lvl-2,.dah-sq.lvl-2{background:rgba(10,132,255,.5)}
+.dah-cell.lvl-3,.dah-sq.lvl-3{background:rgba(10,132,255,.74)}
+.dah-cell.lvl-4,.dah-sq.lvl-4{background:var(--gs-blue-glow);box-shadow:0 0 6px rgba(53,198,255,.5)}
+.dah-foot{font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);margin-top:10px;letter-spacing:.02em}
+
+/* Responsivo */
+@container dashvp (max-width:640px){ .dcar-slide{flex-basis:280px} .dtoday-grid{grid-template-columns:1fr} }
+body.is-mobile .dhud{gap:10px;padding:12px}
+body.is-mobile .dhud-seg{border-right:none;padding-right:0}
+body.is-mobile .dcar-slide{flex-basis:260px}
+</style>
+
+<script id="dash-v3-script">
+(function(){
+  if (typeof LS === 'undefined') return;
+  const DT = (typeof DIET_THRESHOLD !== 'undefined') ? DIET_THRESHOLD : 70;
+  const MN = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const keyOf = d => (typeof dk==='function') ? dk(d) : d.toISOString().slice(0,10);
+  const brl = v => 'R$ ' + Math.round(v||0).toLocaleString('pt-BR');
+  const esct = s => (typeof esc==='function') ? esc(s) : String(s==null?'':s);
+  const slugOf = c => (typeof catSlug==='function') ? catSlug(c) : 'cat-sq';
+  const fmtDate = s => (typeof fmtD==='function') ? fmtD(s) : s;
+  const noteFilled = n => { if(!n) return false; if(typeof n==='string') return n.trim().length>0; return ((n.today||'')+(n.week||'')+(n.general||'')).trim().length>0; };
+
+  // ---- Patrimônio BRL (global; computeWealth original é IIFE-scoped) ----
+  window.dashWealthBRL = function(){
+    try{
+      if(!LS.portfolio) return 0;
+      const items = LS.portfolio.get(); if(!items || !items.length) return 0;
+      const parse = v => (typeof FMT!=='undefined'&&FMT.parse)?FMT.parse(v):(parseFloat(v)||0);
+      const btc = (typeof BTC_CACHE!=='undefined') ? BTC_CACHE.data : null;
+      const fx = (btc && btc.brl && btc.usd) ? (btc.brl/btc.usd) : 5.4;
+      let total = 0;
+      items.forEach(it=>{
+        const qty = parse(it.qty); const cur = it.currency||'BRL';
+        let price = parse(it.precoAtual);
+        if (typeof isBTC==='function' && isBTC(it) && btc){ price = (cur==='USD')?btc.usd:btc.brl; }
+        let val = qty*price; if (cur==='USD') val *= fx;
+        total += val;
+      });
+      return total;
+    }catch(e){ return 0; }
+  };
+
+  // ---- XP a partir de dados REAIS ----
+  window.dashXP = function(){
+    let xp=0;
+    try{ xp += Object.values(LS.notediario.get()||{}).filter(noteFilled).length*12; }catch(e){}
+    try{ Object.values(LS.saude.get()||{}).forEach(e=>{ if(e&&e.treino&&e.treino!=='X')xp+=10; const dp=e&&e.dietPct; if(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)>=DT)xp+=6; }); }catch(e){}
+    try{ xp += (LS.tasks100.get()||[]).filter(x=>x&&x.done).length*8; }catch(e){}
+    try{ xp += (LS.goals.get()||[]).filter(x=>typeof isGoalDone==='function'&&isGoalDone(x)).length*40; }catch(e){}
+    return xp;
+  };
+  window.dashLevel = function(xp){
+    let lvl=1, need=120, into=xp||0;
+    while(into>=need && lvl<999){ into-=need; lvl++; need=Math.round(120*Math.pow(lvl,1.32)); }
+    return { level:lvl, into:Math.round(into), need, pct:Math.max(0,Math.min(100,Math.round(into/need*100))) };
+  };
+
+  // ---- HUD ----
+  window.renderDashHud = function(){
+    const host=document.getElementById('db-hud'); if(!host) return;
+    const xp=window.dashXP(); const L=window.dashLevel(xp);
+    const wealth=window.dashWealthBRL();
+    const streak=(typeof _calcStreak==='function')?_calcStreak(LS.saude.get()||{},'treino'):0;
+    host.innerHTML = `
+      <div class="dhud">
+        <div class="dhud-seg dhud-lvlseg">
+          <div class="dhud-lvl"><span class="dhud-lvl-k">LEVEL</span><span class="dhud-lvl-n">${L.level}</span></div>
+          <div class="dhud-xp">
+            <div class="dhud-xpbar"><div class="dhud-xpfill" style="width:${L.pct}%"></div></div>
+            <div class="dhud-xptext">${L.into} / ${L.need} XP &middot; total ${xp} XP</div>
+          </div>
+        </div>
+        <div class="dhud-seg">
+          <div class="dhud-k">&#9672; Patrim&ocirc;nio</div>
+          <div class="dhud-v dhud-money">${brl(wealth)}</div>
+        </div>
+        <div class="dhud-seg">
+          <div class="dhud-k">&#128293; Streak treino</div>
+          <div class="dhud-v">${streak} <span class="dhud-u">${streak===1?'dia':'dias'}</span></div>
+        </div>
+        <div class="dhud-seg dhud-status"><span class="dhud-dot"></span> SYSTEM ONLINE</div>
+      </div>`;
+  };
+
+  // ---- Carrossel: cabeçalho + trilha ----
+  function block(title, trackId, count, inner){
+    const nav = count>1 ? `<div class="dcar-nav"><button class="dcar-btn" onclick="dashScroll('${trackId}',-1)" aria-label="Anterior">&lsaquo;</button><button class="dcar-btn" onclick="dashScroll('${trackId}',1)" aria-label="Pr&oacute;ximo">&rsaquo;</button></div>` : '';
+    return `<div class="dcar-hd"><span class="dcar-title">${title}</span>${count>1?`<span class="dcar-count">${count}</span>`:''}${nav}</div>
+      <div class="dcar-track" id="${trackId}">${inner}</div>`;
+  }
+  window.dashScroll = function(id,dir){ const t=document.getElementById(id); if(!t) return; const s=t.querySelector('.dcar-slide'); const w=s?s.getBoundingClientRect().width+14:320; t.scrollBy({left:dir*w, behavior:'smooth'}); };
+
+  // ---- Objetivos ----
+  window.renderDashObjectives = function(){
+    const host=document.getElementById('db-objectives'); if(!host) return;
+    const objs = LS.objectives.get()||{};
+    const pins = (LS.dashPins ? (LS.dashPins.get().objectives||[]) : []);
+    const isPinned=(cat,idx)=> pins.some(p=>p.cat===cat && p.idx===idx);
+    let list=[];
+    (typeof CATS!=='undefined'?CATS:[]).forEach(c=>{
+      normalizeObjectives(objs[c.key]).forEach((o,idx)=>{
+        if(o.txt && o.txt.trim()) list.push({cat:c.key, idx, txt:o.txt, deadline:o.deadline, progress:o.progress, image:o.image, pinned:isPinned(c.key,idx)});
+      });
+    });
+    list.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+    const inner = list.length ? list.map(o=>{
+      const pct=Math.max(0,Math.min(100,parseInt(o.progress)||0)); const hasP=pct>0;
+      return `<div class="dcar-slide ${slugOf(o.cat)}" onclick="goto('goals')" title="Abrir Goals">
+        ${o.image?`<div class="dcar-img" style="background-image:url('${o.image}')"></div>`:`<div class="dcar-img dcar-img-ph"><span>&#9670;</span></div>`}
+        <div class="dcar-body">
+          <div class="dcar-tag">${o.pinned?'&#9733; ':''}${esct(o.cat)}</div>
+          <div class="dcar-name">${esct(o.txt)}</div>
+          <div class="dcar-prog"><div class="dcar-pw"><div class="dcar-pb" style="width:${pct}%"></div></div><span class="dcar-pct${hasP?'':' muted'}">${hasP?pct+'%':'&mdash;'}</span></div>
+          <div class="dcar-sub">${hasP?'Progresso':'Defina o progresso em Goals'}${o.deadline?` &middot; ${fmtDate(o.deadline)}`:''}</div>
+        </div>
+      </div>`;
+    }).join('') : `<div class="dcar-empty" onclick="goto('goals')"><div class="dcar-empty-ico">&#9670;</div>Nenhum objetivo ainda. Crie e fixe (&#9733;) em <strong>Goals</strong>.</div>`;
+    host.innerHTML = block('&#9670; Objetivos Principais','db-obj-track',list.length,inner);
+  };
+
+  // ---- Goals ----
+  window.renderDashGoals = function(){
+    const host=document.getElementById('db-goals'); if(!host) return;
+    const goals = (LS.goals.get()||[]).filter(g=> !(typeof isGoalDone==='function' && isGoalDone(g)));
+    const pins = (LS.dashPins ? (LS.dashPins.get().goals||[]) : []);
+    goals.sort((a,b)=>{
+      const A=(pins.includes(a.id)?2:0)+(a.priority==='Tier 1º'?1:0);
+      const B=(pins.includes(b.id)?2:0)+(b.priority==='Tier 1º'?1:0);
+      return B-A;
+    });
+    const inner = goals.length ? goals.map(g=>{
+      const target=parseFloat(g.target)||0; const done=(typeof goalDone==='function')?goalDone(g.id):0;
+      const pct=target>0?Math.min(100,Math.round(done/target*100)):0; const pinned=pins.includes(g.id);
+      return `<div class="dcar-slide ${slugOf(g.category)}" onclick="goto('goals')" title="Abrir Goals">
+        ${g.image?`<div class="dcar-img" style="background-image:url('${g.image}')"></div>`:`<div class="dcar-img dcar-img-ph"><span>&#127919;</span></div>`}
+        <div class="dcar-body">
+          <div class="dcar-tag">${pinned?'&#9733; ':''}${esct(g.category||'')}${g.priority==='Tier 1º'?' &middot; <span class="dcar-tier">TIER 1</span>':''}</div>
+          <div class="dcar-name">${esct(g.name)||'(sem nome)'}</div>
+          <div class="dcar-prog"><div class="dcar-pw"><div class="dcar-pb" style="width:${pct}%"></div></div><span class="dcar-pct">${pct}%</span></div>
+          <div class="dcar-sub">${done} / ${target||'&mdash;'}${g.deadline?` &middot; ${fmtDate(g.deadline)}`:''}</div>
+        </div>
+      </div>`;
+    }).join('') : `<div class="dcar-empty" onclick="goto('goals')"><div class="dcar-empty-ico">&#127919;</div>Nenhum goal ativo. Crie em <strong>Goals</strong>.</div>`;
+    host.innerHTML = block('&#127919; Goals','db-goal-track',goals.length,inner);
+  };
+
+  // ---- Note compacto (mesma fonte: LS.notediario) ----
+  window.renderDashToday = function(){
+    const host=document.getElementById('db-today'); if(!host) return;
+    const key = keyOf(new Date());
+    const raw = (LS.notediario.get()||{})[key];
+    const entry = (typeof ndNormalize==='function') ? ndNormalize(raw) : {today:(raw&&raw.today)||'',week:(raw&&raw.week)||''};
+    host.innerHTML = `
+      <div class="dtoday">
+        <div class="dtoday-hd"><span class="dtoday-t">&#128203; Hoje &amp; Semana</span><span class="dtoday-link" onclick="goto('notediario')">abrir Note Di&aacute;rio &rsaquo;</span></div>
+        <div class="dtoday-grid">
+          <div>
+            <div class="dtoday-lbl">&#127919; Hoje <span class="nd-save-status"></span></div>
+            <textarea class="dtoday-ta" data-nd-field="today" data-nd-key="${key}" placeholder="Prioridades de hoje...">${esct(entry.today)}</textarea>
+          </div>
+          <div>
+            <div class="dtoday-lbl">&#128197; Semana <span class="nd-save-status"></span></div>
+            <textarea class="dtoday-ta" data-nd-field="week" data-nd-key="${key}" placeholder="Metas da semana...">${esct(entry.week)}</textarea>
+          </div>
+        </div>
+      </div>`;
+    if (typeof ndOnInput==='function'){ host.querySelectorAll('textarea').forEach(ta=>ta.addEventListener('input', ndOnInput)); }
+  };
+
+  // ---- Heatmap de atividade diária (sinais reais datados) ----
+  function expenseDaySet(){
+    const set=new Set();
+    try{
+      const ctl = LS.controling.get()||{};
+      Object.values(ctl).forEach(m=>{
+        let exps=[];
+        if(Array.isArray(m)) exps=m;
+        else if(m && Array.isArray(m.expenses)) exps=m.expenses;
+        exps.forEach(e=>{ if(e && e.date) set.add(e.date); });
+      });
+    }catch(e){}
+    return set;
+  }
+  function dayActivity(saude, notes, spent, key){
+    const s=saude[key]||{};
+    const treino = !!(s.treino && s.treino!=='X');
+    const dp=s.dietPct; const diet = dp!==undefined && dp!=='' && dp!==null && parseFloat(dp)>=DT;
+    const note = noteFilled(notes[key]);
+    const fin = spent.has(key);
+    return { treino, diet, note, fin, level:(treino?1:0)+(diet?1:0)+(note?1:0)+(fin?1:0) };
+  }
+  let dahFilter='all';
+  window.setDahFilter=function(f){ dahFilter=f; window.renderActivityHeatmap(); };
+  window.renderActivityHeatmap = function(){
+    const host=document.getElementById('dash-activity-heatmap'); if(!host) return;
+    const saude=LS.saude.get()||{}; const notes=LS.notediario.get()||{}; const spent=expenseDaySet();
+    const today=new Date(); today.setHours(0,0,0,0);
+    const start=new Date(today); start.setDate(today.getDate()-(52*7)-today.getDay());
+    const cols=[]; let cur=new Date(start); let curMonth=-1; const monthLabels=[];
+    for(let c=0;c<53;c++){
+      const days=[];
+      for(let r=0;r<7;r++){
+        const d=new Date(cur); const key=keyOf(d); const future=d>today;
+        days.push({d, key, future, act: future?null:dayActivity(saude,notes,spent,key)});
+        cur.setDate(cur.getDate()+1);
+      }
+      const m=days[0].d.getMonth();
+      if(m!==curMonth){ curMonth=m; monthLabels.push({col:c,label:MN[m]}); }
+      cols.push(days);
+    }
+    const lvlOf = a => { if(!a) return -1; if(dahFilter==='all') return a.level; return a[dahFilter]?4:0; };
+    let cells='';
+    for(let c=0;c<53;c++){
+      cols[c].forEach((cell,r)=>{
+        if(cell.future){ cells+=`<div class="dah-cell is-future" style="grid-column:${c+1};grid-row:${r+1}"></div>`; return; }
+        const lv=lvlOf(cell.act); const p=cell.act;
+        const tip=JSON.stringify({title:cell.key, rows:[
+          ['TREINO', p.treino?'✓':'—'],
+          ['DIETA ≥'+DT+'%', p.diet?'✓':'—'],
+          ['NOTE', p.note?'✓':'—'],
+          ['FINANÇAS', p.fin?'✓':'—'],
+          ['SCORE', p.level+'/4']
+        ]});
+        cells+=`<div class="dah-cell lvl-${lv<0?0:lv}" style="grid-column:${c+1};grid-row:${r+1}" data-tooltip='${escapeAttr(tip)}'></div>`;
+      });
+    }
+    let months=''; monthLabels.forEach(ml=>{ months+=`<span class="dah-mo" style="grid-column:${ml.col+1}">${ml.label}</span>`; });
+    const filters=[['all','Tudo'],['treino','Treino'],['diet','Dieta'],['note','Note']].map(f=>`<button class="dah-f ${dahFilter===f[0]?'on':''}" onclick="setDahFilter('${f[0]}')">${f[1]}</button>`).join('');
+    const legend=`<span class="dah-lg-t">menos</span>${[0,1,2,3,4].map(l=>`<span class="dah-sq lvl-${l}"></span>`).join('')}<span class="dah-lg-t">mais</span>`;
+    host.innerHTML=`
+      <div class="dah-hd"><span class="dah-title">Atividade Di&aacute;ria</span><div class="dah-legend">${legend}</div></div>
+      <div class="dah-filters">${filters}</div>
+      <div class="dah-scroll"><div class="dah-inner">
+        <div class="dah-months" style="grid-template-columns:repeat(53,13px)">${months}</div>
+        <div class="dah-grid" style="grid-template-columns:repeat(53,13px);grid-template-rows:repeat(7,13px)">${cells}</div>
+      </div></div>
+      <div class="dah-foot">Sinais reais por dia: treino, dieta &ge;${DT}%, note di&aacute;rio e finan&ccedil;as registradas.</div>`;
+  };
+
+  // ---- Primeira pintura (o init rodou antes destas definições) ----
+  try{
+    const pd=document.getElementById('page-dashboard');
+    if(pd && pd.classList.contains('active') && typeof renderDash==='function') renderDash();
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
