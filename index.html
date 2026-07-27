@@ -3442,9 +3442,12 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 
   <!-- Rodapé: status de sync e botão de configuração -->
   <div class="sb-footer">
-    <div class="sync-status" onclick="openSyncConfig()" title="Configurar sincronização">
-      <div class="sync-dot dot-off" id="sync-dot"></div>
-      <span id="sync-label">Sem sincronização</span>
+    <div class="sb-footer-row">
+      <div class="sync-status" onclick="openSyncConfig()" title="Configurar sincronização">
+        <div class="sync-dot dot-off" id="sync-dot"></div>
+        <span id="sync-label">Sem sincronização</span>
+      </div>
+      <button class="sb-refresh" id="sb-refresh" onclick="appRefresh()" title="Atualizar / reiniciar o app" aria-label="Atualizar o app">⟳</button>
     </div>
   </div>
 </aside>
@@ -11106,6 +11109,34 @@ body.is-mobile .bl-count{margin-left:0}
     }
   }catch(e){}
 })();
+</script>
+
+<!-- ============================================================
+     ░▒▓ Botão de refresh (F5) na área de sincronização ▓▒░
+     Útil pra quem usa como app na tela inicial (sem barra de URL).
+     ============================================================ -->
+<style id="refresh-style">
+.sb-footer-row{display:flex;align-items:center;gap:8px}
+.sb-footer-row .sync-status{flex:1;min-width:0}
+.sb-refresh{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--gs-border-2);background:var(--gs-card);color:var(--gs-text-2);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s,background .15s}
+.sb-refresh:hover{border-color:var(--gs-blue);color:var(--gs-blue-l);background:var(--accent-fill)}
+.sb-refresh:active{transform:scale(.94)}
+.sb-refresh.spinning{animation:sb-refresh-spin .6s linear infinite;color:var(--gs-blue-l);border-color:var(--gs-blue)}
+@keyframes sb-refresh-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.sb-refresh.spinning{animation:none}}
+body.is-mobile .sb-refresh{width:38px;height:38px;font-size:18px}
+</style>
+<script id="refresh-script">
+// Recarrega o app (equivalente ao F5) — pra quem roda como app na tela inicial.
+window.appRefresh = function(){
+  try{
+    var btn = document.getElementById('sb-refresh');
+    if (btn) btn.classList.add('spinning');
+    if (typeof toast === 'function') { try { toast('↻ Reiniciando…'); } catch(e){} }
+  }catch(e){}
+  // pequeno atraso só pra dar feedback visual, depois recarrega
+  setTimeout(function(){ try { location.reload(); } catch(e){ window.location.href = window.location.pathname; } }, 260);
+};
 </script>
 </body>
 </html>
