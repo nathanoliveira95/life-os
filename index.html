@@ -9638,7 +9638,8 @@ select option{ background:#0a0e14 !important; }
 }
 
 /* ---------- Responsivo — hierarquia preservada, não só encolher ---------- */
-@media (max-width:900px){ .main{ padding:24px 22px !important; } }
+/* Só telas estreitas de DESKTOP — não pode pisar no padding-top do mobile (que reserva espaço pro botão ☰) */
+@media (max-width:900px){ body:not(.is-mobile) .main{ padding:24px 22px !important; } }
 body.is-mobile .ph h1{ font-size:20px !important; }
 body.is-mobile .card{ border-radius:var(--r-sm) !important; }
 </style>
