@@ -1866,6 +1866,12 @@ body.is-mobile .saude-grid{
   scroll-padding-left:2px;
 }
 body.is-mobile .saude-day{scroll-snap-align:start;min-height:88px}
+/* FIX: os wrappers tinham min-width:auto e cresciam além da tela (sendo cortados pelo main
+   overflow:hidden) — sex/sáb/dom ficavam inacessíveis. Constrange os wrappers para que a
+   faixa role DENTRO dela mesma e todos os 7 dias fiquem alcançáveis. */
+body.is-mobile #saude-grid{min-width:0;max-width:100%}
+body.is-mobile .saude-section{min-width:0;max-width:100%}
+body.is-mobile .saude-grid{width:100%;max-width:100%}
 body.is-mobile .saude-grid::-webkit-scrollbar{height:7px}
 body.is-mobile .saude-grid::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:4px}
 body.is-mobile .saude-grid::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
