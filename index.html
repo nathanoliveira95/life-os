@@ -3403,6 +3403,7 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
       <div class="sb-item" data-p="backlog"><span class="ico">📖</span><span class="sep">|</span>Backlog</div>
       <div class="sb-item" data-p="notediario"><span class="ico">📝</span><span class="sep">|</span>Note Diário</div>
       <div class="sb-item" data-p="council"><span class="ico">⚖️</span><span class="sep">|</span>Council</div>
+      <div class="sb-item" data-p="xp"><span class="ico">⚡</span><span class="sep">|</span>XP</div>
       <div class="sb-item" data-p="completed"><span class="ico">🏆</span><span class="sep">|</span>Goals Completados</div>
     </div>
   </div>
@@ -3510,6 +3511,12 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
       <button class="btn btn-g" onclick="ndChangeDay(1)">Próximo Dia →</button>
     </div>
     <div id="nd-card" class="nd-card"></div>
+  </div>
+
+  <!-- XP — sistema de progressão central -->
+  <div class="page" id="page-xp">
+    <div class="ph"><h1>⚡ XP</h1><p>Sistema de progressão — motor central de execução e accountability</p></div>
+    <div id="xp-root"></div>
   </div>
 
   <!-- COUNCIL — revisão executiva periódica (dados reais) -->
@@ -3890,7 +3897,7 @@ window.testSupa = async function() {
 
 // Re-renderiza a página ativa atual
 function refreshPage() {
-  const fn = { dashboard:renderDash, goals:renderGoals, calendar:(typeof renderCalendarPage==='function'?renderCalendarPage:null), completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, council:(typeof renderCouncil==='function'?renderCouncil:null), investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null) };
+  const fn = { dashboard:renderDash, goals:renderGoals, calendar:(typeof renderCalendarPage==='function'?renderCalendarPage:null), completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, council:(typeof renderCouncil==='function'?renderCouncil:null), xp:(typeof renderXPPage==='function'?renderXPPage:null), investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null) };
   fn[curPage]?.();
 }
 
@@ -4174,7 +4181,7 @@ function goto(page) {
   // Para auto-refresh do BTC quando sai da página Portfolio
   if (curPage === 'portfolio' && page !== 'portfolio') { try{ stopPortfolioAutoRefresh(); }catch(_){} }
   curPage = page;
-  const fn = { dashboard:renderDash, goals:renderGoals, calendar:(typeof renderCalendarPage==='function'?renderCalendarPage:null), completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, council:(typeof renderCouncil==='function'?renderCouncil:null), investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null) };
+  const fn = { dashboard:renderDash, goals:renderGoals, calendar:(typeof renderCalendarPage==='function'?renderCalendarPage:null), completed:renderCompleted, backlog:renderBacklog, saude:renderSaude, portfolio:renderPortfolio, controling:renderControling, tasks100:renderTasks100, notediario:renderNoteDiario, council:(typeof renderCouncil==='function'?renderCouncil:null), xp:(typeof renderXPPage==='function'?renderXPPage:null), investbl:renderInvestBL, viagens:(typeof renderViagens==='function'?renderViagens:null), processos:(typeof renderProcessos==='function'?renderProcessos:null), assets:(typeof renderAssets==='function'?renderAssets:null) };
   fn[page]?.();
 }
 
@@ -10774,6 +10781,324 @@ body.is-mobile .bl-count{margin-left:0}
   };
 
   try{ if(typeof curPage!=='undefined' && curPage==='council') window.renderCouncil(); }catch(e){}
+})();
+</script>
+
+<!-- ============================================================
+     ░▒▓ XP — motor central de progressão ▓▒░
+     Fonte única de XP/Level (Dashboard HUD + página XP + Note Diário).
+     ============================================================ -->
+<style id="xp-style">
+.xp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.xp-card{background:linear-gradient(180deg,rgba(255,255,255,.014),transparent 45%),var(--gs-card);border:1px solid var(--gs-border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--edge),var(--sh-1)}
+.xp-card.wide{grid-column:1 / -1}
+.xp-card-t{font-family:var(--font-hud);font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gs-text-2);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* Player status */
+.xps{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.xps-lvl{display:flex;flex-direction:column;align-items:center;justify-content:center;width:96px;height:96px;border-radius:20px;flex:none;
+  background:radial-gradient(circle at 50% 32%,rgba(53,198,255,.30),rgba(10,132,255,.08));border:1px solid rgba(53,198,255,.45);box-shadow:0 0 26px rgba(10,132,255,.28),var(--edge-strong)}
+.xps-lvl-k{font-family:var(--font-hud);font-size:9px;letter-spacing:.24em;color:var(--gs-blue-l)}
+.xps-lvl-n{font-family:var(--font-mono);font-size:40px;font-weight:700;line-height:1;color:#fff;text-shadow:0 0 16px rgba(53,198,255,.7)}
+.xps-main{flex:1;min-width:220px}
+.xps-tot{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--gs-text);letter-spacing:-.01em}
+.xps-tot small{font-size:13px;color:var(--gs-text-3);font-weight:500;margin-left:6px}
+.xps-bar{height:12px;border-radius:100px;background:rgba(255,255,255,.07);overflow:hidden;border:1px solid rgba(255,255,255,.05);margin:12px 0 6px}
+.xps-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gs-blue),var(--gs-blue-glow));box-shadow:0 0 12px rgba(53,198,255,.5);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.xps-sub{font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3);letter-spacing:.03em}
+/* breakdown / categorias */
+.xp-cats{display:flex;flex-direction:column;gap:10px}
+.xp-cat{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:12px}
+.xp-cat-n{font-size:12px;color:var(--gs-text-2);display:flex;align-items:center;gap:7px}
+.xp-cat-bar{height:7px;border-radius:100px;background:rgba(255,255,255,.06);overflow:hidden}
+.xp-cat-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gs-blue-d),var(--gs-blue-l))}
+.xp-cat-v{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--gs-blue-l);min-width:64px;text-align:right}
+/* available */
+.xp-av{display:flex;flex-direction:column;gap:7px}
+.xp-av-it{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--gs-border);border-radius:9px;background:var(--gs-card);cursor:pointer;transition:border-color .15s,transform .1s}
+.xp-av-it:hover{border-color:var(--gs-blue);transform:translateX(2px)}
+.xp-av-ic{font-size:15px;flex:none}
+.xp-av-main{flex:1;min-width:0}
+.xp-av-title{font-size:13px;color:var(--gs-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xp-av-cat{font-family:var(--font-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text-3)}
+.xp-av-xp{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--gs-blue-l);background:var(--accent-fill);border:1px solid rgba(10,132,255,.25);border-radius:100px;padding:2px 9px;flex:none}
+.xp-empty{color:var(--gs-text-3);font-size:12px;padding:14px 2px}
+/* history */
+.xp-hist{display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto}
+.xp-hrow{display:flex;align-items:center;gap:11px;padding:8px 4px;border-bottom:1px solid var(--gs-hair)}
+.xp-hrow:last-child{border-bottom:none}
+.xp-hd{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--gs-success);flex:none;min-width:56px}
+.xp-hl{flex:1;min-width:0;font-size:12.5px;color:var(--gs-text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xp-ht{font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);flex:none}
+/* config */
+.xp-cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.xp-cfg-it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border:1px solid var(--gs-border);border-radius:8px;background:var(--gs-card)}
+.xp-cfg-l{font-size:12px;color:var(--gs-text-2)}
+.xp-cfg-in{width:70px !important;text-align:center;font-family:var(--font-mono) !important;font-size:12px !important;color:var(--gs-blue-l) !important}
+/* micro-activities no Note Diário */
+.ndt-exp{flex:none;background:transparent;border:1px solid var(--gs-border);color:var(--gs-text-3);border-radius:5px;font-family:var(--font-mono);font-size:10px;padding:2px 7px;cursor:pointer;transition:border-color .15s,color .15s}
+.ndt-exp:hover{border-color:var(--gs-blue);color:var(--gs-blue-l)}
+.ndt-subbtn{flex:none;width:24px;height:24px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--gs-text-3);cursor:pointer;font-size:11px;transition:all .15s}
+.ndt-subbtn:hover{border-color:var(--gs-blue);color:var(--gs-blue-l)}
+.ndt-subs{margin:2px 0 8px 34px;padding-left:12px;border-left:1px dashed var(--gs-border-2);display:flex;flex-direction:column;gap:5px}
+.ndt-sub{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--gs-hair);border-radius:7px;background:var(--gs-ink-2)}
+.ndt-sub.done{opacity:.55}
+.ndt-sub-check{flex:none;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--gs-border-2);background:transparent;color:#04121f;cursor:pointer;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ndt-sub.done .ndt-sub-check{background:linear-gradient(180deg,var(--gs-blue-l),var(--gs-blue));border-color:var(--gs-blue)}
+.ndt-sub-title{flex:1;min-width:0;background:transparent !important;border:none !important;color:var(--gs-text-2) !important;font-size:12px !important;padding:1px 0 !important}
+.ndt-sub.done .ndt-sub-title{text-decoration:line-through;color:var(--gs-text-3) !important}
+.ndt-sub-xp{width:44px !important;text-align:center;padding:2px 3px !important;font-family:var(--font-mono) !important;font-size:10px !important;color:var(--gs-blue-l) !important}
+.ndt-sub-del{flex:none;width:20px;height:20px;border:none;background:transparent;color:var(--gs-text-3);cursor:pointer;font-size:10px}
+.ndt-sub-del:hover{color:var(--gs-danger)}
+.ndt-sub-add{display:flex;gap:6px}
+.ndt-sub-addinp{flex:1;font-size:12px !important;padding:5px 8px !important}
+/* Level up */
+#xp-levelup{position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s}
+#xp-levelup.show{opacity:1}
+.xp-lu-box{text-align:center;transform:scale(.9);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+#xp-levelup.show .xp-lu-box{transform:scale(1)}
+.xp-lu-k{font-family:var(--font-hud);font-size:14px;letter-spacing:.4em;color:var(--gs-blue-l);text-shadow:0 0 16px rgba(53,198,255,.6)}
+.xp-lu-n{font-family:var(--font-mono);font-size:88px;font-weight:700;color:#fff;line-height:1;text-shadow:0 0 34px rgba(53,198,255,.8)}
+.xp-lu-s{font-family:var(--font-mono);font-size:12px;color:var(--gs-text-2);letter-spacing:.1em;margin-top:6px}
+@media (prefers-reduced-motion: reduce){.xp-lu-box{transition:none}#xp-levelup{transition:opacity .01s}}
+@media(max-width:760px){ .xp-grid{grid-template-columns:1fr} .xp-cfg{grid-template-columns:1fr} .xp-cat{grid-template-columns:96px 1fr auto} }
+</style>
+
+<script id="xp-script">
+(function(){
+  if (typeof LS === 'undefined') return;
+  const esct = s => (typeof esc==='function')?esc(s):String(s==null?'':s);
+  const keyOf = d => (typeof dk==='function')?dk(d):d.toISOString().slice(0,10);
+  const DT = (typeof DIET_THRESHOLD!=='undefined')?DIET_THRESHOLD:70;
+  const nowISO = () => { try{ return new Date().toISOString(); }catch(e){ return ''; } };
+  const MONTHS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const fmtShort = iso => { try{ const p=iso.slice(0,10).split('-'); return `${+p[2]} ${MONTHS[(+p[1])-1]}`; }catch(e){ return iso; } };
+
+  // ---- Config (sistema de XP explícito e configurável) ----
+  const CFG_DEF = { dailyTaskDefault:10, microDefault:5, goalComplete:100, treinoDay:10, dietDay:6, task100Done:8 };
+  if (!LS.xpConfig) LS.xpConfig = {
+    get(){ try{ return Object.assign({}, CFG_DEF, JSON.parse(localStorage.getItem('lo_xpconfig')||'{}')); }catch(e){ return Object.assign({},CFG_DEF); } },
+    set(v){ localStorage.setItem('lo_xpconfig', JSON.stringify(v)); try{ pushSupa('xpConfig', v); }catch(e){} }
+  };
+
+  // ---- Motor central de XP (fonte única) ----
+  const XP = window.XP = {
+    cfg(){ return LS.xpConfig.get(); },
+    setCfg(k,v){ const c=LS.xpConfig.get(); c[k]=Math.max(0,parseInt(v)||0); LS.xpConfig.set(c); refreshAll(); },
+    // XP recomputado do ESTADO atual → idempotente (marcar/desmarcar/remarcar não duplica)
+    fromTasks(){ let xp=0; try{ const s=LS.daytasks.get(); Object.values(s).forEach(arr=>(arr||[]).forEach(t=>{ if(t.done) xp+=Math.max(0,parseInt(t.xp)||0); (t.subs||[]).forEach(su=>{ if(su.done) xp+=Math.max(0,parseInt(su.xp)||0); }); })); }catch(e){} return xp; },
+    fromHealth(){ const c=XP.cfg(); let xp=0; try{ Object.values(LS.saude.get()||{}).forEach(e=>{ if(e&&e.treino&&e.treino!=='X') xp+=c.treinoDay; const dp=e&&e.dietPct; if(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)>=DT) xp+=c.dietDay; }); }catch(e){} return xp; },
+    fromGoals(){ const c=XP.cfg(); try{ return (LS.goals.get()||[]).filter(g=>typeof isGoalDone==='function'&&isGoalDone(g)).length * c.goalComplete; }catch(e){ return 0; } },
+    fromTasks100(){ const c=XP.cfg(); try{ return (LS.tasks100.get()||[]).filter(t=>t&&t.done).length * c.task100Done; }catch(e){ return 0; } },
+    breakdown(){ return { tasks:XP.fromTasks(), health:XP.fromHealth(), goals:XP.fromGoals(), tasks100:XP.fromTasks100() }; },
+    total(){ const b=XP.breakdown(); return b.tasks+b.health+b.goals+b.tasks100; },
+    level(){ return (typeof window.dashLevel==='function')?window.dashLevel(XP.total()):{level:1,into:0,need:100,pct:0}; },
+    // Histórico derivado (traçável): eventos com data, ordenados desc
+    history(limit){
+      const ev=[];
+      try{ const s=LS.daytasks.get(); Object.keys(s).forEach(k=>{ (s[k]||[]).forEach(t=>{
+        if(t.done && (parseInt(t.xp)||0)>0) ev.push({ts:t.doneAt||k+'T12:00:00', xp:parseInt(t.xp)||0, label:t.title||'Tarefa', cat:'Tarefa'});
+        (t.subs||[]).forEach(su=>{ if(su.done && (parseInt(su.xp)||0)>0) ev.push({ts:su.doneAt||k+'T12:00:00', xp:parseInt(su.xp)||0, label:(t.title?t.title+' › ':'')+ (su.title||'Micro'), cat:'Micro'}); });
+      }); }); }catch(e){}
+      try{ const c=XP.cfg(); Object.keys(LS.saude.get()||{}).forEach(k=>{ const e=LS.saude.get()[k];
+        if(e&&e.treino&&e.treino!=='X') ev.push({ts:k+'T12:00:00', xp:c.treinoDay, label:'Treino '+e.treino, cat:'Treino'});
+        const dp=e&&e.dietPct; if(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)>=DT) ev.push({ts:k+'T12:00:00', xp:c.dietDay, label:'Dieta '+dp+'%', cat:'Dieta'});
+      }); }catch(e){}
+      ev.sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+      return limit?ev.slice(0,limit):ev;
+    },
+    availableToday(){
+      const out=[]; const k=keyOf(new Date());
+      try{ (LS.daytasks.get()[k]||[]).forEach(t=>{
+        if(!t.done) out.push({ic:'📋',title:t.title||'Tarefa',cat:'Tarefa',xp:parseInt(t.xp)||0,act:`dtToggle('${k}','${t.id}')`});
+        (t.subs||[]).forEach(su=>{ if(!su.done) out.push({ic:'◦',title:(t.title?t.title+' › ':'')+(su.title||'Micro'),cat:'Micro',xp:parseInt(su.xp)||0,act:`dtSubToggle('${k}','${t.id}','${su.id}')`}); });
+      }); }catch(e){}
+      try{ const s=LS.saude.get()[k]||{}; const c=XP.cfg();
+        if(!(s.treino&&s.treino!=='X')) out.push({ic:'💪',title:'Registrar treino de hoje',cat:'Saúde',xp:c.treinoDay,act:`goto('saude')`});
+        const dp=s.dietPct; if(!(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)>=DT)) out.push({ic:'🥗',title:`Registrar dieta ≥${DT}%`,cat:'Saúde',xp:c.dietDay,act:`goto('saude')`});
+      }catch(e){}
+      return out;
+    }
+  };
+
+  // ---- Fonte única: dashXP passa a ser o motor central (remove baseline ad-hoc) ----
+  window.dashXP = function(){ return XP.total(); };
+  window.dashXP._xpWrapped = true;
+  window.xpFromTasks = XP.fromTasks; // compat
+
+  // ---- Micro-atividades (parent-child em daytasks[key][].subs) ----
+  function dtStore(){ return LS.daytasks.get(); }
+  function findTask(s,key,id){ return (s[key]||[]).find(t=>t.id===id); }
+  window.dtSubAdd = function(key,taskId,title){ if(!title||!title.trim())return; const s=dtStore(); const t=findTask(s,key,taskId); if(!t)return; t.subs=t.subs||[]; t.subs.push({id:uid(),title:title.trim(),done:false,xp:XP.cfg().microDefault,doneAt:null}); LS.daytasks.set(s); refreshAll(); };
+  window.dtSubAddInput = function(key,taskId,inp){ window.dtSubAdd(key,taskId,inp.value); inp.value=''; };
+  window.dtSubToggle = function(key,taskId,subId){ const s=dtStore(); const t=findTask(s,key,taskId); if(!t||!t.subs)return; const su=t.subs.find(x=>x.id===subId); if(!su)return; su.done=!su.done; su.doneAt=su.done?nowISO():null; LS.daytasks.set(s); if(su.done&&(parseInt(su.xp)||0)>0) pulse(parseInt(su.xp)||0); refreshAll(); };
+  window.dtSubSetTitle = function(key,taskId,subId,v){ const s=dtStore(); const t=findTask(s,key,taskId); if(!t||!t.subs)return; const su=t.subs.find(x=>x.id===subId); if(su){ su.title=v; LS.daytasks.set(s); } };
+  window.dtSubSetXP = function(key,taskId,subId,v){ const s=dtStore(); const t=findTask(s,key,taskId); if(!t||!t.subs)return; const su=t.subs.find(x=>x.id===subId); if(su){ su.xp=Math.max(0,parseInt(v)||0); LS.daytasks.set(s); refreshAll(); } };
+  window.dtSubDel = function(key,taskId,subId){ const s=dtStore(); const t=findTask(s,key,taskId); if(!t||!t.subs)return; t.subs=t.subs.filter(x=>x.id!==subId); LS.daytasks.set(s); refreshAll(); };
+
+  // novas tarefas nascem com o XP padrão explícito
+  if (window.dtAdd && !window.dtAdd._xpDef){
+    window.dtAdd = function(dateKey, title){ const s=LS.daytasks.get(); const arr=(s[dateKey]||[]).slice(); arr.push({id:uid(),title:title,done:false,xp:XP.cfg().dailyTaskDefault,doneAt:null,goalId:'',subs:[]}); s[dateKey]=arr; LS.daytasks.set(s); refreshAll(); };
+    window.dtAdd._xpDef = true;
+  }
+
+  // ---- Level-up ----
+  let _lastLevel = (function(){ try{ return XP.level().level; }catch(e){ return 1; } })();
+  function checkLevelUp(){
+    try{ const lv=XP.level().level; if(lv>_lastLevel){ showLevelUp(lv); } _lastLevel=lv; }catch(e){}
+  }
+  function showLevelUp(lv){
+    let el=document.getElementById('xp-levelup');
+    if(!el){ el=document.createElement('div'); el.id='xp-levelup'; document.body.appendChild(el); }
+    el.innerHTML=`<div class="xp-lu-box"><div class="xp-lu-k">LEVEL UP</div><div class="xp-lu-n">${lv}</div><div class="xp-lu-s">novo nível alcançado</div></div>`;
+    el.classList.add('show'); clearTimeout(window._luT);
+    window._luT=setTimeout(()=>el.classList.remove('show'), 1700);
+  }
+  function pulse(n){ if(typeof window._xpDoPulse==='function'){ window._xpDoPulse(n); } else { const el=document.getElementById('xp-pulse'); if(el){ el.textContent='+'+n+' XP'; el.classList.add('show'); clearTimeout(window._xpPulseT); window._xpPulseT=setTimeout(()=>el.classList.remove('show'),1100); } } }
+
+  function refreshAll(){
+    try{ if(typeof window.dtRefresh==='function') window.dtRefresh(); }catch(e){}
+    try{ if(typeof curPage!=='undefined' && curPage==='xp') window.renderXPPage(); }catch(e){}
+    checkLevelUp();
+  }
+  // Encapa dtRefresh p/ detectar level-up em qualquer conclusão (Dashboard/Note Diário)
+  if (window.dtRefresh && !window.dtRefresh._xpHook){
+    const _r=window.dtRefresh;
+    window.dtRefresh=function(){ const out=_r.apply(this,arguments); try{ if(typeof curPage!=='undefined'&&curPage==='xp') window.renderXPPage(); }catch(e){} checkLevelUp(); return out; };
+    window.dtRefresh._xpHook=true;
+  }
+
+  // ---- Note Diário: injeta micro-atividades nas tarefas (re-override do renderNoteDiario) ----
+  const _expanded = new Set();
+  window.xpToggleExpand = function(id){ if(_expanded.has(id))_expanded.delete(id); else _expanded.add(id); if(typeof window.renderNoteDiario==='function') window.renderNoteDiario(); };
+
+  function subRow(key,tid,su){
+    return `<div class="ndt-sub ${su.done?'done':''}">
+      <button class="ndt-sub-check" onclick="dtSubToggle('${key}','${tid}','${su.id}')">${su.done?'✓':''}</button>
+      <input class="ndt-sub-title" value="${esct(su.title)}" onchange="dtSubSetTitle('${key}','${tid}','${su.id}',this.value)">
+      <input type="number" min="0" class="ndt-sub-xp" value="${parseInt(su.xp)||0}" title="XP" onchange="dtSubSetXP('${key}','${tid}','${su.id}',this.value)">
+      <button class="ndt-sub-del" onclick="dtSubDel('${key}','${tid}','${su.id}')">✕</button>
+    </div>`;
+  }
+  function taskRow(key,t){
+    const subs=t.subs||[]; const doneSubs=subs.filter(x=>x.done).length; const exp=_expanded.has(t.id);
+    let row=`<div class="ndt-item ${t.done?'done':''}">
+      <button class="ndt-check" onclick="dtToggle('${key}','${t.id}')">${t.done?'✓':''}</button>
+      <input class="ndt-title" value="${esct(t.title)}" placeholder="Tarefa…" onchange="dtSetTitle('${key}','${t.id}',this.value)">
+      ${subs.length?`<button class="ndt-exp" onclick="xpToggleExpand('${t.id}')">${exp?'▾':'▸'} ${doneSubs}/${subs.length}</button>`:''}
+      <div class="ndt-xp"><input type="number" min="0" class="ndt-xp-inp" value="${parseInt(t.xp)||0}" title="XP da tarefa" onchange="dtSetXP('${key}','${t.id}',this.value)"><span>XP</span></div>
+      <button class="ndt-subbtn" title="Micro-atividades" onclick="xpToggleExpand('${t.id}')">＋◦</button>
+      <button class="ndt-del" title="Remover" onclick="dtDel('${key}','${t.id}')">✕</button>
+    </div>`;
+    if(exp){
+      row+=`<div class="ndt-subs">${subs.map(su=>subRow(key,t.id,su)).join('')}
+        <div class="ndt-sub-add"><input class="ndt-sub-addinp" placeholder="+ micro-atividade (Enter)" onkeydown="if(event.key==='Enter'){dtSubAddInput('${key}','${t.id}',this)}"><button class="btn btn-g" onclick="dtSubAddInput('${key}','${t.id}',this.previousElementSibling)">＋</button></div>
+      </div>`;
+    }
+    return row;
+  }
+  window.renderNoteDiario = function(){
+    const key = (typeof ndCurrentKey==='function') ? ndCurrentKey() : keyOf(new Date());
+    const weekKey = (typeof weekKeyOf==='function')?weekKeyOf(key):key;
+    const notes = LS.notediario.get();
+    const entry = (typeof ndNormalize==='function') ? ndNormalize(notes[key]) : {general:(notes[key]&&notes[key].general)||''};
+    const tasks = window.dtGet(key);
+    const weekTxt = (typeof wnGet==='function')?wnGet(weekKey):'';
+    try{
+      const dt=new Date(key+'T12:00:00');
+      const dateLabel=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+      const dowLabel=dt.toLocaleDateString('pt-BR',{weekday:'long'});
+      let rel=''; if(ndOff===0)rel=' · HOJE'; else if(ndOff===-1)rel=' · ONTEM'; else if(ndOff===1)rel=' · AMANHÃ';
+      const has=tasks.length||(weekTxt&&weekTxt.trim())||(entry.general&&entry.general.trim());
+      const nav=document.getElementById('nd-nav-date');
+      if(nav) nav.innerHTML=`${has?'<span class="nd-dot"></span>':''}<span>${dateLabel}${rel}</span><span class="nd-nav-dow">${dowLabel}</span>`;
+    }catch(e){}
+    const doneXP=tasks.filter(t=>t.done).reduce((s,t)=>s+(parseInt(t.xp)||0)+ (t.subs||[]).filter(x=>x.done).reduce((a,su)=>a+(parseInt(su.xp)||0),0),0);
+    const totXP =tasks.reduce((s,t)=>s+(parseInt(t.xp)||0)+ (t.subs||[]).reduce((a,su)=>a+(parseInt(su.xp)||0),0),0);
+    document.getElementById('nd-card').innerHTML = `
+      <div class="nd-sec">
+        <div class="nd-sec-hd">🎯 O que precisa ser feito hoje ${tasks.length?`<span class="ndt-xp-sum">${doneXP}/${totXP} XP · ${tasks.filter(t=>t.done).length}/${tasks.length}</span>`:''}</div>
+        <div class="ndt-list">${tasks.map(t=>taskRow(key,t)).join('') || '<div class="ndt-empty">Nenhuma tarefa. Adicione abaixo — cada uma vale XP e pode ter micro-atividades.</div>'}</div>
+        <div class="ndt-add">
+          <input class="ndt-add-inp" data-dtadd="${key}" placeholder="+ Nova tarefa (Enter)" onkeydown="if(event.key==='Enter'){dtAddFromInput('${key}',this)}">
+          <button class="btn btn-p" onclick="dtAddFromInput('${key}',this.previousElementSibling)">Adicionar</button>
+        </div>
+      </div>
+      <div class="nd-sec">
+        <div class="nd-sec-hd">📅 O que precisa ser feito essa semana <span class="ndt-xp-sum" style="color:var(--gs-text-3)">persiste a semana toda</span></div>
+        <textarea placeholder="Metas e compromissos da semana (vale de segunda a domingo)…" oninput="weekNoteInput('${weekKey}',this.value)">${esct(weekTxt)}</textarea>
+      </div>
+      <div class="nd-sec">
+        <div class="nd-sec-hd">💭 Anotações gerais <span class="nd-save-status" id="nd-status-general"></span></div>
+        <textarea data-nd-field="general" data-nd-key="${key}" placeholder="Livre pra qualquer anotação...">${esct(entry.general)}</textarea>
+      </div>`;
+    const gen=document.querySelector('#nd-card textarea[data-nd-field="general"]');
+    if(gen && typeof ndOnInput==='function') gen.addEventListener('input', ndOnInput);
+  };
+
+  // ---- Página XP ----
+  window.renderXPPage = function(){
+    const host=document.getElementById('xp-root'); if(!host) return;
+    const L=XP.level(); const total=XP.total(); const b=XP.breakdown();
+    const maxCat=Math.max(1,b.tasks,b.health,b.goals,b.tasks100);
+    const cat=(n,ic,v)=>`<div class="xp-cat"><div class="xp-cat-n">${ic} ${n}</div><div class="xp-cat-bar"><div class="xp-cat-fill" style="width:${Math.round(v/maxCat*100)}%"></div></div><div class="xp-cat-v">${v} XP</div></div>`;
+    const av=XP.availableToday();
+    const avHtml = av.length ? av.map(a=>`<div class="xp-av-it" onclick="${a.act};event.stopPropagation()"><span class="xp-av-ic">${a.ic}</span><div class="xp-av-main"><div class="xp-av-title" title="${esct(a.title)}">${esct(a.title)}</div><div class="xp-av-cat">${a.cat}</div></div><span class="xp-av-xp">+${a.xp}</span></div>`).join('') : `<div class="xp-empty">Tudo concluído por hoje. Adicione tarefas no Note Diário.</div>`;
+    const hist=XP.history(40);
+    const histHtml = hist.length ? hist.map(e=>`<div class="xp-hrow"><span class="xp-hd">+${e.xp}</span><span class="xp-hl" title="${esct(e.label)}">${esct(e.label)}</span><span class="xp-ht">${e.cat} · ${fmtShort(e.ts)}</span></div>`).join('') : `<div class="xp-empty">Sem ganhos de XP ainda.</div>`;
+    const c=XP.cfg();
+    const cfgIt=(k,l)=>`<div class="xp-cfg-it"><span class="xp-cfg-l">${l}</span><input type="number" min="0" class="xp-cfg-in" value="${c[k]}" onchange="XP.setCfg('${k}',this.value)"></div>`;
+    host.innerHTML = `
+      <div class="xp-grid">
+        <div class="xp-card wide">
+          <div class="xp-card-t">Player Status <span style="font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);font-weight:400">sincronizado com o HUD do Dashboard</span></div>
+          <div class="xps">
+            <div class="xps-lvl"><span class="xps-lvl-k">LEVEL</span><span class="xps-lvl-n">${L.level}</span></div>
+            <div class="xps-main">
+              <div class="xps-tot">${total} <small>XP total</small></div>
+              <div class="xps-bar"><div class="xps-fill" style="width:${L.pct}%"></div></div>
+              <div class="xps-sub">${L.into} / ${L.need} XP para o nível ${L.level+1} · faltam ${Math.max(0,L.need-L.into)} XP</div>
+            </div>
+          </div>
+        </div>
+        <div class="xp-card">
+          <div class="xp-card-t">⚡ XP Disponível Hoje</div>
+          <div class="xp-av">${avHtml}</div>
+        </div>
+        <div class="xp-card">
+          <div class="xp-card-t">Categorias de Atividade</div>
+          <div class="xp-cats">
+            ${cat('Tarefas & Micro','📋',b.tasks)}
+            ${cat('Saúde','💪',b.health)}
+            ${cat('Metas','🎯',b.goals)}
+            ${cat('100 Tasks','💯',b.tasks100)}
+          </div>
+        </div>
+        <div class="xp-card">
+          <div class="xp-card-t">Histórico de XP</div>
+          <div class="xp-hist">${histHtml}</div>
+        </div>
+        <div class="xp-card wide">
+          <div class="xp-card-t">⚙ Configuração de XP</div>
+          <div class="xp-cfg">
+            ${cfgIt('dailyTaskDefault','Tarefa diária (padrão)')}
+            ${cfgIt('microDefault','Micro-atividade (padrão)')}
+            ${cfgIt('treinoDay','Treino / dia')}
+            ${cfgIt('dietDay','Dieta ≥'+DT+'% / dia')}
+            ${cfgIt('goalComplete','Meta concluída')}
+            ${cfgIt('task100Done','100-Task concluída')}
+          </div>
+        </div>
+      </div>`;
+  };
+
+  // Primeira pintura se aplicável + atualiza HUD com o motor central
+  try{
+    if(typeof curPage!=='undefined'){
+      if(curPage==='xp') window.renderXPPage();
+      if(curPage==='notediario') window.renderNoteDiario();
+      if(curPage==='dashboard' && typeof renderDashHud==='function') renderDashHud();
+    }
+  }catch(e){}
 })();
 </script>
 </body>
