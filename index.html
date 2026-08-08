@@ -11333,5 +11333,38 @@ function toggleInflow(mk,id){ const m=ctrlGetMonth(mk); const it=m.inflows.find(
   ctrlSetMonth(mk,m); renderControling(); }
 function delInflow(mk,id){ const m=ctrlGetMonth(mk); m.inflows=m.inflows.filter(x=>x.id!==id); ctrlSetMonth(mk,m); renderControling(); }
 </script>
+
+<!-- ============================================================
+     ░▒▓ SISTEMA GLOBAL DE IMAGEM — nunca distorce ▓▒░
+     Fonte única de comportamento de imagem (cover/contain/avatar).
+     resizeImage() já reduz preservando proporção → nada é esticado ao salvar.
+     ============================================================ -->
+<style id="img-system-style">
+/* Rede de segurança global: nenhuma imagem transborda o container */
+img{ max-width:100%; }
+
+/* Utilitários reutilizáveis (novos recursos herdam o comportamento certo) */
+.img-box{ position:relative; width:100%; overflow:hidden; border-radius:8px; background:var(--gs-card-2); }
+.img-box.ar-16-9{ aspect-ratio:16/9; }
+.img-box.ar-4-3{ aspect-ratio:4/3; }
+.img-box.ar-3-2{ aspect-ratio:3/2; }
+.img-box.ar-1-1{ aspect-ratio:1/1; }
+/* Card / capa / cover: preserva proporção, corta com elegância, altura estável do card */
+.img-cover{ width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
+/* Conteúdo completo importa (documento, print): não corta */
+.img-contain{ width:100%; height:100%; object-fit:contain; object-position:center; display:block; background:var(--gs-ink-2); }
+/* Retrato / avatar: prioriza o topo (onde costuma estar o rosto) */
+.img-avatar{ width:100%; height:100%; object-fit:cover; object-position:center 25%; display:block; }
+
+/* MIGRAÇÃO: unifica TODAS as fotos existentes do app sob um só comportamento (cover, sem distorção).
+   Antes cada componente definia seu próprio object-fit — agora há fonte única. */
+.t100-photo img, .prog-photo-wrap img, .prog-tl-item img,
+.gx-img img, .gx-thumb img, .vg-card-img img, .vg-photo-lg img,
+.dream-img img, .hl-thumb img, .dcar-img img, .oli-avatar-wrap img{
+  width:100% !important; height:100% !important; object-fit:cover !important; object-position:center; display:block;
+}
+/* Visualização em tela cheia (modal) → contain: mostra a imagem inteira, sem cortar nem esticar */
+#mc .modal img, .overlay img.img-full{ object-fit:contain !important; height:auto !important; max-height:74vh; width:auto; max-width:100%; }
+</style>
 </body>
 </html>
