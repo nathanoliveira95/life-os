@@ -10685,6 +10685,18 @@ body.is-mobile .bl-count{margin-left:0}
     const wealth=(typeof dashWealthBRL==='function')?dashWealthBRL():0;
     const hasHealth = cur.treino||cur.dietLogged, hasTasks = cur.tTotal>0, hasBudget = bud.limit>0, hasGoals = g.active>0;
 
+    // Interviews (Entrevistas) como fonte de dados
+    const proc = ((typeof LS!=='undefined'&&LS.processos)?LS.processos.get():[])||[];
+    const procCols=['curriculo','e1','e2','e3','e4'];
+    let pV=0,pX=0,pP=0; proc.forEach(p=>procCols.forEach(c=>{const v=p[c]; if(v==='V')pV++;else if(v==='X')pX++;else if(v==='P')pP++;}));
+    const procActive = proc.filter(p=>procCols.some(c=>p[c]==='P')).length;
+    const hasProc = proc.length>0;
+
+    // Revisão anterior do mesmo tipo (para continuidade)
+    const prevRev = (LS.council.get()||[]).filter(r=>r.type===type)
+      .sort((a,b)=>(b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||''))[0] || null;
+    const snapshot = { treino:cur.treino, taskRate:cur.taskRate, goalAvg:g.avg, budgetPct:bud.pct, wealth, dietOk:cur.dietOk };
+
     // Verdict composto (só de áreas com dados)
     const scores=[];
     if(hasHealth) scores.push(cur.healthScore>=0.5?1:cur.healthScore>=0.3?.5:0);
@@ -10734,38 +10746,83 @@ body.is-mobile .bl-count{margin-left:0}
       if(cur.taskRate<0.4) risks.push(it('Execução de tarefas abaixo do esperado', 'bad', pctOf(cur.taskRate)));
     } else execution.push(it('Sem tarefas registradas no período', 'warn', 'adicione tarefas no Note Diário'));
 
-    // Recomendações & Prioridades (derivadas)
-    if(hasHealth && cur.treino/days<0.6) recs.push(it('Aumente a frequência de treino para ≥4 dias/semana', 'warn'));
-    if(hasBudget && bud.pct>0.8) recs.push(it('Reduza gastos discricionários até o fim do mês', 'warn'));
-    if(g.overdue) recs.push(it('Repactue ou conclua as metas com prazo vencido', 'bad'));
-    if(hasTasks && cur.taskRate<0.7) recs.push(it('Defina menos tarefas por dia e conclua-as (foco > volume)', 'warn'));
-    if(!recs.length) recs.push(it('Manter o ritmo atual — indicadores saudáveis', 'good'));
+    // Interviews (Entrevistas)
+    if(hasProc){
+      const pItem = it(`Processos seletivos: ${procActive} em andamento · ${pV} etapa(s) aprovada(s)${pX?` · ${pX} reprovada(s)`:''}`, procActive>0?'good':pX?'warn':'neutral', `${proc.length} empresa(s)`);
+      (procActive>0?onTrack:offTrack).push(pItem);
+    }
 
-    if(g.tier1) priorities.push(it(`Avançar as ${g.tier1} meta(s) Tier 1`, 'info'));
-    if(g.overdue) priorities.push(it('Resolver prazos vencidos', 'bad'));
-    if(hasHealth && cur.treino/days<0.6) priorities.push(it('Recuperar consistência de treino', 'warn'));
-    if(hasBudget && bud.pct>1) priorities.push(it('Voltar o orçamento ao limite', 'bad'));
-    while(priorities.length<3 && offTrack[priorities.length]) priorities.push(it(offTrack[priorities.length].text, offTrack[priorities.length].status));
-    if(!priorities.length) priorities.push(it('Definir objetivos claros para o próximo ciclo', 'info'));
+    // ---------- ANÁLISE (padrões, trade-offs, leitura mais profunda) ----------
+    const analysisItems=[];
+    if(hasHealth && hasTasks && cur.treino/days>=0.6 && cur.taskRate<0.5)
+      analysisItems.push(it('Boa consistência física convive com baixa execução operacional: a energia está indo para o corpo, mas o foco em entregas ainda não tem a mesma disciplina. Vale transferir parte dessa regularidade do treino para as tarefas do dia.','warn'));
+    if(hasHealth && hasTasks && cur.treino/days<0.4 && cur.taskRate>=0.7)
+      analysisItems.push(it('A execução de tarefas está forte, mas o treino ficou de lado. É um trade-off comum em períodos intensos — cuidado para o ganho de curto prazo em produtividade não cobrar juros na saúde e na energia adiante.','warn'));
+    if(hasBudget && bud.pct>0.9)
+      analysisItems.push(it(`O orçamento está em ${pctOf(bud.pct)} do limite — apertado para o fim do mês. Isso tende a competir com metas que exigem capital; sequenciar gastos e aportes evita decisões reativas na última semana.`,'warn'));
+    if(hasGoals && g.tier1 && g.avg<30)
+      analysisItems.push(it(`Existem ${g.tier1} meta(s) Tier 1, mas o progresso médio de ${g.avg}% indica que o esforço ainda está diluído. Concentrar em uma prioridade por vez costuma render mais que avançar tudo devagar.`,'bad'));
+    if(hasProc && procActive>0 && hasTasks && cur.taskRate<0.6)
+      analysisItems.push(it(`Com ${procActive} processo(s) seletivo(s) em andamento e execução em ${pctOf(cur.taskRate)}, há risco de a preparação (cases, estudos, entrevistas) ficar para trás. Trate a preparação como meta tática desta janela.`,'warn'));
+    if(hasHealth && cur.treino/days>=0.7 && hasTasks && cur.taskRate>=0.7)
+      analysisItems.push(it('Físico e execução altos e sincronizados — é o padrão dos seus dias de alta performance. O trabalho agora é proteger o sistema que gerou isso, não adicionar frentes novas.','good'));
+    if(!analysisItems.length)
+      analysisItems.push(it('Ainda não há padrões cruzados relevantes neste período — os dados estão esparsos para uma leitura mais profunda. Registrar treino, dieta e tarefas com constância torna as próximas análises mais úteis.','neutral'));
 
-    // Summary text (a partir de métricas — não é IA)
-    const parts=[];
-    if(hasHealth) parts.push(`treino ${cur.treino}/${days}`);
-    if(hasTasks)  parts.push(`tarefas ${pctOf(cur.taskRate)}`);
-    if(hasGoals)  parts.push(`metas ${g.avg}%`);
-    if(hasBudget) parts.push(`orçamento ${pctOf(bud.pct)}`);
-    const summary = `Revisão ${type==='grand'?'mensal':'semanal'} dos últimos ${days} dias — ${parts.join(' · ')||'sem dados suficientes'}. ${verdict.t==='ALINHADO'?'A execução está consistente com os objetivos.':verdict.t==='FORA DE ROTA'?'Há desvios relevantes que exigem correção.':'Alguns pontos precisam de atenção.'}`;
+    // ---------- CONTINUIDADE (vs. revisão anterior) ----------
+    const continuity=[];
+    if(prevRev){
+      const pm = prevRev.metrics || {};
+      const vChanged = prevRev.verdict && prevRev.verdict.t !== verdict.t;
+      continuity.push(it(`Veredito ${type==='grand'?'do mês anterior':'da semana anterior'}: ${prevRev.verdict?prevRev.verdict.t:'—'} → agora ${verdict.t}${vChanged?'':' (mantido)'}.`, vChanged?(verdict.s):'neutral'));
+      if(hasTasks && pm.taskRate!=null) continuity.push(it(`Execução de tarefas: ${pctOf(pm.taskRate)} → ${pctOf(cur.taskRate)}.`, cur.taskRate>=pm.taskRate?'good':'warn'));
+      if(hasHealth && pm.treino!=null) continuity.push(it(`Dias de treino no período: ${pm.treino} → ${cur.treino}.`, cur.treino>=pm.treino?'good':'warn'));
+      if(hasGoals && pm.goalAvg!=null) continuity.push(it(`Progresso médio das metas: ${pm.goalAvg}% → ${g.avg}%.`, g.avg>=pm.goalAvg?'good':'warn'));
+      if(pm.wealth!=null && Math.abs(wealth-pm.wealth)>1) continuity.push(it(`Patrimônio: ${brl(pm.wealth)} → ${brl(wealth)}.`, wealth>=pm.wealth?'good':'warn'));
+    } else {
+      continuity.push(it('Primeira revisão deste ciclo — as próximas vão comparar sua evolução (execução, treino, metas, patrimônio) com esta.','info'));
+    }
 
+    // ---------- AÇÕES RECOMENDADAS (com raciocínio) ----------
+    if(hasHealth && cur.treino/days<0.6) recs.push(it(`Suba o treino para ≥4 dias/semana. Hoje está em ${cur.treino}/${days}; a consistência física é o que sustenta energia e foco para o resto do sistema, então é a alavanca de maior efeito.`,'warn'));
+    if(hasBudget && bud.pct>0.8) recs.push(it(`Segure gastos discricionários até o fim do mês — você já usou ${pctOf(bud.pct)} do limite. Cada corte aqui protege diretamente o "disponível para gastar" e evita usar o previsto antes de receber.`,'warn'));
+    if(g.overdue) recs.push(it(`Resolva os ${g.overdue} prazo(s) vencido(s): repactue a data ou conclua a meta. Prazo vencido parado vira peso morto e distorce a leitura de progresso.`,'bad'));
+    if(hasTasks && cur.taskRate<0.7) recs.push(it(`Reduza o número de tarefas por dia e conclua o que entra. A taxa de ${pctOf(cur.taskRate)} mostra que o gargalo é foco, não capacidade — menos itens, todos fechados, rende mais XP e clareza.`,'warn'));
+    if(hasProc && procActive>0) recs.push(it(`Com ${procActive} processo(s) ativo(s), reserve blocos fixos de preparação (cases, valuation, mock interviews) e trate-os como meta Tier 1 desta janela.`,'info'));
+    if(!recs.length) recs.push(it('Manter o ritmo: os indicadores do período estão saudáveis. Antes de abrir novas frentes, consolide o sistema atual — é ele que está entregando.','good'));
+
+    // ---------- PRÓXIMOS PASSOS (priorizados) ----------
+    if(g.overdue) priorities.push(it(`Zerar prazos vencidos (${g.overdue}) — antes de qualquer coisa nova.`, 'bad'));
+    if(hasBudget && bud.pct>1) priorities.push(it('Trazer o orçamento de volta ao limite este mês.', 'bad'));
+    if(hasProc && procActive>0) priorities.push(it(`Avançar os ${procActive} processo(s) seletivo(s) em andamento.`, 'info'));
+    if(g.tier1) priorities.push(it(`Concentrar esforço nas ${g.tier1} meta(s) Tier 1.`, 'info'));
+    if(hasHealth && cur.treino/days<0.6) priorities.push(it('Recuperar a consistência de treino (≥4/semana).', 'warn'));
+    if(hasTasks && cur.taskRate<0.7) priorities.push(it('Fechar as tarefas do dia antes de adicionar novas.', 'warn'));
+    if(!priorities.length) priorities.push(it('Definir 1–3 objetivos claros para o próximo ciclo.', 'info'));
+
+    // ---------- SITUATION ASSESSMENT (texto corrido, interpretando os dados) ----------
+    const aParts=[];
+    aParts.push(`Nos últimos ${days} dias, o quadro geral está **${verdict.t.toLowerCase()}**.`);
+    if(hasHealth) aParts.push(`No físico, você treinou ${cur.treino} de ${days} dias${cur.dietLogged?` e registrou dieta em ${cur.dietLogged} dia(s), ${cur.dietOk} dentro da meta`:''}.`);
+    if(hasTasks) aParts.push(`Na execução, concluiu ${cur.tDone} de ${cur.tTotal} tarefas (${pctOf(cur.taskRate)})${cur.xp?`, somando ${cur.xp} XP`:''}.`);
+    if(hasGoals) aParts.push(`As metas ativas estão em ${g.avg}% de progresso médio${g.overdue?`, com ${g.overdue} prazo(s) vencido(s)`:''}.`);
+    if(hasBudget) aParts.push(`No financeiro, o gasto está em ${pctOf(bud.pct)} do limite do mês.`);
+    if(hasProc && procActive>0) aParts.push(`Há ${procActive} processo(s) seletivo(s) em andamento.`);
+    if(aParts.length===1) aParts.push('Ainda há poucos dados registrados no período — quanto mais você registrar, mais precisa fica a leitura.');
+    const summary = aParts.join(' ');
+
+    // ---------- Montagem das seções (ordem de comitê) ----------
     const sections=[];
-    sections.push({ t:'✅ No Rumo', items: onTrack.length?onTrack:[it('Nenhuma área claramente no rumo ainda','warn')] });
-    sections.push({ t:'⚠ Fora do Rumo', items: offTrack.length?offTrack:[it('Nenhum desvio relevante','good')] });
-    if(changes.length) sections.push({ t:'📈 Mudanças Notáveis', items:changes });
-    if(type==='grand'){ sections.push({ t:'💰 Posição Financeira', items:financial.length?financial:[it('Sem dados financeiros','warn')] }); sections.push({ t:'⚙ Execução / Consistência', items:execution }); }
-    sections.push({ t:'🚨 Riscos', items: risks.length?risks:[it('Nenhum risco crítico identificado','good')] });
-    sections.push({ t:'🎯 Recomendações', items:recs });
-    sections.push({ t:`📌 Prioridades — próxima ${type==='grand'?'fase':'semana'}`, items:priorities.slice(0,4) });
+    sections.push({ t:'👍 Avaliação — o que vai bem', items: onTrack.length?onTrack:[it('Nenhuma área claramente no rumo ainda neste período.','warn')] });
+    sections.push({ t:'👎 Avaliação — o que precisa de atenção', items: offTrack.length?offTrack:[it('Nenhum desvio relevante identificado.','good')] });
+    sections.push({ t:'🧠 Análise', items: analysisItems.concat(changes.length?[it('— Mudanças no período —','neutral')].concat(changes):[]) });
+    sections.push({ t:'🔁 Continuidade', items: continuity });
+    if(type==='grand') sections.push({ t:'💰 Posição Financeira', items:financial.length?financial:[it('Sem dados financeiros no período.','warn')] });
+    sections.push({ t:'🚨 Riscos / Pontos de Atenção', items: risks.length?risks:[it('Nenhum risco crítico identificado.','good')] });
+    sections.push({ t:'🎯 Ações Recomendadas', items:recs });
+    sections.push({ t:`📌 Próximos Passos — ${type==='grand'?'até o próximo Grand Council':'próxima semana'}`, items:priorities.slice(0,5) });
 
-    return { id:uid(), type, date:keyOf(new Date()), createdAt:(function(){try{return new Date().toISOString();}catch(e){return '';}})(), days, verdict, summary, sections, status:'completed' };
+    return { id:uid(), type, date:keyOf(new Date()), createdAt:(function(){try{return new Date().toISOString();}catch(e){return '';}})(), days, verdict, summary, sections, metrics:snapshot, status:'completed' };
   }
 
   // ---------- Agendamento / status ----------
@@ -10831,9 +10888,10 @@ body.is-mobile .bl-count{margin-left:0}
   }
 
   function detailView(rev){
+    const mdb = s => esct(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
     const secs = rev.sections.map(s=>`
       <div class="cnl-sec"><div class="cnl-sec-t">${s.t}</div><div class="cnl-items">${
-        s.items.map(i=>`<div class="cnl-it ${i.status}"><span class="cnl-it-dot"></span><div class="cnl-it-body"><div class="cnl-it-text">${esct(i.text)}</div>${i.metric?`<div class="cnl-it-metric">${esct(i.metric)}</div>`:''}</div></div>`).join('')
+        s.items.map(i=>`<div class="cnl-it ${i.status}"><span class="cnl-it-dot"></span><div class="cnl-it-body"><div class="cnl-it-text">${mdb(i.text)}</div>${i.metric?`<div class="cnl-it-metric">${esct(i.metric)}</div>`:''}</div></div>`).join('')
       }</div></div>`).join('');
     const title = rev.type==='grand'?'Grand Council':'Weekly Council';
     return `
@@ -10841,7 +10899,7 @@ body.is-mobile .bl-count{margin-left:0}
       <div class="cnl-det-hd"><span class="cnl-det-title">${rev.type==='grand'?'🏛️':'🗓️'} ${title}</span></div>
       <div class="cnl-det-meta">${fmtShort(rev.date)} · janela de ${rev.days} dias · gerado automaticamente dos seus dados</div>
       <div class="cnl-verdict ${rev.verdict.s}">Avaliação: ${rev.verdict.t}</div>
-      <div class="cnl-summary">${esct(rev.summary)}</div>
+      <div class="cnl-sec"><div class="cnl-sec-t">📋 Situação Atual</div><div class="cnl-summary">${mdb(rev.summary)}</div></div>
       ${secs}
       <div class="cnl-note">⚙ Esta revisão é <b>gerada automaticamente a partir dos seus dados reais</b> (Treino/Dieta, Orçamento, Metas, Tarefas) por regras determinísticas — não é conteúdo de IA inventado. A arquitetura já está pronta para, no futuro, uma análise por IA rodar no backend (chave no servidor, nunca no frontend).</div>`;
   }
