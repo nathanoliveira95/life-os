@@ -3074,7 +3074,22 @@ body.is-mobile .gcal-pop{ position: fixed; left: 10px; right: 10px; transform: n
 .proc-mark.proc-none{color:var(--text3)}
 .proc-mark.proc-v{color:#fff;background:rgba(16,185,129,.22);border-color:var(--green);color:var(--green)}
 .proc-mark.proc-x{color:var(--red);background:rgba(239,68,68,.18);border-color:var(--red)}
+/* Novo estado: Em andamento (amarelo "–") — processo começou, sem decisão final */
+.proc-mark.proc-p{color:var(--warn,#E0A028);background:rgba(224,160,40,.18);border-color:var(--warn,#E0A028);font-weight:800}
 .proc-mark:hover{transform:scale(1.08);box-shadow:0 0 10px rgba(0,212,255,.25)}
+/* Toolbar + legenda + contadores da página Entrevistas */
+.proc-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.proc-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.proc-lg{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+.proc-chip{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;border:1px solid var(--border);font-size:12px;font-weight:800;line-height:1}
+.proc-chip.proc-v{color:var(--green);background:rgba(16,185,129,.2);border-color:var(--green)}
+.proc-chip.proc-x{color:var(--red);background:rgba(239,68,68,.18);border-color:var(--red)}
+.proc-chip.proc-p{color:var(--warn,#E0A028);background:rgba(224,160,40,.18);border-color:var(--warn,#E0A028)}
+.proc-chip.proc-none{color:var(--text3)}
+.proc-counts{margin-left:auto;display:flex;gap:10px;font-family:var(--font-mono,monospace);font-size:11px}
+.proc-cnt{padding:2px 9px;border-radius:100px;border:1px solid var(--border)}
+.proc-cnt.cnt-v{color:var(--green)}.proc-cnt.cnt-p{color:var(--warn,#E0A028)}.proc-cnt.cnt-x{color:var(--red)}
+body.is-mobile .proc-counts{margin-left:0}
 
 /* ---------- Goals: subtabs + Dreams ---------- */
 .goal-subtabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border)}
@@ -3672,8 +3687,17 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 
   <!-- PROCESSOS (Planning) -->
   <div class="page" id="page-processos">
-    <div class="ph"><h1>Entrevistas 📋</h1><p>Acompanhe seus processos seletivos — marque cada etapa (✓/✗) e a data em que ocorreu</p></div>
-    <div class="flex ai g8 mb16"><button class="btn btn-p" onclick="addProcesso()">+ Nova Empresa</button></div>
+    <div class="ph"><h1>Entrevistas 📋</h1><p>Acompanhe seus processos seletivos — marque cada etapa e a data em que ocorreu</p></div>
+    <div class="proc-toolbar">
+      <button class="btn btn-p" onclick="addProcesso()">+ Nova Empresa</button>
+      <div class="proc-legend">
+        <span class="proc-lg"><span class="proc-chip proc-v">V</span> Aprovado</span>
+        <span class="proc-lg"><span class="proc-chip proc-x">X</span> Reprovado</span>
+        <span class="proc-lg"><span class="proc-chip proc-p">–</span> Em andamento</span>
+        <span class="proc-lg"><span class="proc-chip proc-none">—</span> Não iniciado</span>
+      </div>
+      <span class="proc-counts" id="proc-counts"></span>
+    </div>
     <div class="tw">
       <table class="proc-table">
         <thead><tr>
@@ -8795,16 +8819,25 @@ function renderProcessos(){
     <td><input class="proc-in" value="${esc(p.empresa||'')}" oninput="updProcesso('${p.id}','empresa',this.value)" placeholder="Nome da empresa"></td>
     ${cols.map(c => {
       const val = p[c] || '';
-      const cls = val === 'V' ? 'proc-v' : (val === 'X' ? 'proc-x' : 'proc-none');
+      const cls = val === 'V' ? 'proc-v' : (val === 'X' ? 'proc-x' : (val === 'P' ? 'proc-p' : 'proc-none'));
+      const glyph = val === 'P' ? '–' : (val || '—');
+      const tip = val === 'V' ? 'Aprovado' : val === 'X' ? 'Reprovado' : val === 'P' ? 'Em andamento — sem decisão final' : 'Não iniciado';
       const dt  = (p.dates && p.dates[c]) || '';
       return `<td class="ent-cell">
-        <button class="proc-mark ${cls}" onclick="cycleProcesso('${p.id}','${c}')">${val || '—'}</button>
+        <button class="proc-mark ${cls}" onclick="cycleProcesso('${p.id}','${c}')" title="${tip} · clique para alternar (— → – → V → X)">${glyph}</button>
         <input type="date" class="ent-date" value="${dt}" onchange="updProcessoDate('${p.id}','${c}',this.value)" title="Data desta etapa">
       </td>`;
     }).join('')}
     <td><input class="proc-in" value="${esc(p.notas||'')}" oninput="updProcesso('${p.id}','notas',this.value)" placeholder="Anotações..."></td>
     <td style="text-align:center"><button class="btn btn-d" onclick="delProcesso('${p.id}')" title="Excluir">🗑</button></td>
   </tr>`).join('');
+  // Contadores por status (reconhece o novo estado "Em andamento")
+  const cEl = document.getElementById('proc-counts');
+  if (cEl){
+    let v=0,x=0,pr=0;
+    list.forEach(p => cols.forEach(c => { const val=p[c]||''; if(val==='V')v++; else if(val==='X')x++; else if(val==='P')pr++; }));
+    cEl.innerHTML = `<span class="proc-cnt cnt-v">${v} aprov.</span><span class="proc-cnt cnt-p">${pr} em and.</span><span class="proc-cnt cnt-x">${x} reprov.</span>`;
+  }
 }
 function addProcesso(){
   const list = LS.processos.get();
@@ -8833,7 +8866,8 @@ function cycleProcesso(id, field){
   const p = list.find(x => x.id === id);
   if (!p) return;
   const cur = p[field] || '';
-  p[field] = cur === '' ? 'V' : (cur === 'V' ? 'X' : '');
+  // Ciclo: vazio → P (em andamento) → V (aprovado) → X (reprovado) → vazio
+  p[field] = cur === '' ? 'P' : (cur === 'P' ? 'V' : (cur === 'V' ? 'X' : ''));
   LS.processos.set(list);
   renderProcessos();
 }
