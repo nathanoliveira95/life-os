@@ -6397,6 +6397,14 @@ const EXP_CATS = [
   'Outros'
 ];
 
+// ── Investimento: aporte, NÃO consumo ──────────────────────────────
+// Categorias tratadas como investimento. Reduzem o caixa como qualquer
+// saída, mas são exibidas com cor própria (ciano) e separadas do consumo.
+// Fonte única — nada é reclassificado automaticamente; só o que o usuário
+// já marcou explicitamente com essas categorias.
+const INVEST_CATS = ['Investimento'];
+function isInvestmentExpense(cat){ return INVEST_CATS.includes(cat); }
+
 // Estado local: aba ativa dentro do Controling (Gastos | Budget) e migração
 let ctrlTab = 'expenses';
 let _ctrlMigrated = false;
@@ -6483,6 +6491,10 @@ function renderControling() {
   const monthName = MONTHS[ctrlMonth];
   const m = ctrlGetMonth(monthKey);
   const spent  = m.expenses.reduce((s,e) => s + FMT.parse(e.value), 0);
+  // Saídas totais = Consumo + Investimento. Investimento reduz o caixa igual,
+  // mas é rastreado à parte para não parecer gasto ordinário.
+  const investSpent = m.expenses.reduce((s,e) => s + (isInvestmentExpense(e.cat) ? FMT.parse(e.value) : 0), 0);
+  const consumSpent = spent - investSpent;
   const budget = m.budget.reduce((s,e) => s + FMT.parse(e.value), 0);
   const limit  = Number(m.limit) || 0;
   // ---- Entradas (fonte única): limite REAL = limite base + entradas recebidas ----
@@ -6501,6 +6513,8 @@ function renderControling() {
   const pctForecast= Math.min(100, forecastLimit/scale*100);    // parte HACHURADA (prevista)
   const pctLimit  = Math.min(100, (actualLimit)/scale*100);
   const pctSpent  = Math.min(120, spent/scale*100);  // pode passar se estourou
+  const pctConsumSeg = Math.min(120, consumSpent/scale*100); // segmento consumo
+  const pctInvestSeg = Math.min(120, investSpent/scale*100); // segmento investimento
   const pctBudget = Math.min(100, budget/scale*100);
   // Nível do gasto em relação ao LIMITE (não à escala):
   //   ≤50% verde, ≤75% laranja, ≤100% vermelho, >100% pb-over (pulsante)
@@ -6525,8 +6539,9 @@ function renderControling() {
       const col = diff >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
       const glow = diff < 0 ? 'text-shadow:0 0 10px rgba(239,68,68,.7)' : '';
       const sign = diff >= 0 ? '+' : '';
-      return `<tr>
-        <td>${c}</td>
+      const isInv = isInvestmentExpense(c);
+      return `<tr class="${isInv?'cat-invest':''}">
+        <td>${isInv?'<span class="cat-inv-dot" title="Investimento — aporte, não consumo"></span>':''}${c}</td>
         <td style="text-align:right;color:var(--text2);font-family:var(--font-mono)">${FMT.money(v.budget)}</td>
         <td style="text-align:right;font-family:var(--font-mono)">${FMT.money(v.spent)}</td>
         <td style="text-align:right;color:${col};font-weight:600;font-family:var(--font-mono);${glow}">${sign}${FMT.money(diff)}</td>
@@ -6577,7 +6592,8 @@ function renderControling() {
         <div class="ctrl-sum-grid">
           <div class="ctrl-sum-it"><div class="ctrl-sum-k">◆ Limite real</div><div class="ctrl-sum-v">${FMT.money(actualLimit)}</div><div class="ctrl-sum-note">base ${FMT.money(limit)}${inf.received>0?` + recebido ${FMT.money(inf.received)}`:''}</div></div>
           <div class="ctrl-sum-it forecast"><div class="ctrl-sum-k">▨ Previsto (a receber)</div><div class="ctrl-sum-v">${FMT.money(forecastLimit)}</div><div class="ctrl-sum-note">ainda não disponível</div></div>
-          <div class="ctrl-sum-it"><div class="ctrl-sum-k">● Gasto (comprometido)</div><div class="ctrl-sum-v">${FMT.money(spent)}</div><div class="ctrl-sum-note">${m.expenses.length} lançamento(s)</div></div>
+          <div class="ctrl-sum-it"><div class="ctrl-sum-k">● Saídas totais</div><div class="ctrl-sum-v">${FMT.money(spent)}</div><div class="ctrl-sum-note">${investSpent>0?`consumo ${FMT.money(consumSpent)} · aporte ${FMT.money(investSpent)}`:`${m.expenses.length} lançamento(s)`}</div></div>
+          ${investSpent>0?`<div class="ctrl-sum-it invest"><div class="ctrl-sum-k">⬦ Investido (aporte)</div><div class="ctrl-sum-v">${FMT.money(investSpent)}</div><div class="ctrl-sum-note">reduz o caixa · não é consumo</div></div>`:''}
           <div class="ctrl-sum-it"><div class="ctrl-sum-k">＋ Capacidade futura</div><div class="ctrl-sum-v">${FMT.money(futureCapacity)}</div><div class="ctrl-sum-note">real + previsto − gasto</div></div>
         </div>
       </div>
@@ -6593,10 +6609,10 @@ function renderControling() {
         </div>
         <div class="ctrl-bar ${overLimit?'ctrl-bar-over':''}">
           <div class="ctrl-bar-hd">
-            <span class="ctrl-bar-lbl">💸 GASTO</span>
-            <span class="ctrl-bar-val" style="font-family:var(--font-mono);color:${overLimit?'var(--danger,#ef4444)':'var(--text)'};${overLimit?'text-shadow:0 0 14px rgba(239,68,68,.7)':''}">${FMT.money(spent)}${overLimit?` <em style="font-style:normal;font-size:11px;margin-left:8px">+${FMT.num(overPct,1)}% acima do limite</em>`:''}</span>
+            <span class="ctrl-bar-lbl">💸 SAÍDAS${investSpent>0?' <span class="ctrl-hatch-lg" style="color:var(--gs-invest,#22D3EE)">⬦ investido</span>':''}</span>
+            <span class="ctrl-bar-val" style="font-family:var(--font-mono);color:${overLimit?'var(--danger,#ef4444)':'var(--text)'};${overLimit?'text-shadow:0 0 14px rgba(239,68,68,.7)':''}">${FMT.money(spent)}${investSpent>0?` <span style="color:var(--gs-invest,#22D3EE);font-size:11px">(consumo ${FMT.money(consumSpent)} + aporte ${FMT.money(investSpent)})</span>`:''}${overLimit?` <em style="font-style:normal;font-size:11px;margin-left:8px">+${FMT.num(overPct,1)}% acima do limite</em>`:''}</span>
           </div>
-          <div class="pw ctrl-pw"><div class="pb ctrl-pb ${overLimit?'pb-over':'pb-spent '+spentLvl}" style="width:${pctSpent}%"></div></div>
+          <div class="pw ctrl-pw ctrl-spent-track"><div class="pb ctrl-pb ${overLimit?'pb-over':'pb-spent '+spentLvl}" style="width:${pctConsumSeg}%"></div>${investSpent>0?`<div class="pb ctrl-pb pb-invest" style="width:${pctInvestSeg}%"></div>`:''}</div>
         </div>
         <div class="ctrl-bar">
           <div class="ctrl-bar-hd"><span class="ctrl-bar-lbl">📋 BUDGET</span><span class="ctrl-bar-val" style="font-family:var(--font-mono)">${FMT.money(budget)}</span></div>
@@ -11342,6 +11358,16 @@ window.appRefresh = function(){
 .ctrl-limit-track .pb-limit{flex:none}
 .ctrl-pb-forecast{flex:none;height:100%;background:repeating-linear-gradient(45deg,rgba(10,132,255,.55) 0 6px,rgba(10,132,255,.12) 6px 12px);border-left:1px solid rgba(53,198,255,.5);transition:width .45s cubic-bezier(.2,.8,.2,1)}
 .ctrl-hatch-lg{font-family:var(--font-mono);font-size:9px;color:var(--gs-blue-l);letter-spacing:.04em;margin-left:6px}
+/* Investimento (aporte): cor própria — nem verde (renda), nem vermelho (gasto) */
+:root{--gs-invest:#22D3EE}
+.ctrl-spent-track{display:flex !important;overflow:hidden}
+.ctrl-spent-track .pb{flex:none}
+.ctrl-pb.pb-invest{background:linear-gradient(90deg,#22D3EE,#38BDF8) !important;box-shadow:0 0 10px rgba(34,211,238,.35)}
+.ctrl-sum-it.invest{border-color:rgba(34,211,238,.4);background:linear-gradient(180deg,rgba(34,211,238,.08),transparent 60%),var(--gs-card)}
+.ctrl-sum-it.invest .ctrl-sum-k{color:var(--gs-invest)}
+.ctrl-sum-it.invest .ctrl-sum-v{color:var(--gs-invest)}
+tr.cat-invest td:first-child{color:var(--gs-invest);font-weight:600}
+.cat-inv-dot{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--gs-invest);box-shadow:0 0 8px rgba(34,211,238,.5);margin-right:7px;vertical-align:middle}
 /* Seção de entradas */
 .ctrl-inflows{margin:18px 0 6px;padding:16px;background:var(--gs-card);border:1px solid var(--gs-border);border-radius:var(--r-lg);box-shadow:var(--edge)}
 .ctrl-inflows-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
