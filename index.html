@@ -6397,6 +6397,7 @@ function migrateControling() {
       let need = false;
       if (!Array.isArray(v.expenses)) { v.expenses = []; need = true; }
       if (!Array.isArray(v.budget))   { v.budget   = []; need = true; }
+      if (!Array.isArray(v.inflows))  { v.inflows  = []; need = true; }
       if (typeof v.limit !== 'number'){
         const blim = parseFloat(v.limit) || parseFloat(budgetLegacy[mk]?.limit) || 0;
         v.limit = blim;
@@ -6420,22 +6421,30 @@ function changeCtrlMonth(d) {
 function ctrlGetMonth(monthKey) {
   const all = LS.controling.get();
   const v = all[monthKey];
-  if (!v) return { limit:0, expenses:[], budget:[] };
-  if (Array.isArray(v)) return { limit:0, expenses:v, budget:[] };
+  if (!v) return { limit:0, expenses:[], budget:[], inflows:[] };
+  if (Array.isArray(v)) return { limit:0, expenses:v, budget:[], inflows:[] };
   return {
     limit: parseFloat(v.limit)||0,
     expenses: Array.isArray(v.expenses) ? v.expenses : [],
-    budget:   Array.isArray(v.budget)   ? v.budget   : []
+    budget:   Array.isArray(v.budget)   ? v.budget   : [],
+    inflows:  Array.isArray(v.inflows)  ? v.inflows  : []   // entradas previstas/recebidas
   };
 }
 function ctrlSetMonth(monthKey, data) {
   const all = LS.controling.get();
-  if (!data.expenses.length && !data.budget.length && !data.limit) {
+  const inflows = Array.isArray(data.inflows) ? data.inflows : [];
+  if (!data.expenses.length && !data.budget.length && !inflows.length && !data.limit) {
     delete all[monthKey];
   } else {
-    all[monthKey] = { limit: FMT.parse(data.limit), expenses: data.expenses, budget: data.budget };
+    all[monthKey] = { limit: FMT.parse(data.limit), expenses: data.expenses, budget: data.budget, inflows };
   }
   LS.controling.set(all);
+}
+// Entradas: recebidas (viram limite real) vs previstas (não disponíveis ainda). Fonte única.
+function ctrlInflows(m){
+  let received=0, forecasted=0;
+  (m.inflows||[]).forEach(i => { const a=FMT.parse(i.amount)||0; if(i.status==='received') received+=a; else forecasted+=a; });
+  return { received, forecasted };
 }
 
 function monthTotal(monthKey) {
@@ -6450,13 +6459,21 @@ function renderControling() {
   const spent  = m.expenses.reduce((s,e) => s + FMT.parse(e.value), 0);
   const budget = m.budget.reduce((s,e) => s + FMT.parse(e.value), 0);
   const limit  = Number(m.limit) || 0;
-  const overLimit = limit > 0 && spent > limit;
-  const overPct   = limit > 0 ? ((spent - limit)/limit*100) : 0;
-  const noLimit   = limit <= 0;
+  // ---- Entradas (fonte única): limite REAL = limite base + entradas recebidas ----
+  const inf = ctrlInflows(m);
+  const actualLimit   = limit + inf.received;        // dinheiro efetivamente disponível
+  const forecastLimit = inf.forecasted;              // previsto — NÃO disponível ainda
+  const availToSpend  = actualLimit - spent;         // ★ o que posso gastar HOJE
+  const futureCapacity= actualLimit + forecastLimit - spent; // capacidade com o previsto
+  const overLimit = actualLimit > 0 && spent > actualLimit;
+  const overPct   = actualLimit > 0 ? ((spent - actualLimit)/actualLimit*100) : 0;
+  const noLimit   = actualLimit <= 0;
 
-  // Para as 3 barras: 100% = max(limit, spent, budget) (se limit existe, usa limit; senão o maior)
-  const scale = Math.max(limit, spent, budget, 1);
-  const pctLimit  = limit  > 0 ? Math.min(100, limit/scale*100)  : 0;
+  // Escala das barras: inclui o previsto (parte hachurada) e o gasto
+  const scale = Math.max(actualLimit + forecastLimit, spent, budget, 1);
+  const pctActual  = Math.min(100, actualLimit/scale*100);      // parte SÓLIDA (disponível)
+  const pctForecast= Math.min(100, forecastLimit/scale*100);    // parte HACHURADA (prevista)
+  const pctLimit  = Math.min(100, (actualLimit)/scale*100);
   const pctSpent  = Math.min(120, spent/scale*100);  // pode passar se estourou
   const pctBudget = Math.min(100, budget/scale*100);
   // Nível do gasto em relação ao LIMITE (não à escala):
@@ -6524,14 +6541,29 @@ function renderControling() {
         </div>
       </div>
 
+      <!-- Resumo financeiro (posição atual) -->
+      <div class="ctrl-summary">
+        <div class="ctrl-sum-hero ${availToSpend<0?'neg':''}">
+          <div class="ctrl-sum-hero-lbl">Disponível para Gastar <span class="ctrl-sum-hero-tag">hoje · exclui previsto</span></div>
+          <div class="ctrl-sum-hero-val">${FMT.money(availToSpend)}</div>
+          <div class="ctrl-sum-hero-sub">Limite real ${FMT.money(actualLimit)} − Gasto ${FMT.money(spent)}${forecastLimit>0?` &nbsp;·&nbsp; com previsto chega a <b>${FMT.money(futureCapacity)}</b>`:''}</div>
+        </div>
+        <div class="ctrl-sum-grid">
+          <div class="ctrl-sum-it"><div class="ctrl-sum-k">◆ Limite real</div><div class="ctrl-sum-v">${FMT.money(actualLimit)}</div><div class="ctrl-sum-note">base ${FMT.money(limit)}${inf.received>0?` + recebido ${FMT.money(inf.received)}`:''}</div></div>
+          <div class="ctrl-sum-it forecast"><div class="ctrl-sum-k">▨ Previsto (a receber)</div><div class="ctrl-sum-v">${FMT.money(forecastLimit)}</div><div class="ctrl-sum-note">ainda não disponível</div></div>
+          <div class="ctrl-sum-it"><div class="ctrl-sum-k">● Gasto (comprometido)</div><div class="ctrl-sum-v">${FMT.money(spent)}</div><div class="ctrl-sum-note">${m.expenses.length} lançamento(s)</div></div>
+          <div class="ctrl-sum-it"><div class="ctrl-sum-k">＋ Capacidade futura</div><div class="ctrl-sum-v">${FMT.money(futureCapacity)}</div><div class="ctrl-sum-note">real + previsto − gasto</div></div>
+        </div>
+      </div>
+
       <!-- 3 barras comparativas -->
       <div class="ctrl-bars">
         <div class="ctrl-bar ${noLimit?'ctrl-bar-empty':''}">
           <div class="ctrl-bar-hd">
-            <span class="ctrl-bar-lbl">🎯 LIMITE</span>
-            <span class="ctrl-bar-val" style="font-family:var(--font-mono)">${noLimit?'<em style="font-style:normal;color:var(--text3);font-size:11px;letter-spacing:.08em">DEFINIR LIMITE</em>':FMT.money(limit)}</span>
+            <span class="ctrl-bar-lbl">🎯 LIMITE${forecastLimit>0?' <span class="ctrl-hatch-lg">▨ previsto</span>':''}</span>
+            <span class="ctrl-bar-val" style="font-family:var(--font-mono)">${noLimit?'<em style="font-style:normal;color:var(--text3);font-size:11px;letter-spacing:.08em">DEFINIR LIMITE</em>':FMT.money(actualLimit)+(forecastLimit>0?` <span style="color:var(--text3);font-size:11px">(+${FMT.money(forecastLimit)} prev.)</span>`:'')}</span>
           </div>
-          <div class="pw ctrl-pw"><div class="pb ctrl-pb pb-limit" style="width:${pctLimit}%"></div></div>
+          <div class="pw ctrl-pw ctrl-limit-track"><div class="pb ctrl-pb pb-limit" style="width:${pctActual}%"></div><div class="ctrl-pb-forecast" style="width:${pctForecast}%"></div></div>
         </div>
         <div class="ctrl-bar ${overLimit?'ctrl-bar-over':''}">
           <div class="ctrl-bar-hd">
@@ -6544,6 +6576,18 @@ function renderControling() {
           <div class="ctrl-bar-hd"><span class="ctrl-bar-lbl">📋 BUDGET</span><span class="ctrl-bar-val" style="font-family:var(--font-mono)">${FMT.money(budget)}</span></div>
           <div class="pw ctrl-pw"><div class="pb ctrl-pb pb-budget" style="width:${pctBudget}%"></div></div>
         </div>
+      </div>
+
+      <!-- Entradas previstas / recebidas -->
+      <div class="ctrl-inflows">
+        <div class="ctrl-inflows-hd">
+          <span class="sec-title" style="margin:0;padding:0;border:none">📥 Entradas — dinheiro a receber</span>
+          <button class="btn btn-p" onclick="addInflow('${monthKey}')">+ Nova entrada</button>
+        </div>
+        ${m.inflows.length ? `<div class="tw"><table>
+          <thead><tr><th>Descrição</th><th>Data prevista</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th><th></th></tr></thead>
+          <tbody>${m.inflows.map(i => (typeof inflowRow==='function'?inflowRow(monthKey,i):'')).join('')}</tbody>
+        </table></div>` : `<div class="ctrl-inflows-empty">Nenhuma entrada prevista. Registre o que espera receber (salário, freela, reembolso…) — aparece <b>hachurado</b> no limite e só vira <b>saldo disponível</b> quando você marcar como recebido.</div>`}
       </div>
 
       <!-- Abas Gastos | Budget -->
@@ -11172,6 +11216,63 @@ window.appRefresh = function(){
   // pequeno atraso só pra dar feedback visual, depois recarrega
   setTimeout(function(){ try { location.reload(); } catch(e){ window.location.href = window.location.pathname; } }, 260);
 };
+</script>
+
+<!-- ============================================================
+     ░▒▓ CONTROLLING — entradas previstas + resumo financeiro ▓▒░
+     ============================================================ -->
+<style id="ctrl-forecast-style">
+/* Resumo financeiro topo */
+.ctrl-summary{display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:16px;margin:4px 0 22px}
+.ctrl-sum-hero{background:linear-gradient(180deg,rgba(10,132,255,.10),rgba(10,132,255,.02) 55%),var(--gs-card);border:1px solid rgba(10,132,255,.35);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--edge),0 0 0 1px rgba(10,132,255,.06),var(--sh-1);display:flex;flex-direction:column;justify-content:center}
+.ctrl-sum-hero.neg{border-color:rgba(240,82,75,.4);background:linear-gradient(180deg,rgba(240,82,75,.10),transparent 55%),var(--gs-card)}
+.ctrl-sum-hero-lbl{font-family:var(--font-hud);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-text-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctrl-sum-hero-tag{font-family:var(--font-mono);font-size:9px;color:var(--gs-text-3);border:1px solid var(--gs-border-2);border-radius:100px;padding:1px 8px;letter-spacing:.04em;text-transform:none}
+.ctrl-sum-hero-val{font-family:var(--font-mono);font-size:34px;font-weight:700;letter-spacing:-.01em;color:var(--gs-blue-l);margin:6px 0 4px;line-height:1}
+.ctrl-sum-hero.neg .ctrl-sum-hero-val{color:var(--gs-danger)}
+.ctrl-sum-hero-sub{font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3);letter-spacing:.02em}
+.ctrl-sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.ctrl-sum-it{background:var(--gs-card);border:1px solid var(--gs-border);border-radius:var(--r);padding:13px 15px;box-shadow:var(--edge)}
+.ctrl-sum-it.forecast{border-style:dashed;border-color:var(--gs-border-2);background:repeating-linear-gradient(45deg,rgba(10,132,255,.05) 0 7px,transparent 7px 14px),var(--gs-card)}
+.ctrl-sum-k{font-family:var(--font-hud);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text-3);margin-bottom:6px}
+.ctrl-sum-v{font-family:var(--font-mono);font-size:19px;font-weight:700;color:var(--gs-text);letter-spacing:-.01em}
+.ctrl-sum-it.forecast .ctrl-sum-v{color:var(--gs-blue-l)}
+.ctrl-sum-note{font-family:var(--font-mono);font-size:9.5px;color:var(--gs-text-3);margin-top:4px;letter-spacing:.02em}
+/* Barra de limite: sólido (disponível) + hachurado (previsto) */
+.ctrl-limit-track{display:flex !important;overflow:hidden}
+.ctrl-limit-track .pb-limit{flex:none}
+.ctrl-pb-forecast{flex:none;height:100%;background:repeating-linear-gradient(45deg,rgba(10,132,255,.55) 0 6px,rgba(10,132,255,.12) 6px 12px);border-left:1px solid rgba(53,198,255,.5);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.ctrl-hatch-lg{font-family:var(--font-mono);font-size:9px;color:var(--gs-blue-l);letter-spacing:.04em;margin-left:6px}
+/* Seção de entradas */
+.ctrl-inflows{margin:18px 0 6px;padding:16px;background:var(--gs-card);border:1px solid var(--gs-border);border-radius:var(--r-lg);box-shadow:var(--edge)}
+.ctrl-inflows-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ctrl-inflows-empty{padding:20px;text-align:center;color:var(--gs-text-3);font-size:12.5px;line-height:1.6;background:var(--gs-ink-2);border:1px dashed var(--gs-border-2);border-radius:var(--r)}
+.inflow-status{font-family:var(--font-mono);font-size:11px;font-weight:700;border-radius:100px;padding:5px 12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.inflow-status.fore{background:repeating-linear-gradient(45deg,rgba(10,132,255,.14) 0 6px,transparent 6px 12px),var(--gs-card-2);border:1px dashed var(--gs-blue);color:var(--gs-blue-l)}
+.inflow-status.recv{background:rgba(16,185,129,.16);border:1px solid var(--gs-success);color:var(--gs-success)}
+.inflow-status:hover{transform:scale(1.04)}
+tr.inflow-received{opacity:.72}
+body.is-mobile .ctrl-summary{grid-template-columns:1fr}
+</style>
+<script id="ctrl-forecast-script">
+// Linha da tabela de entradas + CRUD (fonte única: mês.inflows; recalcula tudo via renderControling)
+function inflowRow(mk, i){
+  const recv = i.status === 'received';
+  const val = (i.amount!==''&&i.amount!=null) ? FMT.num(FMT.parse(i.amount)) : '';
+  return `<tr class="${recv?'inflow-received':''}">
+    <td><input class="ii" value="${esc(i.desc||'')}" oninput="updInflow('${mk}','${i.id}','desc',this.value)" placeholder="Ex.: Salário, freela, reembolso..."></td>
+    <td style="width:150px"><input class="ii" type="date" value="${i.date||''}" oninput="updInflow('${mk}','${i.id}','date',this.value)" title="Data prevista"></td>
+    <td style="width:150px"><input class="ii" type="text" inputmode="decimal" value="${val}" oninput="updInflow('${mk}','${i.id}','amount',this.value)" onblur="fmtOnBlur(this);renderControling()" placeholder="0.00" style="text-align:right;font-family:var(--font-mono)"></td>
+    <td style="text-align:center"><button class="inflow-status ${recv?'recv':'fore'}" onclick="toggleInflow('${mk}','${i.id}')" title="${recv?'Recebido — clique para voltar a previsto':'Previsto — clique quando receber'}">${recv?'✓ Recebido':'▨ Previsto'}</button></td>
+    <td style="width:40px;text-align:right"><button class="btn btn-d" onclick="delInflow('${mk}','${i.id}')">🗑</button></td>
+  </tr>`;
+}
+function addInflow(mk){ const m=ctrlGetMonth(mk); m.inflows.push({id:uid(),desc:'',amount:'',date:dk(new Date()),status:'forecasted'}); ctrlSetMonth(mk,m); renderControling(); }
+function updInflow(mk,id,field,val){ const m=ctrlGetMonth(mk); const it=m.inflows.find(x=>x.id===id); if(!it)return; it[field]=val; ctrlSetMonth(mk,m); }
+function toggleInflow(mk,id){ const m=ctrlGetMonth(mk); const it=m.inflows.find(x=>x.id===id); if(!it)return;
+  if(it.status==='received'){ it.status='forecasted'; delete it.receivedAt; } else { it.status='received'; it.receivedAt=dk(new Date()); }
+  ctrlSetMonth(mk,m); renderControling(); }
+function delInflow(mk,id){ const m=ctrlGetMonth(mk); m.inflows=m.inflows.filter(x=>x.id!==id); ctrlSetMonth(mk,m); renderControling(); }
 </script>
 </body>
 </html>
