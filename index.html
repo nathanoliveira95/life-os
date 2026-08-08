@@ -3650,10 +3650,11 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
     <div class="tw">
       <table>
         <thead><tr>
-          <th>Ticker</th><th>Tipo</th><th>Moeda</th><th style="text-align:right">Qtd</th><th style="text-align:right">P. Médio</th><th style="text-align:right">Rent.</th><th>Notas</th><th></th>
+          <th>Ticker</th><th>Tipo</th><th>Plataforma</th><th>Moeda</th><th style="text-align:right">Qtd</th><th style="text-align:right">P. Médio</th><th style="text-align:right">Rent.</th><th>Notas</th><th></th>
         </tr></thead>
         <tbody id="investbl-body"></tbody>
       </table>
+      <datalist id="platform-list"></datalist>
     </div>
   </div>
 
@@ -6003,7 +6004,7 @@ function renderPortfolio() {
           return `<tr class="port-row">
             <td class="pt-asset">
               <div class="pt-tname">${esc(tname)}${r.auto?'<span class="pt-auto" title="Cotação automática">●</span>':''}</div>
-              <div class="pt-ttype">${esc(r.it.tipo||'—')}</div>
+              <div class="pt-ttype">${esc(r.it.tipo||'—')}${r.it.platform?`<span class="pt-platform" title="Plataforma">${esc(r.it.platform)}</span>`:''}</div>
             </td>
             <td style="text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--text2)">${esc(r.cur)}</td>
             <td style="text-align:right;font-family:var(--font-mono)">${FMT.qty(r.qty)}</td>
@@ -6230,7 +6231,8 @@ function renderPortPie(byTipo, total) {
 }
 
 function openPortModal(it) {
-  const i = it || { id:'', ticker:'', nome:'', tipo:'Ações', currency:'BRL', qty:'', avgPrice:'', precoAtual:'', dataCompra:'' };
+  const i = it || { id:'', ticker:'', nome:'', tipo:'Ações', currency:'BRL', qty:'', avgPrice:'', precoAtual:'', dataCompra:'', platform:'' };
+  try{ fillPlatformDatalist(); }catch(e){}
   const ticker = i.ticker || i.nome || '';
   const isB = (ticker.toUpperCase().trim()==='BTC' || ticker.toUpperCase().trim()==='BITCOIN');
   document.getElementById('mc').innerHTML = `
@@ -6248,8 +6250,13 @@ function openPortModal(it) {
             </select>
           </div>
         </div>
-        <div class="fg"><label>Tipo</label>
-          <select id="po-tipo">${PORT_TIPOS.map(t => `<option value="${t}" ${i.tipo===t?'selected':''}>${t}</option>`).join('')}</select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>Tipo</label>
+            <select id="po-tipo">${PORT_TIPOS.map(t => `<option value="${t}" ${i.tipo===t?'selected':''}>${t}</option>`).join('')}</select>
+          </div>
+          <div class="fg"><label>Plataforma / Corretora</label>
+            <input id="po-platform" list="platform-list" value="${esc(i.platform||'')}" placeholder="Ex: XP, BTG, Binance…" title="Onde investiu — digite qualquer uma">
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="fg"><label>Quantidade</label>
@@ -6335,7 +6342,8 @@ async function savePort(id) {
     qty: FMT.parse(document.getElementById('po-qty').value),
     avgPrice: FMT.parse(document.getElementById('po-avg').value),
     precoAtual: isB ? '' : FMT.parse(document.getElementById('po-price')?.value || window._poEdit?.precoAtual || ''),
-    dataCompra: document.getElementById('po-date').value || ''
+    dataCompra: document.getElementById('po-date').value || '',
+    platform: (document.getElementById('po-platform')?.value || '').trim()
   };
   if (id) {
     const idx = items.findIndex(i => i.id===id);
@@ -6907,11 +6915,20 @@ function resizeImage(file, maxDim, cb) {
    MÓDULO 10 — BACKLOG INVEST (CRUD dos ativos)
    ========================================= */
 
+// Plataformas comuns (sugestões) — o usuário pode digitar qualquer outra
+const INVEST_PLATFORMS = ['XP','BTG','Itaú','Nubank','Binance','Interactive Brokers','Rico','Clear','Inter','C6','Avenue','Mercado Bitcoin','Toro','Warren','Órama','Outra'];
+function fillPlatformDatalist(){
+  const el = document.getElementById('platform-list'); if(!el) return;
+  const used = [...new Set(LS.portfolio.get().map(x=>(x.platform||'').trim()).filter(Boolean))];
+  const all = [...new Set([...used, ...INVEST_PLATFORMS])];
+  el.innerHTML = all.map(p=>`<option value="${esc(p)}"></option>`).join('');
+}
 function renderInvestBL() {
+  fillPlatformDatalist();
   const items = LS.portfolio.get();
   if (!items.length) {
     document.getElementById('investbl-body').innerHTML =
-      `<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--text3)">Nenhum investimento ainda. Clique em <strong style="color:var(--accent-l)">+ Novo Investimento</strong>.</td></tr>`;
+      `<tr><td colspan="9" style="padding:30px;text-align:center;color:var(--text3)">Nenhum investimento ainda. Clique em <strong style="color:var(--accent-l)">+ Novo Investimento</strong>.</td></tr>`;
     return;
   }
   document.getElementById('investbl-body').innerHTML = items.map(i => {
@@ -6932,6 +6949,7 @@ function renderInvestBL() {
           ${PORT_TIPOS.map(tp => `<option value="${tp}" ${i.tipo===tp?'selected':''}>${tp}</option>`).join('')}
         </select>
       </td>
+      <td><input class="ii bl-platform" list="platform-list" value="${esc(i.platform||'')}" oninput="updateInvest('${i.id}','platform',this.value)" placeholder="Corretora…" title="Plataforma/corretora onde investiu"></td>
       <td>
         <select class="ii" onchange="updateInvest('${i.id}','currency',this.value);renderInvestBL()" title="Moeda em que foi comprado" style="font-family:var(--font-mono)">
           <option value="BRL" ${cur==='BRL'?'selected':''}>R$ BRL</option>
@@ -11365,6 +11383,12 @@ img{ max-width:100%; }
 }
 /* Visualização em tela cheia (modal) → contain: mostra a imagem inteira, sem cortar nem esticar */
 #mc .modal img, .overlay img.img-full{ object-fit:contain !important; height:auto !important; max-height:74vh; width:auto; max-width:100%; }
+</style>
+
+<!-- Backlog Invest — campo Plataforma (discreto) -->
+<style id="platform-style">
+.pt-platform{display:inline-block;margin-left:7px;font-family:var(--font-mono);font-size:9px;letter-spacing:.04em;color:var(--gs-text-3);background:var(--gs-card-2);border:1px solid var(--gs-border);border-radius:100px;padding:1px 7px;vertical-align:middle}
+.bl-platform{min-width:92px}
 </style>
 </body>
 </html>
