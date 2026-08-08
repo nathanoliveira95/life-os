@@ -1780,6 +1780,8 @@ body.is-mobile .main-deco-tl,body.is-mobile .main-deco-tr,body.is-mobile .deco,b
 .hud-mini-btn:hover{border-color:var(--accent);color:var(--accent-l)}
 .hud-mini-btn.active{background:rgba(0,168,255,.12);border-color:var(--accent);color:var(--accent-l);box-shadow:inset 0 0 8px rgba(0,212,255,.15)}
 .hud-source{position:absolute;bottom:6px;right:14px;font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:var(--text3);opacity:.55;text-transform:uppercase;pointer-events:none}
+/* Mobile: o selo decorativo "SOURCE:" sobrepunha a legenda do heatmap — passa a fluir abaixo */
+body.is-mobile .hud-source{position:static;bottom:auto;right:auto;display:block;text-align:right;margin-top:8px;opacity:.4}
 
 /* ░▒▓ 1. ANNUAL HEATMAP ▓▒░ */
 .heatmap-wrap{overflow-x:auto;padding:8px 4px 6px;-webkit-overflow-scrolling:touch}
@@ -3067,7 +3069,7 @@ body.is-mobile .gcal-pop{ position: fixed; left: 10px; right: 10px; transform: n
 /* ---------- Processos: tabela estilo planilha ---------- */
 .proc-table th{white-space:nowrap}
 .proc-table td{padding:6px 8px;vertical-align:middle}
-.proc-in{width:100%;background:transparent;border:1px solid transparent;border-radius:6px;padding:7px 9px;color:var(--text);font-size:13px}
+.proc-in{width:100%;min-width:150px;background:transparent;border:1px solid transparent;border-radius:6px;padding:7px 9px;color:var(--text);font-size:13px}
 .proc-in:hover{border-color:var(--border)}
 .proc-in:focus{outline:none;border-color:var(--accent-l);background:var(--input)}
 .proc-mark{width:38px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);font-size:16px;font-weight:800;cursor:pointer;transition:all .15s;line-height:1}
@@ -10396,7 +10398,11 @@ body.is-mobile .bl-count{margin-left:0}
 .ndt-del{flex:none;width:24px;height:24px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--gs-text-3);cursor:pointer;font-size:12px;transition:all .15s}
 .ndt-del:hover{border-color:var(--gs-danger);color:var(--gs-danger)}
 .ndt-add{display:flex;gap:8px;margin-top:8px}
-.ndt-add-inp{flex:1}
+.ndt-add-inp{flex:1;min-width:0}
+/* Mobile: input e botão empilham para o placeholder não cortar */
+body.is-mobile .ndt-add{flex-wrap:wrap}
+body.is-mobile .ndt-add-inp{flex:1 1 100%}
+body.is-mobile .ndt-add>.btn{width:100%}
 .ndt-xp-sum{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--gs-blue-l);letter-spacing:.05em;font-weight:400}
 .ndt-empty{color:var(--gs-text-3);font-size:12px;padding:10px 2px}
 
