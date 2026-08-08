@@ -5894,14 +5894,22 @@ function renderPortfolio() {
     }
 
     const investedNative = qty * avg;
-    const currentNative  = qty * priceNow;
+    // FALLBACK: valor de mercado indisponível (sem cotação e sem preço manual) → NÃO trata como zero/-100%.
+    // Usa o valor investido como valor exibido temporário (neutro). Guarda a distinção internamente (fallback).
+    let fallback = false;
+    let currentNative = qty * priceNow;
+    if (priceNow <= 0 && investedNative > 0) {
+      currentNative = investedNative;   // exibe o investido, performance fica pendente (0, não -100%)
+      fallback = true;
+    }
     const invDisp = convertCur(investedNative, cur, portCur, fxRate);
     const curDisp = convertCur(currentNative,  cur, portCur, fxRate);
     totalInvested += invDisp;
     totalCurrent  += curDisp;
 
-    return { it, qty, avg, cur, priceNow, invDisp, curDisp, auto, isBtc: isBTC(it) };
+    return { it, qty, avg, cur, priceNow, invDisp, curDisp, auto, fallback, isBtc: isBTC(it) };
   });
+  const anyFallback = rows.some(r => r.fallback);
 
   const lucro = totalCurrent - totalInvested;
   const rent  = totalInvested > 0 ? (lucro/totalInvested*100) : 0;
@@ -5943,6 +5951,7 @@ function renderPortfolio() {
       </div>
       <div class="phud-pwbar"><div class="${pwCls}" style="width:${pwWidth}%"></div></div>
       <div class="phud-pwbar-lbl"><span>Rentabilidade acumulada</span><span style="color:${rentCol}">${FMT.pct(rent)}</span></div>
+      ${anyFallback?`<div class="port-fallback-note">⚠ Sem cotação de mercado para ${rows.filter(r=>r.fallback).length} ativo(s) — exibindo o valor investido no lugar (não é perda). Atualiza sozinho quando a cotação voltar.</div>`:''}
       <div class="phud-attrs">
         <div class="phud-attr"><div class="l">Investido</div><div class="v">${FMT.money(totalInvested, 'BRL')}</div></div>
         <div class="phud-attr"><div class="l">Resultado</div><div class="v ${rescls}">${resArrow}${FMT.money(lucro, 'BRL')}</div></div>
@@ -5995,13 +6004,18 @@ function renderPortfolio() {
           const l = r.curDisp - r.invDisp;
           const rpct = r.invDisp > 0 ? (l/r.invDisp*100) : 0;
           let cls = 'port-zero', arrow = '—';
-          if (l > 0.005)      { cls = 'port-pos'; arrow = '▲'; }
-          else if (l < -0.005){ cls = 'port-neg'; arrow = '▼'; }
+          if (!r.fallback && l > 0.005)      { cls = 'port-pos'; arrow = '▲'; }
+          else if (!r.fallback && l < -0.005){ cls = 'port-neg'; arrow = '▼'; }
           const tname = r.it.ticker || r.it.nome || '—';
           const priceCell = r.priceNow > 0
             ? `${FMT.money(r.priceNow, r.cur)}${r.auto?' '+dot:''}`
             : (r.isBtc ? '<span style="color:var(--text3)">aguardando...</span>' : '<span style="color:var(--text3)">defina</span>');
-          return `<tr class="port-row">
+          const curCell = r.fallback
+            ? `${FMT.money(r.curDisp, portCur)}<span class="pt-fallback" title="Valor de mercado indisponível — exibindo o valor investido. Assim que a cotação voltar, atualiza sozinho.">≈ investido</span>`
+            : FMT.money(r.curDisp, portCur);
+          const profitCell = r.fallback ? '<span style="color:var(--text3)">pendente</span>' : `${arrow} ${FMT.money(l, portCur)}`;
+          const pctCell    = r.fallback ? '<span style="color:var(--text3)" title="Aguardando dados de mercado">— · s/ cotação</span>' : FMT.pct(rpct);
+          return `<tr class="port-row${r.fallback?' port-row-fallback':''}">
             <td class="pt-asset">
               <div class="pt-tname">${esc(tname)}${r.auto?'<span class="pt-auto" title="Cotação automática">●</span>':''}</div>
               <div class="pt-ttype">${esc(r.it.tipo||'—')}${r.it.platform?`<span class="pt-platform" title="Plataforma">${esc(r.it.platform)}</span>`:''}</div>
@@ -6011,9 +6025,9 @@ function renderPortfolio() {
             <td style="text-align:right;font-family:var(--font-mono)">${FMT.money(r.avg, r.cur)}</td>
             <td style="text-align:right;font-family:var(--font-mono)">${priceCell}</td>
             <td style="text-align:right;font-family:var(--font-mono)">${FMT.money(r.invDisp, portCur)}</td>
-            <td style="text-align:right;font-family:var(--font-mono)">${FMT.money(r.curDisp, portCur)}</td>
-            <td style="text-align:right;font-family:var(--font-mono);font-weight:600" class="${cls}">${arrow} ${FMT.money(l, portCur)}</td>
-            <td style="text-align:right;font-family:var(--font-mono);font-weight:600" class="${cls}">${FMT.pct(rpct)}</td>
+            <td style="text-align:right;font-family:var(--font-mono)">${curCell}</td>
+            <td style="text-align:right;font-family:var(--font-mono);font-weight:600" class="${cls}">${profitCell}</td>
+            <td style="text-align:right;font-family:var(--font-mono);font-weight:600" class="${cls}">${pctCell}</td>
             <td style="text-align:right;white-space:nowrap">
               <button class="btn btn-g btn-ghost" title="Editar" onclick="editPort('${r.it.id}')">✎</button>
               <button class="btn btn-d btn-ghost" title="Excluir" onclick="delPort('${r.it.id}')">🗑</button>
@@ -6937,11 +6951,15 @@ function renderInvestBL() {
     const qty = FMT.parse(i.qty), avg = FMT.parse(i.avgPrice);
     let priceNow = FMT.parse(i.precoAtual);
     if (isBTC(i) && BTC_CACHE.data) priceNow = (cur==='USD' ? BTC_CACHE.data.usd : BTC_CACHE.data.brl);
-    const invested = qty*avg, current = qty*priceNow;
+    const invested = qty*avg;
+    // Fallback: sem cotação → performance pendente (não -100%)
+    const fallback = priceNow <= 0 && invested > 0;
+    const current = fallback ? invested : qty*priceNow;
     const l = current - invested, r = invested > 0 ? (l/invested*100) : 0;
     let cls = 'port-zero', arrow='';
-    if (l > 0.005) { cls='port-pos'; arrow='▲'; }
-    else if (l < -0.005) { cls='port-neg'; arrow='▼'; }
+    if (!fallback && l > 0.005) { cls='port-pos'; arrow='▲'; }
+    else if (!fallback && l < -0.005) { cls='port-neg'; arrow='▼'; }
+    const rentCell = fallback ? '<span style="color:var(--text3)" title="Valor de mercado indisponível — mostrando o investido">pendente</span>' : `${arrow} ${FMT.pct(r)}`;
     return `<tr>
       <td><input class="ii" value="${esc(ticker)}" oninput="updateInvest('${i.id}','ticker',this.value)" onblur="renderInvestBL()" style="text-transform:uppercase" placeholder="Ticker"></td>
       <td>
@@ -6958,7 +6976,7 @@ function renderInvestBL() {
       </td>
       <td style="text-align:right"><input class="ii" type="text" inputmode="decimal" value="${qty?FMT.qty(qty):''}" oninput="updateInvest('${i.id}','qty',this.value)" onblur="fmtOnBlurQty(this);renderInvestBL()" style="text-align:right;font-family:var(--font-mono)" placeholder="Qtd"></td>
       <td style="text-align:right"><input class="ii" type="text" inputmode="decimal" value="${avg?FMT.num(avg):''}" oninput="updateInvest('${i.id}','avgPrice',this.value)" onblur="fmtOnBlur(this);renderInvestBL()" style="text-align:right;font-family:var(--font-mono)" placeholder="P. médio"></td>
-      <td style="text-align:right;font-family:var(--font-mono);font-weight:600" class="${cls}">${arrow} ${FMT.pct(r)}</td>
+      <td style="text-align:right;font-family:var(--font-mono);font-weight:600" class="${cls}">${rentCell}</td>
       <td><input class="ii" value="${esc(i.notas||'')}" oninput="updateInvest('${i.id}','notas',this.value)" placeholder="—"></td>
       <td style="text-align:right"><button class="btn btn-g" onclick="editPort('${i.id}')" title="Editar completo">✎</button> <button class="btn btn-d" onclick="delPort('${i.id}')">🗑</button></td>
     </tr>`;
@@ -8271,7 +8289,9 @@ function openProgPhotoModal(wkKey) {
       if (typeof isBTC === 'function' && isBTC(it) && btc){
         priceNow = (cur === 'USD') ? btc.usd : btc.brl;
       }
-      let nativeVal = qty * priceNow;
+      const avg = (typeof FMT !== 'undefined') ? FMT.parse(it.avgPrice) : parseFloat(it.avgPrice)||0;
+      // Fallback: sem cotação → usa o investido (não zera o patrimônio)
+      let nativeVal = (priceNow > 0) ? qty * priceNow : qty * avg;
       // Converte pra BRL
       if (cur === 'USD' && fxRate) nativeVal = nativeVal * fxRate;
       totalBRL += nativeVal;
@@ -9877,7 +9897,9 @@ body.is-mobile .dcar-slide{flex-basis:260px}
         const qty = parse(it.qty); const cur = it.currency||'BRL';
         let price = parse(it.precoAtual);
         if (typeof isBTC==='function' && isBTC(it) && btc){ price = (cur==='USD')?btc.usd:btc.brl; }
-        let val = qty*price; if (cur==='USD') val *= fx;
+        const avg = parse(it.avgPrice);
+        let val = (price>0) ? qty*price : qty*avg;  // fallback: sem cotação → investido
+        if (cur==='USD') val *= fx;
         total += val;
       });
       return total;
@@ -11389,6 +11411,10 @@ img{ max-width:100%; }
 <style id="platform-style">
 .pt-platform{display:inline-block;margin-left:7px;font-family:var(--font-mono);font-size:9px;letter-spacing:.04em;color:var(--gs-text-3);background:var(--gs-card-2);border:1px solid var(--gs-border);border-radius:100px;padding:1px 7px;vertical-align:middle}
 .bl-platform{min-width:92px}
+/* Portfolio — indicador de fallback (valor de mercado indisponível) */
+.pt-fallback{display:inline-block;margin-left:6px;font-family:var(--font-mono);font-size:8.5px;letter-spacing:.03em;color:var(--gs-warn,#E0A028);border:1px solid rgba(224,160,40,.35);border-radius:100px;padding:0 6px;vertical-align:middle}
+.port-row-fallback{background:repeating-linear-gradient(45deg,rgba(224,160,40,.03) 0 8px,transparent 8px 16px)}
+.port-fallback-note{margin-top:10px;font-family:var(--font-mono);font-size:10.5px;line-height:1.5;color:var(--gs-warn,#E0A028);background:rgba(224,160,40,.06);border:1px solid rgba(224,160,40,.25);border-radius:8px;padding:8px 11px}
 </style>
 </body>
 </html>
