@@ -2337,12 +2337,12 @@ tbody td{ padding: 10px 12px !important; font-size: 13px !important; color: var(
 .oliv-boot-bar > i{ background: var(--gs-blue) !important; box-shadow: none !important; }
 .oliv-boot-scan{ display:none !important; }
 
-/* ===== Saude / Heatmap ===== */
-.heatmap-cell.lvl-0{ fill: #1A2535 !important; stroke: rgba(115,153,198,.08) !important; }
-.heatmap-cell.lvl-1{ fill: rgba(115,153,198,.30) !important; }
-.heatmap-cell.lvl-2{ fill: rgba(115,153,198,.60) !important; }
-.heatmap-cell.lvl-3{ fill: var(--gs-blue) !important; filter: none !important; }
-.heatmap-cell:hover{ filter: brightness(1.3) !important; }
+/* ===== Saude / Heatmap — escala de intensidade elétrica (contraste claro) ===== */
+.heatmap-cell.lvl-0{ fill: #111a24 !important; stroke: rgba(53,198,255,.07) !important; stroke-width:.5 !important; }
+.heatmap-cell.lvl-1{ fill: rgba(10,132,255,.30) !important; }
+.heatmap-cell.lvl-2{ fill: rgba(10,132,255,.62) !important; }
+.heatmap-cell.lvl-3{ fill: var(--gs-blue-glow, #35C6FF) !important; filter: drop-shadow(0 0 4px rgba(53,198,255,.5)) !important; }
+.heatmap-cell:hover{ filter: brightness(1.35) !important; }
 .heatmap-cell.hm-anim{ animation: none !important; }
 
 /* ===== Calendar ===== */
@@ -4285,25 +4285,28 @@ function _streakColor(n) {
 // Sequência de dias (contando de hoje pra trás) que bateram a meta.
 // kind 'diet' = dietPct>=DIET_THRESHOLD ; kind 'treino' = treino registrado != 'X'.
 // Dia de hoje vazio não quebra a sequência (ainda dá tempo de registrar).
-function _calcStreak(saude, kind) {
-  const today = new Date(); today.setHours(0,0,0,0);
+// ---- Streak centralizado (Treino e Dieta usam a MESMA metodologia) ----
+// Regra: HOJE só afeta a sequência depois de registrado. Enquanto hoje não tem registro,
+// a sequência é contada a partir de ONTEM (não é considerada quebra). Um dia PASSADO sem
+// registro, ou HOJE registrado como falha (treino X / dieta abaixo da meta), encerra a sequência.
+function calcStreak(isOk, isRegistered) {
+  const today = new Date(); today.setHours(12,0,0,0);   // meio-dia: dk() usa America/Sao_Paulo (TZ-safe)
   let streak = 0;
   for (let i = 0; i < 400; i++) {
     const d = new Date(today); d.setDate(today.getDate() - i);
-    const e = saude[dk(d)];
-    let ok;
-    if (kind === 'diet') {
-      const raw = e ? e.dietPct : undefined;
-      const has = raw !== undefined && raw !== null && raw !== '';
-      ok = has && parseFloat(raw) >= DIET_THRESHOLD;
-    } else {
-      // Treino: A/B/C/D/E ou R (descanso planejado) mantêm o streak; X (faltou) quebra.
-      ok = !!(e && e.treino && e.treino !== 'X');
-    }
-    if (ok) streak++;
-    else if (i > 0) break;   // dia passado sem bater a meta encerra a sequência
+    const key = dk(d);
+    if (i === 0 && !isRegistered(key)) continue;   // hoje ainda não registrado → conta de ontem
+    if (isOk(key)) streak++; else break;
   }
   return streak;
+}
+function _dietRegistered(saude, key){ const r = saude[key] ? saude[key].dietPct : undefined; return r !== undefined && r !== null && r !== ''; }
+function _dietOk(saude, key){ return _dietRegistered(saude, key) && parseFloat(saude[key].dietPct) >= DIET_THRESHOLD; }
+function _treinoRegistered(saude, key){ return !!(saude[key] && saude[key].treino); }
+function _treinoOk(saude, key){ return !!(saude[key] && saude[key].treino && saude[key].treino !== 'X'); } // A/B/C/D/E/R ok; X quebra
+function _calcStreak(saude, kind) {
+  if (kind === 'diet') return calcStreak(k => _dietOk(saude, k), k => _dietRegistered(saude, k));
+  return calcStreak(k => _treinoOk(saude, k), k => _treinoRegistered(saude, k));
 }
 
 // Renderiza o bloco de destaques no topo do dashboard:
@@ -7808,11 +7811,18 @@ function openProgPhotoModal(wkKey) {
         else run=0;
         it.setDate(it.getDate()+1);
       }
-      // sequência atual: conta de hoje para trás
-      let cur=0; const dd=new Date(today);
-      while (dd >= start){
-        if (isOn(dkey(dd))){ cur++; dd.setDate(dd.getDate()-1); } else break;
-      }
+      // sequência atual — lógica central: hoje sem registro NÃO quebra a sequência
+      const isReg = (key) => {
+        const s = saude[key] || {}; const n = notes[key];
+        const tReg = !!s.treino;
+        const dReg = (s.dietPct !== undefined && s.dietPct !== '' && s.dietPct !== null);
+        const nReg = n ? ((typeof n === 'string') ? n.trim().length > 0 : ((n.today||'')+(n.week||'')+(n.general||'')).trim().length > 0) : false;
+        if (HM.filter === 'treino') return tReg;
+        if (HM.filter === 'dieta')  return dReg;
+        if (HM.filter === 'note')   return nReg;
+        return tReg || dReg || nReg;
+      };
+      const cur = (typeof calcStreak === 'function') ? calcStreak(k => isOn(k), k => isReg(k)) : 0;
       const pct = elapsed ? Math.round(active/elapsed*100) : 0;
       statHost.innerHTML = `
         <div class="hm-stat"><div class="hm-stat-val streak">🔥 ${cur}</div><div class="hm-stat-lbl">Sequência atual</div></div>
@@ -8272,18 +8282,8 @@ function openProgPhotoModal(wkKey) {
       intelligence = Math.min(999, filled * 3);
     } catch(e){}
     try {
-      const saude = LS.saude.get();
-      // streak de treino contando trás-pra-frente do hoje
-      const today = new Date(); today.setHours(0,0,0,0);
-      let streak = 0;
-      for (let i=0; i<365; i++){
-        const d = new Date(today); d.setDate(today.getDate()-i);
-        const k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        const e = saude[k];
-        if (e && e.treino && e.treino !== 'X') streak++;
-        else if (i>0) break;
-      }
-      discipline = streak;
+      // streak de treino — lógica central (hoje sem registro não quebra a sequência)
+      discipline = (typeof _calcStreak === 'function') ? _calcStreak(LS.saude.get(), 'treino') : 0;
     } catch(e){}
     return { strength, intelligence, discipline };
   }
