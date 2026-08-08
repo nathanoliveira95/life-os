@@ -6108,7 +6108,7 @@ function renderPortReturnsChart(rows, totalCurrent) {
     <div class="returns-stats">
       <div class="rs-item"><span class="rs-dot" style="background:#38BDF8"></span><span class="rs-lbl">Aportado</span><span class="rs-val">${FMT.money(totalAportado, portCur)}</span></div>
       <div class="rs-item"><span class="rs-dot" style="background:#10B981"></span><span class="rs-lbl">Patrimônio Atual</span><span class="rs-val" style="color:${lucroCol}">${FMT.money(totalCurrent, portCur)} <em style="font-style:normal;font-size:11px;color:${lucroCol}">(${lucro>=0?'+':''}${FMT.money(lucro, portCur)})</em></span></div>
-      <div class="rs-item"><span class="rs-dot" style="background:#A78BFA"></span><span class="rs-lbl">Bench SELIC</span><span class="rs-val">${FMT.money(series[series.length-1].selic, portCur)} <em style="font-style:normal;font-size:11px;color:var(--text3)">(+${FMT.money(ganhoSelic, portCur)})</em></span></div>
+      <div class="rs-item"><span class="rs-dot" style="background:#8296AE"></span><span class="rs-lbl">Bench SELIC</span><span class="rs-val">${FMT.money(series[series.length-1].selic, portCur)} <em style="font-style:normal;font-size:11px;color:var(--text3)">(+${FMT.money(ganhoSelic, portCur)})</em></span></div>
     </div>
     <svg viewBox="0 0 ${W} ${H}" class="returns-svg" preserveAspectRatio="none" style="width:100%;height:auto;max-height:380px">
       <defs>
@@ -6125,7 +6125,7 @@ function renderPortReturnsChart(rows, totalCurrent) {
       <path d="${areaFor('aportado')}" fill="url(#rg-aporte)"/>
       <!-- Linhas -->
       <path d="${lineFor('aportado')}" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      <path d="${lineFor('selic')}"    fill="none" stroke="#A78BFA" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${lineFor('selic')}"    fill="none" stroke="#8296AE" stroke-width="1.8" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>
       <path d="${lineFor('atual')}"    fill="none" stroke="#10B981" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(16,185,129,.55))"/>
       <!-- Ponto final destaque -->
       <circle cx="${xAt(series.length-1).toFixed(1)}" cy="${yAt(totalCurrent).toFixed(1)}" r="5" fill="#10B981" stroke="var(--card)" stroke-width="2"/>
@@ -6140,9 +6140,10 @@ function renderPortReturnsChart(rows, totalCurrent) {
 }
 
 // Paleta de cores por tipo (ciano-friendly)
+// Paleta restrained e coesa: família azul elétrica + verde (renda fixa) + âmbar (cripto) + slate (resto)
 const PIE_COLORS = {
-  'Ações':'#00D4FF','FIIs':'#38BDF8','Renda Fixa':'#10B981','Cripto':'#F59E0B',
-  'ETF':'#A78BFA','Internacional':'#F472B6','Outros':'#64748B'
+  'Ações':'#0A84FF','FIIs':'#35C6FF','Renda Fixa':'#10B981','Cripto':'#E0A028',
+  'ETF':'#4FB4FF','Internacional':'#6EA0D6','Outros':'#46617C'
 };
 
 function renderPortPie(byTipo, total) {
