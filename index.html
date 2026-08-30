@@ -3234,6 +3234,93 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   <div class="oliv-boot-scan"></div>
 </div>
 
+<!-- ░▒▓ HUB — SELETOR DE MÓDULOS (camada OS acima do app) ▓▒░
+     Cada bloco é um "site dentro do site". Por enquanto só o Lifestyle
+     está ativo; os demais são placeholders para o crescimento futuro. -->
+<style id="hub-style">
+#hub-screen{position:fixed;inset:0;z-index:9800;display:flex;align-items:center;justify-content:center;padding:32px 24px;
+  background:radial-gradient(circle at 50% 22%,rgba(10,132,255,.12),transparent 58%),var(--gs-ink,#06090f);
+  overflow-y:auto;-webkit-overflow-scrolling:touch}
+#hub-screen.hub-hidden{display:none}
+.hub-inner{width:100%;max-width:940px;text-align:center;margin:auto}
+.hub-brand{font-family:var(--font-hud,monospace);font-size:24px;font-weight:800;letter-spacing:.16em;color:var(--gs-blue-l,#35C6FF)}
+.hub-brandtag{font-family:var(--font-mono,monospace);font-size:9.5px;letter-spacing:.32em;color:var(--gs-text-3,#6b7c8f);margin-top:8px;text-transform:uppercase}
+.hub-title{font-family:var(--font-hud,monospace);font-size:29px;font-weight:700;color:var(--gs-text,#e8eef7);margin:36px 0 8px;letter-spacing:.01em}
+.hub-sub{font-family:var(--font-mono,monospace);font-size:12.5px;color:var(--gs-text-3,#6b7c8f);margin:0 auto 34px;max-width:540px;line-height:1.65}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;text-align:left}
+.hub-block{position:relative;background:var(--gs-card,#0e141d);border:1px solid var(--gs-border,#1c2733);border-radius:16px;
+  padding:24px 20px 20px;min-height:184px;display:flex;flex-direction:column;color:inherit;font:inherit;text-align:left;
+  transition:transform .16s cubic-bezier(.2,.8,.2,1),border-color .16s,box-shadow .16s}
+.hub-block.active{cursor:pointer;border-color:rgba(10,132,255,.42)}
+.hub-block.active:hover,.hub-block.active:focus-visible{transform:translateY(-4px);border-color:var(--gs-blue,#0A84FF);box-shadow:0 12px 44px rgba(10,132,255,.20);outline:none}
+.hub-block.active:active{transform:translateY(-1px)}
+.hub-block.soon{opacity:.48;cursor:not-allowed}
+.hub-block-ico{font-size:30px;line-height:1;margin-bottom:14px}
+.hub-block-name{font-family:var(--font-hud,monospace);font-size:18px;font-weight:700;color:var(--gs-text,#e8eef7);letter-spacing:.01em}
+.hub-block-desc{font-family:var(--font-mono,monospace);font-size:11.5px;color:var(--gs-text-3,#6b7c8f);line-height:1.55;margin-top:9px;flex:1}
+.hub-block-go{font-family:var(--font-hud,monospace);font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--gs-blue-l,#35C6FF);margin-top:14px}
+.hub-block-tag{position:absolute;top:16px;right:16px;font-family:var(--font-mono,monospace);font-size:8.5px;letter-spacing:.14em;
+  color:var(--gs-text-3,#6b7c8f);border:1px solid var(--gs-border-2,#26333f);border-radius:100px;padding:2px 9px}
+/* Enquanto o hub está aberto, esconde os botões flutuantes do app */
+body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
+@media(max-width:600px){#hub-screen{padding:26px 16px}.hub-title{font-size:23px;margin-top:26px}.hub-grid{grid-template-columns:1fr}.hub-block{min-height:150px}}
+</style>
+<div id="hub-screen" role="dialog" aria-label="Selecione um módulo">
+  <div class="hub-inner">
+    <div class="hub-brand">◇ OLIVER</div>
+    <div class="hub-brandtag">Sistema Operacional Pessoal</div>
+    <h1 class="hub-title">Selecione um módulo</h1>
+    <p class="hub-sub">Cada módulo é um espaço completo. Comece pelo <b style="color:var(--gs-blue-l,#35C6FF)">Lifestyle</b> — os demais chegam em breve.</p>
+    <div class="hub-grid">
+      <button type="button" class="hub-block active" onclick="enterModule('lifestyle')" aria-label="Entrar no módulo Lifestyle">
+        <div class="hub-block-ico">🌿</div>
+        <div class="hub-block-name">Lifestyle</div>
+        <div class="hub-block-desc">Metas, saúde, finanças, rotina, entrevistas — tudo que você já construiu.</div>
+        <div class="hub-block-go">Entrar →</div>
+      </button>
+      <div class="hub-block soon" aria-disabled="true">
+        <div class="hub-block-tag">EM BREVE</div>
+        <div class="hub-block-ico">📚</div>
+        <div class="hub-block-name">Estudos</div>
+        <div class="hub-block-desc">Um espaço dedicado a aprendizado, trilhas e conhecimento.</div>
+      </div>
+      <div class="hub-block soon" aria-disabled="true">
+        <div class="hub-block-tag">EM BREVE</div>
+        <div class="hub-block-ico">✦</div>
+        <div class="hub-block-name">Novo módulo</div>
+        <div class="hub-block-desc">Outros "sites dentro do site" serão adicionados aqui.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script id="hub-script">
+// ── HUB: camada de seleção de módulos acima do app Lifestyle ──────────
+function enterModule(mod){
+  if(mod!=='lifestyle') return;                 // só Lifestyle ativo por ora
+  try{ sessionStorage.setItem('oliver_module', mod); }catch(e){}
+  const hub=document.getElementById('hub-screen');
+  if(hub) hub.classList.add('hub-hidden');
+  document.body.classList.remove('hub-open');
+  try{ if(typeof toggleMobNav==='function') toggleMobNav(false); }catch(e){}
+  try{ if(typeof goto==='function' && !document.querySelector('.page.active')) goto('dashboard'); }catch(e){}
+}
+function showHub(){
+  try{ sessionStorage.removeItem('oliver_module'); }catch(e){}
+  try{ if(typeof toggleMobNav==='function') toggleMobNav(false); }catch(e){}
+  const hub=document.getElementById('hub-screen');
+  if(hub) hub.classList.remove('hub-hidden');
+  document.body.classList.add('hub-open');
+}
+window.enterModule=enterModule; window.showHub=showHub;
+// Estado inicial: já escolheu Lifestyle nesta sessão → entra direto; senão mostra o hub.
+(function initHub(){
+  let mod=null; try{ mod=sessionStorage.getItem('oliver_module'); }catch(e){}
+  const hub=document.getElementById('hub-screen');
+  if(mod==='lifestyle'){ if(hub) hub.classList.add('hub-hidden'); document.body.classList.remove('hub-open'); }
+  else { document.body.classList.add('hub-open'); }
+})();
+</script>
+
 <!-- ░▒▓ TOOLTIP CONTAINER ▓▒░ -->
 <div id="oliv-tip" role="tooltip" aria-hidden="true"></div>
 
@@ -3416,7 +3503,7 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sb-logo"><span>◇ OLIVER</span><button class="sb-min-btn" onclick="toggleSidebar()" title="Recolher / expandir menu" aria-label="Recolher menu">«</button></div>
+  <div class="sb-logo"><span class="sb-brand" onclick="showHub()" title="Voltar aos módulos" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showHub()}">◇ OLIVER <b class="sb-modtag">LIFESTYLE</b></span><button class="sb-min-btn" onclick="toggleSidebar()" title="Recolher / expandir menu" aria-label="Recolher menu">«</button></div>
   <div class="sb-group" data-g="home">
     <div class="sb-label sb-toggle">💻 Home<span class="sb-caret">▾</span></div>
     <div class="sb-group-items">
@@ -9366,6 +9453,10 @@ function delAporte(aid, pid){
 .sb-min-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
 body.sb-collapsed .sb-min-btn{transform:rotate(180deg)}
 body.is-mobile .sb-min-btn{display:none}
+/* Marca clicável na sidebar → volta ao hub de módulos; tag do módulo atual */
+.sb-brand{cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:color .15s}
+.sb-brand:hover{color:var(--gs-blue-l,#35C6FF)}
+.sb-modtag{font-family:var(--font-mono,monospace);font-size:8px;font-weight:700;letter-spacing:.14em;color:var(--gs-blue-l,#35C6FF);border:1px solid rgba(10,132,255,.4);border-radius:100px;padding:2px 7px;line-height:1}
 /* Recolher = ESCONDER por completo (sem faixa/rail residual). O conteúdo recupera toda a largura. */
 body:not(.is-mobile) .sidebar{transition:width .28s cubic-bezier(.4,0,.2,1), padding .28s cubic-bezier(.4,0,.2,1), opacity .2s ease !important}
 body:not(.is-mobile).sb-collapsed .sidebar{width:0 !important;min-width:0 !important;padding:0 !important;border-right:0 !important;box-shadow:none !important;overflow:hidden !important;opacity:0 !important;pointer-events:none !important}
