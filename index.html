@@ -3278,12 +3278,12 @@ body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
         <div class="hub-block-desc">Metas, saúde, finanças, rotina, entrevistas — tudo que você já construiu.</div>
         <div class="hub-block-go">Entrar →</div>
       </button>
-      <div class="hub-block soon" aria-disabled="true">
-        <div class="hub-block-tag">EM BREVE</div>
-        <div class="hub-block-ico">📚</div>
-        <div class="hub-block-name">Estudos</div>
-        <div class="hub-block-desc">Um espaço dedicado a aprendizado, trilhas e conhecimento.</div>
-      </div>
+      <button type="button" class="hub-block active" onclick="enterModule('toefl')" aria-label="Entrar no módulo 100+ TOEFL">
+        <div class="hub-block-ico">🎓</div>
+        <div class="hub-block-name">100+ TOEFL</div>
+        <div class="hub-block-desc">Seu espaço para bater 100+ no TOEFL — prática por seção, vocabulário e plano de estudo.</div>
+        <div class="hub-block-go">Entrar →</div>
+      </button>
       <div class="hub-block soon" aria-disabled="true">
         <div class="hub-block-tag">EM BREVE</div>
         <div class="hub-block-ico">✦</div>
@@ -3293,30 +3293,364 @@ body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
     </div>
   </div>
 </div>
+<!-- ░▒▓ MÓDULO: 100+ TOEFL ▓▒░
+     Espaço dedicado de estudo para o TOEFL. Container próprio, mostrado
+     quando body.in-toefl. Dados em lo_toefl (sincroniza via pushSupa). -->
+<style id="toefl-style">
+#module-toefl{position:fixed;inset:0;z-index:600;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:radial-gradient(circle at 50% -5%,rgba(10,132,255,.08),transparent 55%),var(--gs-ink,#06090f);color:var(--gs-text,#e8eef7)}
+body.in-toefl #module-toefl{display:block}
+body.in-toefl .sidebar,body.in-toefl .main,body.in-toefl .mob-nav-btn,body.in-toefl #sb-reopen,body.in-toefl #mobBackdrop{display:none !important}
+.tf-shell{max-width:960px;margin:0 auto;padding:26px 22px 60px}
+.tf-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.tf-brand{font-family:var(--font-hud,monospace);font-size:16px;font-weight:800;letter-spacing:.1em;color:var(--gs-text,#e8eef7);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.tf-brand:hover{color:var(--gs-blue-l,#35C6FF)}
+.tf-brand b{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--gs-blue-l,#35C6FF);border:1px solid rgba(10,132,255,.4);border-radius:100px;padding:2px 8px}
+.tf-hub-btn{font-family:var(--font-mono,monospace);font-size:11px;letter-spacing:.06em;color:var(--gs-text-3,#6b7c8f);background:var(--gs-card,#0e141d);border:1px solid var(--gs-border,#1c2733);border-radius:8px;padding:8px 14px;cursor:pointer;transition:border-color .15s,color .15s}
+.tf-hub-btn:hover{border-color:var(--gs-blue,#0A84FF);color:var(--gs-blue-l,#35C6FF)}
+.tf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;border-bottom:1px solid var(--gs-border,#1c2733);padding-bottom:2px}
+.tf-tab{font-family:var(--font-hud,monospace);font-size:12.5px;font-weight:600;letter-spacing:.03em;color:var(--gs-text-3,#6b7c8f);background:none;border:none;border-bottom:2px solid transparent;padding:9px 14px;cursor:pointer;transition:color .15s,border-color .15s}
+.tf-tab:hover{color:var(--gs-text-2,#9fb0c2)}
+.tf-tab.on{color:var(--gs-blue-l,#35C6FF);border-bottom-color:var(--gs-blue,#0A84FF)}
+/* Overview */
+.tf-hero{background:linear-gradient(180deg,rgba(10,132,255,.10),transparent 60%),var(--gs-card,#0e141d);border:1px solid rgba(10,132,255,.30);border-radius:16px;padding:22px;margin-bottom:18px}
+.tf-hero-top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.tf-hero-lbl{font-family:var(--font-hud,monospace);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-3,#6b7c8f)}
+.tf-hero-total{font-family:var(--font-mono,monospace);font-size:40px;font-weight:800;line-height:1;color:var(--gs-blue-l,#35C6FF)}
+.tf-hero-total small{font-size:17px;color:var(--gs-text-3,#6b7c8f);font-weight:600}
+.tf-hero-goal{text-align:right;font-family:var(--font-mono,monospace);font-size:12px;color:var(--gs-text-3,#6b7c8f)}
+.tf-hero-goal b{display:block;font-size:22px;color:var(--gs-text,#e8eef7)}
+.tf-total-track{position:relative;height:12px;border-radius:100px;background:var(--gs-ink-2,#0a0f16);border:1px solid var(--gs-border,#1c2733);overflow:hidden}
+.tf-total-fill{height:100%;background:linear-gradient(90deg,#0A84FF,#35C6FF);border-radius:100px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.tf-total-goal{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--gs-success,#10B981);box-shadow:0 0 8px rgba(16,185,129,.6)}
+.tf-total-cap{display:flex;justify-content:space-between;font-family:var(--font-mono,monospace);font-size:10px;color:var(--gs-text-3,#6b7c8f);margin-top:7px}
+.tf-sec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.tf-sec-card{background:var(--gs-card,#0e141d);border:1px solid var(--gs-border,#1c2733);border-radius:14px;padding:16px;border-top:2px solid var(--sc,#0A84FF)}
+.tf-sec-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.tf-sec-ico{font-size:18px}
+.tf-sec-name{font-family:var(--font-hud,monospace);font-size:14px;font-weight:700;flex:1}
+.tf-sec-best{font-family:var(--font-mono,monospace);font-size:20px;font-weight:800;color:var(--sc,#0A84FF)}
+.tf-sec-best small{font-size:11px;color:var(--gs-text-3,#6b7c8f);font-weight:600}
+.tf-sec-track{height:7px;border-radius:100px;background:var(--gs-ink-2,#0a0f16);overflow:hidden;margin-bottom:8px}
+.tf-sec-fill{height:100%;background:var(--sc,#0A84FF);border-radius:100px;transition:width .5s}
+.tf-sec-meta{font-family:var(--font-mono,monospace);font-size:10px;color:var(--gs-text-3,#6b7c8f)}
+.tf-info-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.tf-info{flex:1;min-width:150px;background:var(--gs-card,#0e141d);border:1px solid var(--gs-border,#1c2733);border-radius:12px;padding:14px 16px}
+.tf-info-k{font-family:var(--font-hud,monospace);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text-3,#6b7c8f);margin-bottom:5px}
+.tf-info-v{font-family:var(--font-mono,monospace);font-size:18px;font-weight:700}
+/* Forms & lists */
+.tf-card{background:var(--gs-card,#0e141d);border:1px solid var(--gs-border,#1c2733);border-radius:14px;padding:18px;margin-bottom:16px}
+.tf-card-title{font-family:var(--font-hud,monospace);font-size:13px;font-weight:700;letter-spacing:.03em;color:var(--gs-text,#e8eef7);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.tf-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.tf-fld{display:flex;flex-direction:column;gap:4px}
+.tf-fld label{font-family:var(--font-mono,monospace);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text-3,#6b7c8f)}
+.tf-in,.tf-sel{background:var(--gs-ink-2,#0a0f16);border:1px solid var(--gs-border,#1c2733);border-radius:8px;padding:9px 11px;color:var(--gs-text,#e8eef7);font-family:var(--font-mono,monospace);font-size:13px;min-width:0}
+.tf-in:focus,.tf-sel:focus{outline:none;border-color:var(--gs-blue,#0A84FF)}
+.tf-btn{background:linear-gradient(180deg,#1a8dff,#0A84FF);border:none;border-radius:8px;padding:10px 18px;color:#fff;font-family:var(--font-hud,monospace);font-size:13px;font-weight:700;cursor:pointer;transition:filter .15s}
+.tf-btn:hover{filter:brightness(1.1)}
+.tf-btn.ghost{background:var(--gs-card,#0e141d);border:1px solid var(--gs-border,#1c2733);color:var(--gs-text-2,#9fb0c2)}
+.tf-x{background:none;border:none;color:var(--gs-text-3,#6b7c8f);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;transition:color .15s,background .15s}
+.tf-x:hover{color:var(--gs-danger,#F0524B);background:rgba(240,82,75,.1)}
+.tf-empty{padding:26px;text-align:center;font-family:var(--font-mono,monospace);font-size:12px;color:var(--gs-text-3,#6b7c8f);border:1px dashed var(--gs-border-2,#26333f);border-radius:10px;line-height:1.6}
+.tf-pr-row{display:grid;grid-template-columns:56px auto 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--gs-hair,rgba(255,255,255,.05))}
+.tf-pr-date{font-family:var(--font-mono,monospace);font-size:11px;color:var(--gs-text-3,#6b7c8f)}
+.tf-sec-badge{font-family:var(--font-mono,monospace);font-size:10px;font-weight:700;color:var(--sc,#0A84FF);border:1px solid var(--sc,#0A84FF);border-radius:100px;padding:2px 9px;white-space:nowrap;justify-self:start}
+.tf-pr-score{font-family:var(--font-mono,monospace);font-size:15px;font-weight:800}
+.tf-pr-score small{font-size:10px;color:var(--gs-text-3,#6b7c8f);font-weight:600}
+.tf-pr-notes{font-family:var(--font-mono,monospace);font-size:11px;color:var(--gs-text-3,#6b7c8f);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tf-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.tf-chip{font-family:var(--font-mono,monospace);font-size:11px;color:var(--gs-text-2,#9fb0c2);background:var(--gs-ink-2,#0a0f16);border:1px solid var(--gs-border,#1c2733);border-radius:100px;padding:5px 11px;cursor:pointer}
+.tf-chip.on{color:var(--gs-success,#10B981);border-color:var(--gs-success,#10B981)}
+.tf-vc{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 4px;border-bottom:1px solid var(--gs-hair,rgba(255,255,255,.05))}
+.tf-vc.done .tf-vc-main b{color:var(--gs-success,#10B981)}
+.tf-vc-main{font-family:var(--font-mono,monospace);font-size:12.5px;line-height:1.5}
+.tf-vc-main b{font-size:14px;color:var(--gs-text,#e8eef7)}
+.tf-vc-main span{color:var(--gs-text-2,#9fb0c2);margin-left:6px}
+.tf-vc-main i{display:block;color:var(--gs-text-3,#6b7c8f);font-size:11px;margin-top:3px}
+.tf-vc-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tf-plan-it{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--gs-hair,rgba(255,255,255,.05));font-family:var(--font-mono,monospace);font-size:12.5px;cursor:pointer}
+.tf-plan-it input{width:16px;height:16px;accent-color:var(--gs-blue,#0A84FF);cursor:pointer}
+.tf-plan-it span{flex:1}
+.tf-plan-it.done span{text-decoration:line-through;color:var(--gs-text-3,#6b7c8f)}
+.tf-res-it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid var(--gs-hair,rgba(255,255,255,.05))}
+.tf-res-it a{font-family:var(--font-mono,monospace);font-size:12.5px;color:var(--gs-blue-l,#35C6FF);text-decoration:none}
+.tf-res-it a:hover{text-decoration:underline}
+@media(max-width:600px){
+  .tf-shell{padding:20px 15px 50px}
+  .tf-hero-total{font-size:34px}
+  .tf-pr-row{grid-template-columns:48px auto 1fr;grid-auto-rows:auto}
+  .tf-pr-notes{grid-column:1/-1;white-space:normal}
+  .tf-form .tf-fld,.tf-form .tf-in,.tf-form .tf-sel{flex:1 1 100%;width:100%}
+  .tf-form .tf-btn{flex:1 1 100%}
+}
+</style>
+<div id="module-toefl">
+  <div class="tf-shell">
+    <div class="tf-top">
+      <div class="tf-brand" onclick="showHub()" title="Voltar aos módulos" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showHub()}">◇ OLIVER <b>100+ TOEFL</b></div>
+      <button class="tf-hub-btn" onclick="showHub()">⟵ Módulos</button>
+    </div>
+    <div class="tf-tabs" id="tf-tabs"></div>
+    <div id="tf-main"></div>
+  </div>
+</div>
+<script id="toefl-script">
+(function(){
+  const KEY='lo_toefl';
+  const SECTIONS=[
+    {k:'reading',   name:'Reading',   ico:'📖', color:'#0A84FF'},
+    {k:'listening', name:'Listening', ico:'🎧', color:'#35C6FF'},
+    {k:'speaking',  name:'Speaking',  ico:'🎤', color:'#E0A028'},
+    {k:'writing',   name:'Writing',   ico:'✍️', color:'#10B981'},
+  ];
+  const secOf=k=>SECTIONS.find(s=>s.k===k)||SECTIONS[0];
+  const TABS=[
+    {k:'overview', name:'◎ Visão Geral'},
+    {k:'practice', name:'✎ Prática'},
+    {k:'vocab',    name:'🗂 Vocabulário'},
+    {k:'plan',     name:'✓ Plano'},
+  ];
+  const DEFAULT_PLAN=()=>[
+    'Fazer 1 simulado completo por semana',
+    'Ler artigos em inglês (Reading) — 20 min/dia',
+    'Ouvir podcasts/TED Talks (Listening) — 20 min/dia',
+    'Gravar respostas de Speaking e revisar',
+    'Escrever 1 essay (Writing) por semana',
+    'Revisar 20 palavras novas por dia',
+  ].map(t=>({id:uid(),text:t,done:false}));
+  const DEFAULT_RES=()=>[
+    {id:uid(),label:'TOEFL iBT — site oficial (ETS)',url:'https://www.ets.org/toefl'},
+    {id:uid(),label:'TOEFL — testes de prática gratuitos',url:'https://www.ets.org/toefl/test-takers/ibt/prepare.html'},
+  ];
+  let tab='overview';
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function uid(){ return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function today(){ try{ if(typeof dk==='function') return dk(new Date()); }catch(e){} return new Date().toISOString().slice(0,10); }
+  function fmtd(s){ if(!s) return '—'; const p=String(s).split('-'); return (p[2]&&p[1])?p[2]+'/'+p[1]:s; }
+  function daysTo(s){ if(!s) return null; const t=new Date(s+'T12:00:00'); if(isNaN(t)) return null; const n=new Date(); n.setHours(12,0,0,0); return Math.round((t-n)/86400000); }
+
+  function get(){
+    let raw=null; try{ raw=localStorage.getItem(KEY); }catch(e){}
+    let d; try{ d = raw? JSON.parse(raw) : null; }catch(e){ d=null; }
+    const fresh = !d || typeof d!=='object';
+    if(fresh) d={};
+    if(typeof d.target!=='number') d.target=100;
+    d.testDate = d.testDate||'';
+    d.practices = Array.isArray(d.practices)?d.practices:[];
+    d.vocab     = Array.isArray(d.vocab)?d.vocab:[];
+    d.plan      = Array.isArray(d.plan)?d.plan:[];
+    d.resources = Array.isArray(d.resources)?d.resources:[];
+    if(fresh){ d.plan=DEFAULT_PLAN(); d.resources=DEFAULT_RES(); save(d); }
+    return d;
+  }
+  function save(d){ try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){} try{ if(typeof pushSupa==='function') pushSupa('toefl', d); }catch(e){} }
+  function mutate(fn){ const d=get(); fn(d); save(d); render(); }
+  function bestBy(d){ const b={}; SECTIONS.forEach(s=>b[s.k]=null); (d.practices||[]).forEach(p=>{ const v=parseInt(p.score,10); if(!isNaN(v)){ if(b[p.section]==null||v>b[p.section]) b[p.section]=v; } }); return b; }
+
+  // ---------- ações (globais para os onclick) ----------
+  window.tfTab=function(k){ tab=k; render(); };
+  window.tfAddPractice=function(){
+    const sec=document.getElementById('tf-p-sec').value;
+    const raw=document.getElementById('tf-p-score').value;
+    const dt=document.getElementById('tf-p-date').value||today();
+    const notes=document.getElementById('tf-p-notes').value.trim();
+    let sc=parseInt(raw,10);
+    if(isNaN(sc)){ document.getElementById('tf-p-score').focus(); return; }
+    sc=Math.max(0,Math.min(30,sc));
+    mutate(d=>d.practices.unshift({id:uid(),section:sec,score:sc,date:dt,notes}));
+  };
+  window.tfDelPractice=function(id){ mutate(d=>d.practices=d.practices.filter(p=>p.id!==id)); };
+  window.tfAddVocab=function(){
+    const w=document.getElementById('tf-v-word').value.trim();
+    const m=document.getElementById('tf-v-mean').value.trim();
+    const ex=document.getElementById('tf-v-ex').value.trim();
+    if(!w){ document.getElementById('tf-v-word').focus(); return; }
+    mutate(d=>d.vocab.unshift({id:uid(),word:w,meaning:m,example:ex,learned:false,created:today()}));
+  };
+  window.tfToggleVocab=function(id){ mutate(d=>{ const v=d.vocab.find(x=>x.id===id); if(v) v.learned=!v.learned; }); };
+  window.tfDelVocab=function(id){ mutate(d=>d.vocab=d.vocab.filter(v=>v.id!==id)); };
+  window.tfAddPlan=function(){ const el=document.getElementById('tf-plan-inp'); const t=el.value.trim(); if(!t){ el.focus(); return; } mutate(d=>d.plan.push({id:uid(),text:t,done:false})); };
+  window.tfTogglePlan=function(id){ mutate(d=>{ const it=d.plan.find(x=>x.id===id); if(it) it.done=!it.done; }); };
+  window.tfDelPlan=function(id){ mutate(d=>d.plan=d.plan.filter(p=>p.id!==id)); };
+  window.tfAddRes=function(){ const l=document.getElementById('tf-res-label').value.trim(); const u=document.getElementById('tf-res-url').value.trim(); if(!l||!u){ return; } const url=/^https?:\/\//i.test(u)?u:('https://'+u); mutate(d=>d.resources.push({id:uid(),label:l,url})); };
+  window.tfDelRes=function(id){ mutate(d=>d.resources=d.resources.filter(r=>r.id!==id)); };
+  window.tfSetTarget=function(v){ let n=parseInt(v,10); if(isNaN(n))n=100; n=Math.max(0,Math.min(120,n)); mutate(d=>d.target=n); };
+  window.tfSetDate=function(v){ mutate(d=>d.testDate=v||''); };
+
+  // ---------- render ----------
+  function render(){
+    const host=document.getElementById('tf-main'); if(!host) return;
+    const tabsEl=document.getElementById('tf-tabs');
+    if(tabsEl) tabsEl.innerHTML=TABS.map(t=>`<button class="tf-tab ${t.k===tab?'on':''}" onclick="tfTab('${t.k}')">${t.name}</button>`).join('');
+    const d=get();
+    host.innerHTML = tab==='overview' ? viewOverview(d)
+                   : tab==='practice' ? viewPractice(d)
+                   : tab==='vocab'    ? viewVocab(d)
+                   :                    viewPlan(d);
+  }
+  window.renderTOEFL=render;
+
+  function viewOverview(d){
+    const best=bestBy(d);
+    const total=SECTIONS.reduce((s,x)=>s+(best[x.k]||0),0);
+    const dts=daysTo(d.testDate);
+    const secs=SECTIONS.map(s=>{
+      const b=best[s.k];
+      const cnt=d.practices.filter(p=>p.section===s.k).length;
+      return `<div class="tf-sec-card" style="--sc:${s.color}">
+        <div class="tf-sec-hd"><span class="tf-sec-ico">${s.ico}</span><span class="tf-sec-name">${s.name}</span><span class="tf-sec-best">${b==null?'—':b}<small>/30</small></span></div>
+        <div class="tf-sec-track"><div class="tf-sec-fill" style="width:${(b||0)/30*100}%"></div></div>
+        <div class="tf-sec-meta">${cnt} prática${cnt===1?'':'s'} registrada${cnt===1?'':'s'}</div>
+      </div>`;
+    }).join('');
+    const hit = total>=d.target;
+    return `
+      <div class="tf-hero">
+        <div class="tf-hero-top">
+          <div>
+            <div class="tf-hero-lbl">Melhor total estimado</div>
+            <div class="tf-hero-total">${total}<small>/120</small></div>
+          </div>
+          <div class="tf-hero-goal">meta<b>${d.target}+</b>${hit?'<span style="color:var(--gs-success,#10B981)">✓ atingida</span>':'faltam '+(d.target-total)+' pts'}</div>
+        </div>
+        <div class="tf-total-track"><div class="tf-total-fill" style="width:${Math.min(100,total/120*100)}%"></div><div class="tf-total-goal" style="left:${Math.min(100,d.target/120*100)}%"></div></div>
+        <div class="tf-total-cap"><span>0</span><span>soma do seu melhor score por seção</span><span>120</span></div>
+      </div>
+      <div class="tf-sec-grid">${secs}</div>
+      <div class="tf-info-row">
+        <div class="tf-info"><div class="tf-info-k">Data da prova</div><div class="tf-info-v">${d.testDate?fmtd(d.testDate)+(dts!=null?` · ${dts>=0?dts+' dias':'passou'}`:''):'não definida'}</div></div>
+        <div class="tf-info"><div class="tf-info-k">Práticas registradas</div><div class="tf-info-v">${d.practices.length}</div></div>
+        <div class="tf-info"><div class="tf-info-k">Vocabulário</div><div class="tf-info-v">${d.vocab.filter(v=>v.learned).length}/${d.vocab.length} aprendidas</div></div>
+      </div>
+      <div style="margin-top:16px"><button class="tf-btn" onclick="tfTab('practice')">＋ Registrar uma prática</button></div>
+    `;
+  }
+
+  function viewPractice(d){
+    const best=bestBy(d);
+    const rows = d.practices.length ? d.practices.map(p=>{
+      const s=secOf(p.section);
+      return `<div class="tf-pr-row">
+        <span class="tf-pr-date">${fmtd(p.date)}</span>
+        <span class="tf-sec-badge" style="--sc:${s.color}">${s.name}</span>
+        <span class="tf-pr-score">${p.score}<small>/30</small></span>
+        <span class="tf-pr-notes" title="${esc(p.notes||'')}">${esc(p.notes||'')}</span>
+        <button class="tf-x" onclick="tfDelPractice('${p.id}')" style="grid-column:4;justify-self:end">🗑</button>
+      </div>`;
+    }).join('') : `<div class="tf-empty">Nenhuma prática ainda. Registre o resultado de um simulado ou exercício por seção — o melhor de cada seção alimenta seu total na Visão Geral.</div>`;
+    const chips = SECTIONS.map(s=>`<span class="tf-chip" style="border-color:${s.color};color:${s.color}">${s.name}: ${best[s.k]==null?'—':best[s.k]+'/30'}</span>`).join('');
+    return `
+      <div class="tf-card">
+        <div class="tf-card-title">✎ Registrar prática</div>
+        <div class="tf-form">
+          <div class="tf-fld"><label>Seção</label><select class="tf-sel" id="tf-p-sec">${SECTIONS.map(s=>`<option value="${s.k}">${s.name}</option>`).join('')}</select></div>
+          <div class="tf-fld"><label>Score (0–30)</label><input class="tf-in" id="tf-p-score" type="number" min="0" max="30" placeholder="ex: 24" style="width:110px"></div>
+          <div class="tf-fld"><label>Data</label><input class="tf-in" id="tf-p-date" type="date" value="${today()}"></div>
+          <div class="tf-fld" style="flex:1"><label>Notas (opcional)</label><input class="tf-in" id="tf-p-notes" placeholder="ex: errei inferência..." style="width:100%"></div>
+          <button class="tf-btn" onclick="tfAddPractice()">＋ Adicionar</button>
+        </div>
+        <div class="tf-chips">${chips}</div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-card-title">Histórico <span style="color:var(--gs-text-3,#6b7c8f);font-weight:400;font-size:11px">(${d.practices.length})</span></div>
+        ${rows}
+      </div>
+    `;
+  }
+
+  function viewVocab(d){
+    const list = d.vocab.length ? d.vocab.map(v=>`<div class="tf-vc ${v.learned?'done':''}">
+        <div class="tf-vc-main"><b>${esc(v.word)}</b>${v.meaning?`<span>${esc(v.meaning)}</span>`:''}${v.example?`<i>“${esc(v.example)}”</i>`:''}</div>
+        <div class="tf-vc-actions"><button class="tf-chip ${v.learned?'on':''}" onclick="tfToggleVocab('${v.id}')">${v.learned?'✓ aprendida':'marcar'}</button><button class="tf-x" onclick="tfDelVocab('${v.id}')">🗑</button></div>
+      </div>`).join('') : `<div class="tf-empty">Sem palavras ainda. Adicione o vocabulário novo que encontrar — marque como <b>aprendida</b> conforme domina.</div>`;
+    return `
+      <div class="tf-card">
+        <div class="tf-card-title">🗂 Nova palavra</div>
+        <div class="tf-form">
+          <div class="tf-fld"><label>Palavra</label><input class="tf-in" id="tf-v-word" placeholder="ex: ubiquitous"></div>
+          <div class="tf-fld" style="flex:1"><label>Significado</label><input class="tf-in" id="tf-v-mean" placeholder="onipresente" style="width:100%"></div>
+          <div class="tf-fld" style="flex:1"><label>Exemplo (opcional)</label><input class="tf-in" id="tf-v-ex" placeholder="frase de uso" style="width:100%"></div>
+          <button class="tf-btn" onclick="tfAddVocab()">＋ Adicionar</button>
+        </div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-card-title">Palavras <span style="color:var(--gs-text-3,#6b7c8f);font-weight:400;font-size:11px">(${d.vocab.filter(v=>v.learned).length}/${d.vocab.length} aprendidas)</span></div>
+        ${list}
+      </div>
+    `;
+  }
+
+  function viewPlan(d){
+    const plan = d.plan.length ? d.plan.map(it=>`<div class="tf-plan-it ${it.done?'done':''}">
+        <input type="checkbox" ${it.done?'checked':''} onchange="tfTogglePlan('${it.id}')">
+        <span>${esc(it.text)}</span>
+        <button class="tf-x" onclick="tfDelPlan('${it.id}')">🗑</button>
+      </div>`).join('') : `<div class="tf-empty">Sem itens no plano. Adicione hábitos e metas de estudo.</div>`;
+    const res = d.resources.length ? d.resources.map(r=>`<div class="tf-res-it"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.label)}</a><button class="tf-x" onclick="tfDelRes('${r.id}')">🗑</button></div>`).join('') : `<div class="tf-empty">Sem links salvos.</div>`;
+    const done=d.plan.filter(p=>p.done).length;
+    return `
+      <div class="tf-card">
+        <div class="tf-card-title">🎯 Configuração</div>
+        <div class="tf-form">
+          <div class="tf-fld"><label>Meta de score (0–120)</label><input class="tf-in" type="number" min="0" max="120" value="${d.target}" onchange="tfSetTarget(this.value)" style="width:130px"></div>
+          <div class="tf-fld"><label>Data da prova</label><input class="tf-in" type="date" value="${d.testDate}" onchange="tfSetDate(this.value)"></div>
+        </div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-card-title">✓ Plano de estudo <span style="color:var(--gs-text-3,#6b7c8f);font-weight:400;font-size:11px">(${done}/${d.plan.length})</span></div>
+        ${plan}
+        <div class="tf-form" style="margin-top:14px">
+          <input class="tf-in" id="tf-plan-inp" placeholder="+ novo item do plano" style="flex:1" onkeydown="if(event.key==='Enter')tfAddPlan()">
+          <button class="tf-btn ghost" onclick="tfAddPlan()">Adicionar</button>
+        </div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-card-title">🔗 Recursos</div>
+        ${res}
+        <div class="tf-form" style="margin-top:14px">
+          <input class="tf-in" id="tf-res-label" placeholder="nome do recurso" style="flex:1">
+          <input class="tf-in" id="tf-res-url" placeholder="https://..." style="flex:1">
+          <button class="tf-btn ghost" onclick="tfAddRes()">Adicionar</button>
+        </div>
+      </div>
+    `;
+  }
+})();
+</script>
+
 <script id="hub-script">
-// ── HUB: camada de seleção de módulos acima do app Lifestyle ──────────
+// ── HUB: camada de seleção de módulos acima do app ────────────────────
+const HUB_MODULES = ['lifestyle','toefl'];
 function enterModule(mod){
-  if(mod!=='lifestyle') return;                 // só Lifestyle ativo por ora
-  try{ sessionStorage.setItem('oliver_module', mod); }catch(e){}
+  if(HUB_MODULES.indexOf(mod)<0) return;         // módulo não ativado
   const hub=document.getElementById('hub-screen');
   if(hub) hub.classList.add('hub-hidden');
   document.body.classList.remove('hub-open');
   try{ if(typeof toggleMobNav==='function') toggleMobNav(false); }catch(e){}
-  try{ if(typeof goto==='function' && !document.querySelector('.page.active')) goto('dashboard'); }catch(e){}
+  try{ sessionStorage.setItem('oliver_module', mod); }catch(e){}
+  if(mod==='toefl'){
+    document.body.classList.add('in-toefl');
+    try{ if(typeof renderTOEFL==='function') renderTOEFL(); }catch(e){}
+  } else { // lifestyle (padrão)
+    document.body.classList.remove('in-toefl');
+    try{ if(typeof goto==='function' && !document.querySelector('.page.active')) goto('dashboard'); }catch(e){}
+  }
+  window.scrollTo(0,0);
 }
 function showHub(){
   try{ sessionStorage.removeItem('oliver_module'); }catch(e){}
   try{ if(typeof toggleMobNav==='function') toggleMobNav(false); }catch(e){}
+  document.body.classList.remove('in-toefl');
   const hub=document.getElementById('hub-screen');
   if(hub) hub.classList.remove('hub-hidden');
   document.body.classList.add('hub-open');
 }
 window.enterModule=enterModule; window.showHub=showHub;
-// Estado inicial: já escolheu Lifestyle nesta sessão → entra direto; senão mostra o hub.
+// Estado inicial: já escolheu um módulo nesta sessão → entra direto; senão mostra o hub.
 (function initHub(){
   let mod=null; try{ mod=sessionStorage.getItem('oliver_module'); }catch(e){}
-  const hub=document.getElementById('hub-screen');
-  if(mod==='lifestyle'){ if(hub) hub.classList.add('hub-hidden'); document.body.classList.remove('hub-open'); }
+  if(HUB_MODULES.indexOf(mod)>=0){ enterModule(mod); }
   else { document.body.classList.add('hub-open'); }
 })();
 </script>
