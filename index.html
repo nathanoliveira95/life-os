@@ -3375,6 +3375,26 @@ body.in-toefl .sidebar,body.in-toefl .main,body.in-toefl .mob-nav-btn,body.in-to
 .tf-res-it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid var(--gs-hair,rgba(255,255,255,.05))}
 .tf-res-it a{font-family:var(--font-mono,monospace);font-size:12.5px;color:var(--gs-blue-l,#35C6FF);text-decoration:none}
 .tf-res-it a:hover{text-decoration:underline}
+/* Progresso: sparklines por seção */
+.tf-spark-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--gs-hair,rgba(255,255,255,.05))}
+.tf-spark-row:last-child{border-bottom:none}
+.tf-spark-lbl{width:82px;flex-shrink:0;font-family:var(--font-hud,monospace);font-size:12.5px;font-weight:700}
+.tf-spark-svg{flex:1;min-width:0;line-height:0}
+.tf-spark{width:100%;height:46px;display:block}
+.tf-spark-delta{width:56px;flex-shrink:0;text-align:right;font-family:var(--font-mono,monospace);font-size:11.5px;font-weight:700}
+/* Flashcards */
+.tf-flash{max-width:520px;margin:6px auto 0}
+.tf-flash-top{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--font-mono,monospace);font-size:12px;color:var(--gs-text-3,#6b7c8f);margin-bottom:14px}
+.tf-flash-card{background:linear-gradient(180deg,var(--gs-card,#0e141d),var(--gs-ink-2,#0a0f16));border:1px solid var(--gs-border,#1c2733);border-radius:18px;min-height:230px;display:flex;align-items:center;justify-content:center;text-align:center;padding:32px 24px;cursor:pointer;transition:border-color .15s,transform .1s;user-select:none}
+.tf-flash-card:hover{border-color:var(--gs-blue,#0A84FF)}
+.tf-flash-card:active{transform:scale(.99)}
+.tf-flash-card.flip{border-color:var(--gs-success,#10B981)}
+.tf-flash-word{font-family:var(--font-hud,monospace);font-size:30px;font-weight:800;color:var(--gs-text,#e8eef7);letter-spacing:.01em}
+.tf-flash-hint{font-family:var(--font-mono,monospace);font-size:10.5px;color:var(--gs-text-3,#6b7c8f);margin-top:16px}
+.tf-flash-mean{font-family:var(--font-hud,monospace);font-size:23px;font-weight:700;color:var(--gs-success,#10B981);line-height:1.3}
+.tf-flash-ex{font-family:var(--font-mono,monospace);font-size:12.5px;color:var(--gs-text-2,#9fb0c2);margin-top:14px;line-height:1.5}
+.tf-flash-actions{display:flex;gap:10px;margin-top:16px}
+.tf-flash-actions .tf-btn{flex:1}
 @media(max-width:600px){
   .tf-shell{padding:20px 15px 50px}
   .tf-hero-total{font-size:34px}
@@ -3447,9 +3467,38 @@ body.in-toefl .sidebar,body.in-toefl .main,body.in-toefl .mob-nav-btn,body.in-to
   function save(d){ try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){} try{ if(typeof pushSupa==='function') pushSupa('toefl', d); }catch(e){} }
   function mutate(fn){ const d=get(); fn(d); save(d); render(); }
   function bestBy(d){ const b={}; SECTIONS.forEach(s=>b[s.k]=null); (d.practices||[]).forEach(p=>{ const v=parseInt(p.score,10); if(!isNaN(v)){ if(b[p.section]==null||v>b[p.section]) b[p.section]=v; } }); return b; }
+  // Série cronológica (mais antiga→recente) dos scores de uma seção
+  function seriesOf(d, sec){ return (d.practices||[]).filter(p=>p.section===sec).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(p=>parseInt(p.score,10)).filter(v=>!isNaN(v)); }
+  // Sparkline SVG (escala fixa 0–30) — área + linha + pontos
+  function spark(points, color){
+    const W=260, H=46, PADX=5, PADY=6;
+    if(!points.length) return '';
+    const n=points.length, max=30, min=0;
+    const x=i=> n===1 ? W/2 : PADX + (i/(n-1))*(W-PADX*2);
+    const y=v=> H-PADY - ((v-min)/(max-min))*(H-PADY*2);
+    const line=points.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const area=`M${x(0).toFixed(1)},${(H-PADY).toFixed(1)} `+points.map((v,i)=>`L${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')+` L${x(n-1).toFixed(1)},${(H-PADY).toFixed(1)} Z`;
+    const dots=points.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.6" fill="${color}"/>`).join('');
+    const gid='g'+Math.random().toString(36).slice(2,7);
+    return `<svg class="tf-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="evolução">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+      <path d="${area}" fill="url(#${gid})"/>
+      <path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      ${dots}</svg>`;
+  }
+
+  // Estado do modo flashcards (estudo de vocabulário)
+  let flash={active:false,order:[],idx:0,flipped:false};
 
   // ---------- ações (globais para os onclick) ----------
-  window.tfTab=function(k){ tab=k; render(); };
+  window.tfTab=function(k){ flash.active=false; tab=k; render(); };
+  // Flashcards
+  window.tfStudyStart=function(){ const d=get(); let pool=d.vocab.filter(v=>!v.learned); if(!pool.length) pool=d.vocab.slice(); if(!pool.length) return;
+    const order=pool.map(v=>v.id); for(let i=order.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=order[i]; order[i]=order[j]; order[j]=t; }
+    flash={active:true,order,idx:0,flipped:false}; render(); };
+  window.tfFlip=function(){ flash.flipped=!flash.flipped; render(); };
+  window.tfStudyMark=function(known){ const d=get(); const id=flash.order[flash.idx]; if(known){ const v=d.vocab.find(x=>x.id===id); if(v&&!v.learned){ v.learned=true; save(d); } } flash.idx++; flash.flipped=false; render(); };
+  window.tfStudyExit=function(){ flash.active=false; render(); };
   window.tfAddPractice=function(){
     const sec=document.getElementById('tf-p-sec').value;
     const raw=document.getElementById('tf-p-score').value;
@@ -3486,7 +3535,7 @@ body.in-toefl .sidebar,body.in-toefl .main,body.in-toefl .mob-nav-btn,body.in-to
     const d=get();
     host.innerHTML = tab==='overview' ? viewOverview(d)
                    : tab==='practice' ? viewPractice(d)
-                   : tab==='vocab'    ? viewVocab(d)
+                   : tab==='vocab'    ? (flash.active ? viewFlash(d) : viewVocab(d))
                    :                    viewPlan(d);
   }
   window.renderTOEFL=render;
@@ -3518,6 +3567,15 @@ body.in-toefl .sidebar,body.in-toefl .main,body.in-toefl .mob-nav-btn,body.in-to
         <div class="tf-total-cap"><span>0</span><span>soma do seu melhor score por seção</span><span>120</span></div>
       </div>
       <div class="tf-sec-grid">${secs}</div>
+      ${d.practices.length ? `<div class="tf-card">
+        <div class="tf-card-title">📈 Progresso por seção <span style="color:var(--gs-text-3,#6b7c8f);font-weight:400;font-size:11px">(evolução dos scores)</span></div>
+        ${SECTIONS.map(s=>{ const pts=seriesOf(d,s.k); if(!pts.length) return '';
+          const delta=pts.length>1?pts[pts.length-1]-pts[0]:0;
+          const dtxt=pts.length>1?(delta>0?'▲ +'+delta:delta<0?'▼ '+delta:'= 0'):'1º';
+          const dcol=delta>0?'var(--gs-success,#10B981)':delta<0?'var(--gs-danger,#F0524B)':'var(--gs-text-3,#6b7c8f)';
+          return `<div class="tf-spark-row"><span class="tf-spark-lbl" style="color:${s.color}">${s.name}</span><span class="tf-spark-svg">${spark(pts,s.color)}</span><span class="tf-spark-delta" style="color:${dcol}">${dtxt}</span></div>`;
+        }).join('') || '<div class="tf-empty">Registre práticas para ver a evolução.</div>'}
+      </div>` : ''}
       <div class="tf-info-row">
         <div class="tf-info"><div class="tf-info-k">Data da prova</div><div class="tf-info-v">${d.testDate?fmtd(d.testDate)+(dts!=null?` · ${dts>=0?dts+' dias':'passou'}`:''):'não definida'}</div></div>
         <div class="tf-info"><div class="tf-info-k">Práticas registradas</div><div class="tf-info-v">${d.practices.length}</div></div>
@@ -3575,10 +3633,39 @@ body.in-toefl .sidebar,body.in-toefl .main,body.in-toefl .mob-nav-btn,body.in-to
         </div>
       </div>
       <div class="tf-card">
-        <div class="tf-card-title">Palavras <span style="color:var(--gs-text-3,#6b7c8f);font-weight:400;font-size:11px">(${d.vocab.filter(v=>v.learned).length}/${d.vocab.length} aprendidas)</span></div>
+        <div class="tf-card-title" style="justify-content:space-between">
+          <span>Palavras <span style="color:var(--gs-text-3,#6b7c8f);font-weight:400;font-size:11px">(${d.vocab.filter(v=>v.learned).length}/${d.vocab.length} aprendidas)</span></span>
+          ${d.vocab.length?`<button class="tf-btn" onclick="tfStudyStart()" style="padding:7px 14px;font-size:12px">▶ Estudar (flashcards)</button>`:''}
+        </div>
         ${list}
       </div>
     `;
+  }
+
+  function viewFlash(d){
+    const deck=flash.order.map(id=>d.vocab.find(v=>v.id===id)).filter(Boolean);
+    if(!deck.length){ flash.active=false; return viewVocab(d); }
+    if(flash.idx>=deck.length){
+      return `<div class="tf-card" style="text-align:center;padding:44px 20px">
+        <div style="font-size:36px;margin-bottom:12px">🎉</div>
+        <div class="tf-card-title" style="justify-content:center">Sessão concluída</div>
+        <div style="font-family:var(--font-mono,monospace);font-size:12px;color:var(--gs-text-3,#6b7c8f);margin:6px 0 20px">${deck.length} palavra${deck.length===1?'':'s'} revisada${deck.length===1?'':'s'} · ${d.vocab.filter(v=>v.learned).length}/${d.vocab.length} aprendidas no total</div>
+        <button class="tf-btn" onclick="tfStudyExit()">Voltar ao vocabulário</button>
+      </div>`;
+    }
+    const c=deck[flash.idx];
+    return `<div class="tf-flash">
+      <div class="tf-flash-top"><span>🗂 Flashcards</span><span>${flash.idx+1} / ${deck.length}</span><button class="tf-hub-btn" onclick="tfStudyExit()" style="padding:6px 12px">✕ sair</button></div>
+      <div class="tf-flash-card ${flash.flipped?'flip':''}" onclick="tfFlip()">
+        ${flash.flipped
+          ? `<div class="tf-flash-face"><div class="tf-flash-mean">${esc(c.meaning||'(sem significado cadastrado)')}</div>${c.example?`<div class="tf-flash-ex">“${esc(c.example)}”</div>`:''}</div>`
+          : `<div class="tf-flash-face"><div class="tf-flash-word">${esc(c.word)}</div><div class="tf-flash-hint">toque para ver o significado</div></div>`}
+      </div>
+      <div class="tf-flash-actions">
+        <button class="tf-btn ghost" onclick="tfStudyMark(false)">↷ Ainda não</button>
+        <button class="tf-btn" onclick="tfStudyMark(true)" style="background:linear-gradient(180deg,#12c98a,#10B981)">✓ Já sei</button>
+      </div>
+    </div>`;
   }
 
   function viewPlan(d){
