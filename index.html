@@ -11419,13 +11419,13 @@ body.is-mobile .dcar-slide{flex-basis:260px}
 .dl-empty-ico{font-size:30px;opacity:.35;display:block;margin-bottom:10px}
 /* Colapso desktop */
 body:not(.is-mobile) .rightbar{transition:width .26s cubic-bezier(.4,0,.2,1),opacity .2s}
-body:not(.is-mobile).rb-collapsed .rightbar{width:0;flex-basis:0;border-left:0;opacity:0;pointer-events:none}
+body:not(.is-mobile).rb-collapsed .rightbar,body:not(.is-mobile).rb-empty .rightbar{width:0;flex-basis:0;border-left:0;opacity:0;pointer-events:none}
 #rbReopen{position:fixed;top:14px;right:14px;z-index:60;width:34px;height:34px;border-radius:8px;border:1px solid var(--gs-border-2);background:var(--gs-glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--gs-text-2);cursor:pointer;font-size:15px;line-height:1;display:none;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.5);transition:border-color .15s,color .15s}
 #rbReopen:hover{border-color:var(--gs-blue);color:var(--gs-blue-l)}
-body:not(.is-mobile).rb-collapsed #rbReopen{display:flex}
+body:not(.is-mobile).rb-collapsed #rbReopen,body:not(.is-mobile).rb-empty #rbReopen{display:flex}
 /* desloca elementos fixos do topo-direito quando o painel está aberto */
-body:not(.is-mobile):not(.rb-collapsed) .hud-clock{right:384px}
-body:not(.is-mobile):not(.rb-collapsed) .main-deco-tr{right:330px}
+body:not(.is-mobile):not(.rb-collapsed):not(.rb-empty) .hud-clock{right:384px}
+body:not(.is-mobile):not(.rb-collapsed):not(.rb-empty) .main-deco-tr{right:330px}
 /* Drawer mobile */
 .rb-backdrop{display:none}
 body.is-mobile #rbReopen{display:flex}
@@ -11441,14 +11441,18 @@ body.is-mobile.rb-open #rbReopen{display:none}
   if (typeof LS === 'undefined') return;
   const esct = s => (typeof esc==='function') ? esc(s) : String(s==null?'':s);
 
+  let rbForceShown=false;
   window.toggleRightbar = function(force){
     if (document.body.classList.contains('is-mobile')){
       const open = (typeof force==='boolean') ? force : !document.body.classList.contains('rb-open');
       document.body.classList.toggle('rb-open', open);
     } else {
-      const collapse = (typeof force==='boolean') ? !force : !document.body.classList.contains('rb-collapsed');
+      const isHidden = document.body.classList.contains('rb-collapsed') || document.body.classList.contains('rb-empty');
+      const collapse = (typeof force==='boolean') ? !force : !isHidden;
       document.body.classList.toggle('rb-collapsed', collapse);
       try{ localStorage.setItem('lo_rb_col', collapse?'1':'0'); }catch(e){}
+      if(collapse){ rbForceShown=false; }
+      else { rbForceShown=true; document.body.classList.remove('rb-empty'); }
     }
   };
   window.dlGo = function(page){
@@ -11524,10 +11528,13 @@ body.is-mobile.rb-open #rbReopen{display:none}
   window.renderDeadlines = function(){
     const host=document.getElementById('dl-panel'); if(!host) return;
     const items=collect();
+    // Uso de espaço: sem prazos → recolhe o painel (conteúdo ocupa a largura), salvo se o usuário abriu
     if(!items.length){
+      if(!rbForceShown) document.body.classList.add('rb-empty');
       host.innerHTML=`<div class="dl-empty"><span class="dl-empty-ico">🗓️</span>Sem prazos futuros.<br>Defina prazos em <strong>Goals</strong> ou crie eventos no <strong>Calendário</strong>.</div>`;
       return;
     }
+    document.body.classList.remove('rb-empty'); rbForceShown=false;
     const active=items.filter(i=>!i.done), done=items.filter(i=>i.done);
     const row=it=>`<div class="dl-item st-${it.status}" onclick="dlGo('${it.page}')" title="${esct(it.title)}">
       <span class="dl-dot"></span>
@@ -12744,6 +12751,15 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,.hub-block:focus
 
 /* Seleção de texto temática */
 ::selection{background:rgba(10,132,255,.32);color:#fff}
+
+/* Empty states mais compactos e elegantes (carrosséis do Dashboard) */
+.dcar-empty{min-height:96px !important;padding:22px 24px !important;transition:border-color .16s ease,background .16s ease}
+.dcar-empty:hover{border-color:rgba(10,132,255,.4);background:var(--gs-card-2,var(--gs-card))}
+.dcar-empty-ico{font-size:26px}
+/* Consistência de empty states do módulo fitness/toefl */
+.fx-empty,.tf-empty,.dl-empty{transition:border-color .16s ease}
+/* Realce suave da linha de título das páginas */
+.ph h1,.page h1{text-shadow:0 0 22px rgba(10,132,255,.14)}
 </style>
 </body>
 </html>
