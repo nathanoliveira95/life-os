@@ -413,7 +413,26 @@ select option{background:#1e1e1e}
 .check-red{background:rgba(239,68,68,.18);color:#F87171;border:2px solid #EF4444}
 .check-rest{background:rgba(79,157,123,.18);color:#7CCFA5;border:2px solid #4F9D7B;font-size:16px}
 .check-empty{background:transparent;color:var(--text3);border:2px dashed var(--border)}
+.check-cardio{background:rgba(245,158,11,.16);color:#FBBF24;border:2px solid #F59E0B}
 .saude-val{font-size:11px;color:var(--text2);font-weight:500}
+
+/* ===== kcal acumulado (saldo dieta × cardio) ===== */
+.kcal-acum-card{background:linear-gradient(145deg,var(--card),var(--bg));border:1px solid var(--border);position:relative;overflow:hidden}
+.kcal-acum-card::before{content:"";position:absolute;inset:0;background:radial-gradient(420px 120px at 12% 0%,rgba(245,158,11,.10),transparent 70%);pointer-events:none}
+.kcal-acum-body{display:flex;align-items:stretch;gap:18px;flex-wrap:wrap}
+.kcal-acum-main{flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.kcal-acum-net{font-family:var(--font-hud,inherit);font-size:38px;font-weight:800;line-height:1;letter-spacing:-.01em}
+.kcal-acum-main.is-pos .kcal-acum-net{color:#FBBF24}
+.kcal-acum-main.is-neg .kcal-acum-net{color:#34D399}
+.kcal-acum-main.is-empty .kcal-acum-net{color:var(--text3)}
+.kcal-acum-cap{font-size:12px;color:var(--text3)}
+.kcal-acum-split{display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.kcal-acum-stat{text-align:center;min-width:72px}
+.kas-v{font-family:var(--font-mono,inherit);font-size:20px;font-weight:800;line-height:1.1}
+.kas-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+.kcal-acum-op{font-size:22px;color:var(--text3);font-weight:300}
+body.is-mobile .kcal-acum-net{font-size:30px}
+body.is-mobile .kcal-acum-split{width:100%;justify-content:space-around}
 
 /* ===== INVESTMENTS — PORTFOLIO ===== */
 .port-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
@@ -6599,6 +6618,19 @@ const DIET_THRESHOLD = 70; // % mínimo para check verde
 
 function changeSaudeWeek(d) { weekOff += d; renderSaude(); }
 
+// Saldo de kcal acumulado: soma do excedente de dieta (<meta) menos kcal queimadas em cardio.
+// net pode ficar negativo (cardio cobriu mais do que o excedente).
+function kcalStats(saude) {
+  saude = saude || LS.saude.get();
+  let over = 0, burned = 0;
+  Object.keys(saude).forEach(k => {
+    const e = saude[k] || {};
+    if (e.kcalOver !== undefined && e.kcalOver !== null && e.kcalOver !== '') over += (parseFloat(e.kcalOver) || 0);
+    if (Array.isArray(e.cardio)) e.cardio.forEach(c => { burned += (parseFloat(c && c.kcal) || 0); });
+  });
+  return { over, burned, net: over - burned };
+}
+
 function renderSaude() {
   const ws   = weekStart(weekOff);
   const days = DAYS.map((name,i) => {
@@ -6633,6 +6665,21 @@ function renderSaude() {
       </div>`;
   };
 
+  // Célula de cardio: mostra kcal queimadas no dia (soma das atividades)
+  const cardioCell = (day) => {
+    const entry = saude[day.key] || {};
+    const list  = Array.isArray(entry.cardio) ? entry.cardio : [];
+    const total = list.reduce((s,c)=> s + (parseFloat(c.kcal)||0), 0);
+    const filled = list.length > 0;
+    return `
+      <div class="saude-day ${day.key===todayKey?'today':''}" onclick="openCardioCheck('${day.key}','${day.name}')">
+        <div class="saude-day-name">${day.name.slice(0,3)}</div>
+        <div class="saude-day-date">${day.date.getDate()}/${day.date.getMonth()+1}</div>
+        <div class="saude-check ${filled?'check-cardio':'check-empty'}">${filled?'🔥':'—'}</div>
+        <div class="saude-val">${filled ? total+' kcal' : 'clique'}</div>
+      </div>`;
+  };
+
   // Monta uma célula de treino:
   // A/B/C/D/E = verde (treino feito) · R = verde com ícone 🌙 (descanso planejado) · X = vermelho (faltou)
   const treinoCell = (day) => {
@@ -6656,7 +6703,31 @@ function renderSaude() {
       </div>`;
   };
 
+  // --- kcal acumulado: saldo entre excedente de dieta (<70%) e cardio queimado ---
+  const ks = kcalStats(saude);
+  const net = ks.net;
+  const isEmpty = ks.over === 0 && ks.burned === 0;
+  const mainCls = isEmpty ? 'is-empty' : (net <= 0 ? 'is-neg' : 'is-pos');
+  const netTxt  = (net > 0 ? '+' : '') + Math.round(net) + ' kcal';
+  const capTxt  = isEmpty
+    ? 'Sem registros — anote dietas < '+DIET_THRESHOLD+'% e cardio'
+    : (net <= 0 ? 'Saldo coberto pelo cardio 🎉' : 'kcal ainda a queimar para zerar');
+
   document.getElementById('saude-grid').innerHTML = `
+    <div class="saude-section kcal-acum-card">
+      <div class="saude-section-title">⚖️ kcal acumulado <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— excedente de dieta menos o cardio</span></div>
+      <div class="kcal-acum-body">
+        <div class="kcal-acum-main ${mainCls}">
+          <div class="kcal-acum-net">${netTxt}</div>
+          <div class="kcal-acum-cap">${capTxt}</div>
+        </div>
+        <div class="kcal-acum-split">
+          <div class="kcal-acum-stat"><div class="kas-v" style="color:#F87171">+${Math.round(ks.over)}</div><div class="kas-l">excedente dieta</div></div>
+          <div class="kcal-acum-op">−</div>
+          <div class="kcal-acum-stat"><div class="kas-v" style="color:#34D399">${Math.round(ks.burned)}</div><div class="kas-l">cardio</div></div>
+        </div>
+      </div>
+    </div>
     <div class="saude-section">
       <div class="saude-section-title">🥗 Dieta <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— verde se ≥ ${DIET_THRESHOLD}% seguida</span></div>
       <div class="saude-grid">${days.map(dietCell).join('')}</div>
@@ -6664,6 +6735,10 @@ function renderSaude() {
     <div class="saude-section">
       <div class="saude-section-title">💪 Treino <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— A/B/C/D/E treinou · 🌙 descanso planejado · X faltou</span></div>
       <div class="saude-grid">${days.map(treinoCell).join('')}</div>
+    </div>
+    <div class="saude-section">
+      <div class="saude-section-title">🏃 Cardio <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— atividade + kcal gastas (abate do kcal acumulado)</span></div>
+      <div class="saude-grid">${days.map(cardioCell).join('')}</div>
     </div>`;
   renderProgPanel();
   try{ if(typeof sdSync==='function') sdSync(); }catch(e){}
@@ -6672,17 +6747,24 @@ function renderSaude() {
 // Modal para registrar % de dieta seguida no dia
 function openDietCheck(dateKey, dayName) {
   const saude = LS.saude.get();
-  const cur   = saude[dateKey]?.dietPct ?? '';
+  const cur     = saude[dateKey]?.dietPct ?? '';
+  const curKcal = saude[dateKey]?.kcalOver ?? '';
+  const showKcal = cur !== '' && !isNaN(parseFloat(cur)) && parseFloat(cur) < DIET_THRESHOLD;
   document.getElementById('mc').innerHTML = `
     <div class="overlay" onclick="if(event.target===this)closeMC()">
       <div class="modal">
         <h3>🥗 Dieta — ${dayName}</h3>
         <div class="fg">
           <label>% da dieta seguida hoje (0 a 100)</label>
-          <input id="sd-pct" type="number" min="0" max="100" value="${cur}" placeholder="Ex: 85" autofocus>
+          <input id="sd-pct" type="number" min="0" max="100" value="${cur}" placeholder="Ex: 85" oninput="sdToggleKcal()" autofocus>
         </div>
         <div style="font-size:12px;color:var(--text3);margin-top:-4px">
           ≥ ${DIET_THRESHOLD}% → ✓ verde · &lt; ${DIET_THRESHOLD}% → ✗ vermelho
+        </div>
+        <div class="fg" id="sd-kcal-wrap" style="margin-top:14px;${showKcal?'':'display:none'}">
+          <label>kcal acima do ideal <span style="color:var(--text3);font-weight:400">(opcional)</span></label>
+          <input id="sd-kcal" type="number" min="0" value="${curKcal}" placeholder="Ex: 450">
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Aparece quando a dieta fica &lt; ${DIET_THRESHOLD}%. Soma ao <b>kcal acumulado</b>.</div>
         </div>
         <div class="mf">
           <button class="btn btn-d" onclick="clearDietCheck('${dateKey}')">Limpar</button>
@@ -6693,17 +6775,33 @@ function openDietCheck(dateKey, dayName) {
     </div>`;
 }
 
+function sdToggleKcal() {
+  const pct  = parseFloat((document.getElementById('sd-pct')||{}).value);
+  const wrap = document.getElementById('sd-kcal-wrap');
+  if (!wrap) return;
+  wrap.style.display = (!isNaN(pct) && pct < DIET_THRESHOLD) ? '' : 'none';
+}
+
 function saveDietCheck(dateKey) {
   const saude = LS.saude.get();
   if (!saude[dateKey]) saude[dateKey] = {};
-  saude[dateKey].dietPct = document.getElementById('sd-pct').value;
+  const pctVal = document.getElementById('sd-pct').value;
+  saude[dateKey].dietPct = pctVal;
+  const kcalEl = document.getElementById('sd-kcal');
+  const pctNum = parseFloat(pctVal);
+  // Só guarda kcal excedente quando a dieta ficou abaixo da meta e há valor informado
+  if (kcalEl && !isNaN(pctNum) && pctNum < DIET_THRESHOLD && kcalEl.value !== '' && !isNaN(parseFloat(kcalEl.value))) {
+    saude[dateKey].kcalOver = parseFloat(kcalEl.value);
+  } else {
+    delete saude[dateKey].kcalOver;
+  }
   LS.saude.set(saude);
   closeMC(); renderSaude();
 }
 
 function clearDietCheck(dateKey) {
   const saude = LS.saude.get();
-  if (saude[dateKey]) { delete saude[dateKey].dietPct; if (!Object.keys(saude[dateKey]).length) delete saude[dateKey]; }
+  if (saude[dateKey]) { delete saude[dateKey].dietPct; delete saude[dateKey].kcalOver; if (!Object.keys(saude[dateKey]).length) delete saude[dateKey]; }
   LS.saude.set(saude);
   closeMC(); renderSaude();
 }
@@ -6757,6 +6855,69 @@ function clearTreinoCheck(dateKey) {
   if (saude[dateKey]) { delete saude[dateKey].treino; if (!Object.keys(saude[dateKey]).length) delete saude[dateKey]; }
   LS.saude.set(saude);
   closeMC(); renderSaude();
+}
+
+// --- Cardio: registra atividades e kcal queimadas no dia (abate do kcal acumulado) ---
+function openCardioCheck(dateKey, dayName) {
+  window._cardioCtx = { dateKey, dayName };
+  const saude = LS.saude.get();
+  const list  = Array.isArray(saude[dateKey]?.cardio) ? saude[dateKey].cardio : [];
+  const total = list.reduce((s,c)=> s + (parseFloat(c && c.kcal)||0), 0);
+  const esc = (s)=> String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const rows = list.length ? list.map((c,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gs-ink-2,var(--bg));border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+        <span style="flex:1;font-size:13px;color:var(--text)">${esc(c.activity)||'Cardio'}</span>
+        <span style="font-weight:700;color:#FBBF24;font-family:var(--font-mono,inherit)">${parseFloat(c.kcal)||0} kcal</span>
+        <button class="btn btn-d" style="padding:4px 9px;font-size:12px" onclick="removeCardio(${i})" title="Remover">✕</button>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--text3);padding:6px 0">Nenhuma atividade registrada neste dia.</div>';
+  document.getElementById('mc').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeMC()">
+      <div class="modal">
+        <h3>🏃 Cardio — ${dayName}</h3>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Registre a atividade e as kcal gastas. O total abate do <b>kcal acumulado</b>.</div>
+        <div id="cardio-list">${rows}</div>
+        <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-end">
+          <div class="fg" style="flex:1;margin:0"><label>Atividade</label><input id="cd-act" placeholder="Ex: Corrida 5km" autofocus></div>
+          <div class="fg" style="width:110px;margin:0"><label>kcal</label><input id="cd-kcal" type="number" min="0" placeholder="320" onkeydown="if(event.key==='Enter')addCardio()"></div>
+          <button class="btn btn-p" style="height:40px;white-space:nowrap" onclick="addCardio()">+ Add</button>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Total do dia</span>
+          <span style="font-weight:800;font-size:18px;color:#FBBF24;font-family:var(--font-mono,inherit)">${total} kcal</span>
+        </div>
+        <div class="mf">
+          <button class="btn btn-g" onclick="closeMC()">Fechar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addCardio() {
+  const ctx = window._cardioCtx; if (!ctx) return;
+  const actEl  = document.getElementById('cd-act');
+  const kcalEl = document.getElementById('cd-kcal');
+  const act  = (actEl ? actEl.value : '').trim();
+  const kcal = parseFloat(kcalEl ? kcalEl.value : '');
+  if (!act && (isNaN(kcal) || kcal === 0)) { toast('Informe a atividade e/ou as kcal'); return; }
+  const saude = LS.saude.get();
+  if (!saude[ctx.dateKey]) saude[ctx.dateKey] = {};
+  if (!Array.isArray(saude[ctx.dateKey].cardio)) saude[ctx.dateKey].cardio = [];
+  saude[ctx.dateKey].cardio.push({ activity: act || 'Cardio', kcal: isNaN(kcal) ? 0 : kcal });
+  LS.saude.set(saude);
+  openCardioCheck(ctx.dateKey, ctx.dayName); // re-render modal
+  renderSaude();                              // atualiza grade + kcal acumulado
+}
+
+function removeCardio(idx) {
+  const ctx = window._cardioCtx; if (!ctx) return;
+  const saude = LS.saude.get();
+  const list = saude[ctx.dateKey] && Array.isArray(saude[ctx.dateKey].cardio) ? saude[ctx.dateKey].cardio : null;
+  if (!list) return;
+  list.splice(idx, 1);
+  if (!list.length) { delete saude[ctx.dateKey].cardio; if (!Object.keys(saude[ctx.dateKey]).length) delete saude[ctx.dateKey]; }
+  LS.saude.set(saude);
+  openCardioCheck(ctx.dateKey, ctx.dayName);
+  renderSaude();
 }
 
 /* =========================================
