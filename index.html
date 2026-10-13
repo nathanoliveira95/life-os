@@ -4752,7 +4752,7 @@ window.enterModule=enterModule; window.showHub=showHub;
 
   <!-- GOALS COMPLETADOS -->
   <div class="page" id="page-completed">
-    <div class="ph"><h1>Goals Completados 🏆</h1><p>Metas que atingiram 100% ou foram marcadas como concluídas</p></div>
+    <div class="ph"><h1>Goals Completados 🏆</h1><p>Missões e objetivos concluídos — atingiram 100% ou foram marcados como concluídos</p></div>
     <div id="completed-cols" class="goal-cols"></div>
   </div>
 
@@ -6346,20 +6346,59 @@ function gcard(g, slug, isCompleted) {
    ========================================= */
 function renderCompleted() {
   const goals = LS.goals.get().filter(g => isGoalDone(g));
-  document.getElementById('completed-cols').innerHTML = goals.length === 0
-    ? `<div class="empty" style="grid-column:1/-1">Nenhuma meta completada ainda. Conquiste 100% de alguma e ela aparecerá aqui! 🏆</div>`
-    : CATS.map(cat => {
-        const colGoals = goals.filter(g => g.category === cat.key);
-        if (!colGoals.length) return '';
-        return `
-          <div class="goal-col ${cat.slug}">
-            <div class="goal-col-hd">
-              <span class="goal-col-title">${cat.key}</span>
-              <span class="goal-col-cnt">${colGoals.length}</span>
-            </div>
-            ${colGoals.map(g => gcard(g, cat.slug, true)).join('')}
-          </div>`;
-      }).join('');
+  const objsAll = LS.objectives.get() || {};
+  // Objetivos concluídos (progresso ≥ 100) por categoria
+  const compObjs = {};
+  CATS.forEach(c => {
+    const done = [];
+    normalizeObjectives(objsAll[c.key]).forEach((o, idx) => {
+      if (o.txt && o.txt.trim() && (parseInt(o.progress) || 0) >= 100) done.push({ idx, obj:o });
+    });
+    if (done.length) compObjs[c.key] = done;
+  });
+  const totalObjs = Object.values(compObjs).reduce((s,a)=>s+a.length, 0);
+  if (goals.length === 0 && totalObjs === 0) {
+    document.getElementById('completed-cols').innerHTML =
+      `<div class="empty" style="grid-column:1/-1">Nenhuma meta ou objetivo completado ainda. Conquiste 100% de uma <strong>missão</strong> ou de um <strong>objetivo</strong> e ele aparecerá aqui! 🏆</div>`;
+    return;
+  }
+  document.getElementById('completed-cols').innerHTML = CATS.map(cat => {
+    const colGoals = goals.filter(g => g.category === cat.key);
+    const colObjs  = compObjs[cat.key] || [];
+    if (!colGoals.length && !colObjs.length) return '';
+    return `
+      <div class="goal-col ${cat.slug}">
+        <div class="goal-col-hd">
+          <span class="goal-col-title">${cat.key}</span>
+          <span class="goal-col-cnt">${colGoals.length + colObjs.length}</span>
+        </div>
+        ${colObjs.map(x => ocardCompleted(cat, x.idx, x.obj)).join('')}
+        ${colGoals.map(g => gcard(g, cat.slug, true)).join('')}
+      </div>`;
+  }).join('');
+}
+
+// Card de um OBJETIVO concluído (read-only + reabrir)
+function ocardCompleted(cat, idx, o) {
+  return `
+    <div class="gcard ocard-done ${cat.slug}">
+      <div class="ocard-tag">◆ Objetivo concluído</div>
+      ${o.image ? `<div class="gx-img gx-banner ${cat.slug} has-img"><img src="${esc(o.image)}" alt="" loading="lazy"></div>` : ''}
+      <div class="ocard-txt">${esc(o.txt)}</div>
+      <div class="ocard-meta">${o.deadline ? `<span>📅 ${fmtD(o.deadline)}</span>` : '<span></span>'}<span class="ocard-done-badge">✓ 100%</span></div>
+      <button class="btn btn-g" style="width:100%;margin-top:10px;font-size:11px" onclick="reopenObjective('${esc(cat.key).replace(/'/g,"\\'")}',${idx})">↩ Reabrir objetivo</button>
+    </div>`;
+}
+
+// Reabre um objetivo concluído (volta o progresso para 90% → sai de Completados)
+function reopenObjective(catKey, idx) {
+  const objs = LS.objectives.get();
+  const list = normalizeObjectives(objs[catKey]);
+  if (list[idx]) { list[idx].progress = 90; objs[catKey] = list; LS.objectives.set(objs); }
+  renderCompleted();
+  if (typeof curPage !== 'undefined' && curPage === 'goals') renderGoals();
+  if (typeof renderDashObjectives === 'function') try { renderDashObjectives(); } catch(e){}
+  if (typeof toast === 'function') toast('↩ Objetivo reaberto');
 }
 
 /* =========================================
@@ -12760,6 +12799,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,.hub-block:focus
 .fx-empty,.tf-empty,.dl-empty{transition:border-color .16s ease}
 /* Realce suave da linha de título das páginas */
 .ph h1,.page h1{text-shadow:0 0 22px rgba(10,132,255,.14)}
+
+/* Card de objetivo concluído (Goals Completados) */
+.gcard.ocard-done{display:flex;flex-direction:column}
+.ocard-tag{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-blue-l,#35C6FF);margin-bottom:9px}
+.ocard-txt{font-size:14px;font-weight:600;color:var(--gs-text,#e8eef7);line-height:1.45}
+.ocard-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3,#6b7c8f)}
+.ocard-done-badge{color:var(--gs-success,#10B981);font-weight:700;border:1px solid var(--gs-success,#10B981);border-radius:100px;padding:2px 9px;white-space:nowrap}
 </style>
 </body>
 </html>
