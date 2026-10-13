@@ -973,7 +973,7 @@ body::after{
   position:relative;
 }
 .sb-logo::after{
-  content:"v.2.4.1  ◉ ONLINE";
+  content:"v2.5.0  ◉ ONLINE";
   font-family:var(--font-mono);font-size:9px;font-weight:500;
   color:var(--text3);letter-spacing:.15em;text-transform:uppercase;
 }
@@ -5139,8 +5139,11 @@ async function pushSupa(key, value) {
 }
 
 // Assina mudanças em tempo real do Supabase
+let _rtRetry = 0, _rtTimer = null;
 function subscribeRealtime() {
-  supa.channel('lifeos-realtime')
+  // remove canal anterior (evita múltiplos canais ao reconectar)
+  try { if (window._lifeosChannel && supa) supa.removeChannel(window._lifeosChannel); } catch(e){}
+  const ch = supa.channel('lifeos-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'lifeos_data' }, payload => {
       // Ignora mudanças que vieram desta própria aba (evita loop)
       if (Date.now() - lastPush < 2000) return;
@@ -5157,10 +5160,23 @@ function subscribeRealtime() {
     })
     .subscribe(status => {
       console.info('[Supa] channel status:', status);
-      if (status === 'SUBSCRIBED')   setSyncStatus('ok', 'Sincronizado');
-      if (status === 'CHANNEL_ERROR') syncError('realtime', new Error('CHANNEL_ERROR — confira se rodou: alter publication supabase_realtime add table lifeos_data;'));
-      if (status === 'TIMED_OUT')     syncError('realtime', new Error('TIMED_OUT — sem conexão com o servidor'));
+      if (status === 'SUBSCRIBED') {
+        _rtRetry = 0;
+        setSyncStatus('ok', 'Sincronizado');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        // Realtime (updates ao vivo entre dispositivos) indisponível.
+        // NÃO é erro de sincronização: salvar/carregar (REST) seguem funcionando.
+        // Por isso NÃO alteramos o status nem mostramos toast — apenas log + reconexão silenciosa.
+        console.warn('[Supa] realtime ' + status + ' — live updates indisponíveis; save/load continuam ativos');
+        if (_rtRetry < 5) {
+          clearTimeout(_rtTimer);
+          const delay = Math.min(60000, 4000 * Math.pow(2, _rtRetry));
+          _rtRetry++;
+          _rtTimer = setTimeout(() => { try { if (supa) subscribeRealtime(); } catch(e){} }, delay);
+        }
+      }
     });
+  window._lifeosChannel = ch;
 }
 
 // Função de diagnóstico — chame no console: testSupa()
@@ -8739,7 +8755,7 @@ function openProgPhotoModal(wkKey) {
   const bootEl = document.getElementById('oliv-boot');
   const bootLog = document.getElementById('olivBootLog');
   const BOOT_LINES = [
-    ['> INITIALIZING OLIVER OS v2.4.1', 'OK'],
+    ['> INITIALIZING OLIVER OS v2.5.0', 'OK'],
     ['> LOADING MODULES..............', 'OK'],
     ['> SYNC HANDSHAKE...............', 'OK'],
     ['> BIOMETRIC AUTH...............', 'OK'],
