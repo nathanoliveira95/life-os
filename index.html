@@ -5996,6 +5996,13 @@ function upGoal(id, field, val) {
   if (field === 'target') updateGoalProgress(id);
 }
 
+// Vincula uma missão a um objetivo (índice do objetivo na mesma categoria) e re-renderiza a página atual
+function linkGoalObj(id, val) {
+  upGoal(id, 'objIdx', val);
+  if (typeof curPage !== 'undefined' && curPage === 'completed') { if (typeof renderCompleted === 'function') renderCompleted(); }
+  else if (typeof renderGoals === 'function') renderGoals();
+}
+
 // Atualiza a barra e o texto de progresso de uma meta específica
 function updateGoalProgress(id) {
   const g = LS.goals.get().find(g => g.id === id);
@@ -6299,6 +6306,12 @@ function gcard(g, slug, isCompleted) {
   const tierClass = (g.priority === 'Tier 1º') ? 'tier-1' : 'tier-2';
 
   const pinned = isGoalPinned(g.id);
+  // Vínculo missão → objetivo (objetivos da mesma categoria)
+  const _objs = (typeof LS!=='undefined' && LS.objectives) ? (LS.objectives.get()||{}) : {};
+  const _catObjs = normalizeObjectives(_objs[g.category]).map((o,idx)=>({idx,txt:(o.txt||'').trim()})).filter(o=>o.txt);
+  const _linkIdx = (g.objIdx!==''&&g.objIdx!=null&&!isNaN(parseInt(g.objIdx))) ? parseInt(g.objIdx) : -1;
+  const _linked = (_linkIdx>=0) ? _catObjs.find(o=>o.idx===_linkIdx) : null;
+  const _clip = (t,n)=> t.length>n ? t.slice(0,n)+'…' : t;
   return `
     <div class="gcard ${slug}">
       <button class="btn btn-d gcard-del" onclick="${isCompleted?'delGoal':'delGoal'}('${g.id}')">✕</button>
@@ -6309,6 +6322,7 @@ function gcard(g, slug, isCompleted) {
       </div>
       <input id="gn-${g.id}" class="gcard-name" value="${esc(g.name)}" placeholder="Nome da meta"
         onchange="upGoal('${g.id}','name',this.value)">
+      ${_linked ? `<div class="gcard-objlink" title="Missão vinculada a este objetivo">◆ ${esc(_clip(_linked.txt,46))}</div>` : ''}
 
       <div class="gx-img gx-banner ${slug} ${g.image?'has-img':'is-empty'}"
            onclick="${g.image?'':`pickGoalPhoto('${g.id}')`}" ${g.image?'':'title="Adicionar foto"'}>
@@ -6317,6 +6331,13 @@ function gcard(g, slug, isCompleted) {
           : `<span class="gx-ph-ico">🎯</span><span class="gx-ph-txt">＋ Adicionar foto</span>`}
       </div>
 
+      <div class="gcard-row">
+        <label>Objetivo</label>
+        <select onchange="linkGoalObj('${g.id}',this.value)" title="Vincular esta missão a um objetivo da categoria ${esc(g.category||'')}">
+          <option value="">— nenhum —</option>
+          ${_catObjs.map(o=>`<option value="${o.idx}" ${_linkIdx===o.idx?'selected':''}>${esc(_clip(o.txt,38))}</option>`).join('')}
+        </select>
+      </div>
       <div class="gcard-row">
         <label>Meta</label>
         <input type="number" min="0" step="any" value="${g.target||0}" placeholder="0"
@@ -12377,7 +12398,22 @@ body.is-mobile .ndt-add>.btn{width:100%}
 .xp-lu-n{font-family:var(--font-mono);font-size:88px;font-weight:700;color:#fff;line-height:1;text-shadow:0 0 34px rgba(53,198,255,.8)}
 .xp-lu-s{font-family:var(--font-mono);font-size:12px;color:var(--gs-text-2);letter-spacing:.1em;margin-top:6px}
 @media (prefers-reduced-motion: reduce){.xp-lu-box{transition:none}#xp-levelup{transition:opacity .01s}}
-@media(max-width:760px){ .xp-grid{grid-template-columns:1fr} .xp-cfg{grid-template-columns:1fr} .xp-cat{grid-template-columns:96px 1fr auto} }
+/* Regras de XP por categoria + balanceamento */
+.xp-presets{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.xp-presets-l{font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3);letter-spacing:.04em}
+.xp-preset{font-family:var(--font-hud);font-size:11.5px;font-weight:600;color:var(--gs-text-2);background:var(--gs-card);border:1px solid var(--gs-border);border-radius:100px;padding:6px 13px;cursor:pointer;transition:all .14s}
+.xp-preset:hover{border-color:var(--gs-blue);color:var(--gs-blue-l);transform:translateY(-1px)}
+.xp-preset-g{color:var(--gs-text-3)}
+.xp-rulegrps{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.xp-rgrp{border:1px solid var(--gs-border);border-radius:12px;padding:13px 14px;background:var(--gs-ink-2)}
+.xp-rgrp-hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+.xp-rgrp-n{font-family:var(--font-hud);font-size:13px;font-weight:700;color:var(--gs-text)}
+.xp-rgrp-w{font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:var(--gs-blue-l);white-space:nowrap}
+.xp-rgrp-bar{height:6px;border-radius:100px;background:rgba(255,255,255,.06);overflow:hidden;margin-bottom:11px}
+.xp-rgrp-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gs-blue-d,#0A84FF),var(--gs-blue-l,#35C6FF));transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.xp-rgrp-rules{display:flex;flex-direction:column;gap:8px}
+.xp-rules-hint{font-family:var(--font-mono);font-size:10.5px;line-height:1.5;color:var(--gs-text-3);margin-top:12px}
+@media(max-width:760px){ .xp-grid{grid-template-columns:1fr} .xp-cfg{grid-template-columns:1fr} .xp-cat{grid-template-columns:96px 1fr auto} .xp-rulegrps{grid-template-columns:1fr} }
 </style>
 
 <script id="xp-script">
@@ -12392,6 +12428,13 @@ body.is-mobile .ndt-add>.btn{width:100%}
 
   // ---- Config (sistema de XP explícito e configurável) ----
   const CFG_DEF = { dailyTaskDefault:10, microDefault:5, goalComplete:100, treinoDay:10, dietDay:6, task100Done:8 };
+  // Presets de balanceamento (conjuntos de regras por ênfase)
+  const XP_PRESETS = {
+    equilibrado: { dailyTaskDefault:10, microDefault:5, treinoDay:10, dietDay:8,  goalComplete:80,  task100Done:10 },
+    saude:       { dailyTaskDefault:8,  microDefault:4, treinoDay:16, dietDay:12, goalComplete:60,  task100Done:8 },
+    metas:       { dailyTaskDefault:8,  microDefault:4, treinoDay:8,  dietDay:6,  goalComplete:150, task100Done:16 },
+    rotina:      { dailyTaskDefault:14, microDefault:8, treinoDay:8,  dietDay:6,  goalComplete:60,  task100Done:8 },
+  };
   if (!LS.xpConfig) LS.xpConfig = {
     get(){ try{ return Object.assign({}, CFG_DEF, JSON.parse(localStorage.getItem('lo_xpconfig')||'{}')); }catch(e){ return Object.assign({},CFG_DEF); } },
     set(v){ localStorage.setItem('lo_xpconfig', JSON.stringify(v)); try{ pushSupa('xpConfig', v); }catch(e){} }
@@ -12401,6 +12444,9 @@ body.is-mobile .ndt-add>.btn{width:100%}
   const XP = window.XP = {
     cfg(){ return LS.xpConfig.get(); },
     setCfg(k,v){ const c=LS.xpConfig.get(); c[k]=Math.max(0,parseInt(v)||0); LS.xpConfig.set(c); refreshAll(); },
+    setCfgMulti(obj){ const c=LS.xpConfig.get(); Object.keys(obj).forEach(k=>{ c[k]=Math.max(0,parseInt(obj[k])||0); }); LS.xpConfig.set(c); refreshAll(); },
+    applyPreset(name){ const p=XP_PRESETS[name]; if(p){ XP.setCfgMulti(p); if(typeof toast==='function') toast('⚖ Balanceamento aplicado'); } },
+    reset(){ LS.xpConfig.set(Object.assign({},CFG_DEF)); refreshAll(); if(typeof toast==='function') toast('↺ Regras de XP restauradas'); },
     // XP recomputado do ESTADO atual → idempotente (marcar/desmarcar/remarcar não duplica)
     fromTasks(){ let xp=0; try{ const s=LS.daytasks.get(); Object.values(s).forEach(arr=>(arr||[]).forEach(t=>{ if(t.done) xp+=Math.max(0,parseInt(t.xp)||0); (t.subs||[]).forEach(su=>{ if(su.done) xp+=Math.max(0,parseInt(su.xp)||0); }); })); }catch(e){} return xp; },
     fromHealth(){ const c=XP.cfg(); let xp=0; try{ Object.values(LS.saude.get()||{}).forEach(e=>{ if(e&&e.treino&&e.treino!=='X') xp+=c.treinoDay; const dp=e&&e.dietPct; if(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)>=DT) xp+=c.dietDay; }); }catch(e){} return xp; },
@@ -12564,6 +12610,12 @@ body.is-mobile .ndt-add>.btn{width:100%}
     const histHtml = hist.length ? hist.map(e=>`<div class="xp-hrow"><span class="xp-hd">+${e.xp}</span><span class="xp-hl" title="${esct(e.label)}">${esct(e.label)}</span><span class="xp-ht">${e.cat} · ${fmtShort(e.ts)}</span></div>`).join('') : `<div class="xp-empty">Sem ganhos de XP ainda.</div>`;
     const c=XP.cfg();
     const cfgIt=(k,l)=>`<div class="xp-cfg-it"><span class="xp-cfg-l">${l}</span><input type="number" min="0" class="xp-cfg-in" value="${c[k]}" onchange="XP.setCfg('${k}',this.value)"></div>`;
+    const pctOf=v=> total>0 ? Math.round(v/total*100) : 0;
+    const ruleGrp=(ic,name,catXp,rules)=>`<div class="xp-rgrp">
+        <div class="xp-rgrp-hd"><span class="xp-rgrp-n">${ic} ${name}</span><span class="xp-rgrp-w" title="Peso desta categoria no seu XP total">${pctOf(catXp)}% · ${catXp} XP</span></div>
+        <div class="xp-rgrp-bar"><div class="xp-rgrp-fill" style="width:${pctOf(catXp)}%"></div></div>
+        <div class="xp-rgrp-rules">${rules.map(r=>cfgIt(r[0],r[1])).join('')}</div>
+      </div>`;
     host.innerHTML = `
       <div class="xp-grid">
         <div class="xp-card wide">
@@ -12595,15 +12647,22 @@ body.is-mobile .ndt-add>.btn{width:100%}
           <div class="xp-hist">${histHtml}</div>
         </div>
         <div class="xp-card wide">
-          <div class="xp-card-t">⚙ Configuração de XP</div>
-          <div class="xp-cfg">
-            ${cfgIt('dailyTaskDefault','Tarefa diária (padrão)')}
-            ${cfgIt('microDefault','Micro-atividade (padrão)')}
-            ${cfgIt('treinoDay','Treino / dia')}
-            ${cfgIt('dietDay','Dieta ≥'+DT+'% / dia')}
-            ${cfgIt('goalComplete','Meta concluída')}
-            ${cfgIt('task100Done','100-Task concluída')}
+          <div class="xp-card-t">⚙ Regras de XP <span style="font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);font-weight:400">por categoria · balanceável</span></div>
+          <div class="xp-presets">
+            <span class="xp-presets-l">⚖ Balancear:</span>
+            <button class="xp-preset" onclick="XP.applyPreset('equilibrado')">Equilibrado</button>
+            <button class="xp-preset" onclick="XP.applyPreset('saude')">💪 Foco Saúde</button>
+            <button class="xp-preset" onclick="XP.applyPreset('metas')">🎯 Foco Metas</button>
+            <button class="xp-preset" onclick="XP.applyPreset('rotina')">📋 Foco Rotina</button>
+            <button class="xp-preset xp-preset-g" onclick="XP.reset()">↺ Padrão</button>
           </div>
+          <div class="xp-rulegrps">
+            ${ruleGrp('📋','Rotina & Tarefas', b.tasks, [['dailyTaskDefault','Tarefa diária (padrão)'],['microDefault','Micro-atividade (padrão)']])}
+            ${ruleGrp('💪','Saúde', b.health, [['treinoDay','Treino / dia'],['dietDay','Dieta ≥'+DT+'% / dia']])}
+            ${ruleGrp('🎯','Metas', b.goals, [['goalComplete','Missão concluída']])}
+            ${ruleGrp('💯','100 Tasks', b.tasks100, [['task100Done','Ficha concluída']])}
+          </div>
+          <div class="xp-rules-hint">As barras mostram o <b>peso</b> de cada categoria no seu XP total — ajuste os valores ou use um preset para balancear.</div>
         </div>
       </div>`;
   };
@@ -12814,6 +12873,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,.hub-block:focus
 .ocard-txt{font-size:14px;font-weight:600;color:var(--gs-text,#e8eef7);line-height:1.45}
 .ocard-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3,#6b7c8f)}
 .ocard-done-badge{color:var(--gs-success,#10B981);font-weight:700;border:1px solid var(--gs-success,#10B981);border-radius:100px;padding:2px 9px;white-space:nowrap}
+/* Vínculo missão → objetivo (badge no card de missão) */
+.gcard-objlink{font-family:var(--font-mono);font-size:10px;line-height:1.35;color:var(--gs-blue-l,#35C6FF);background:rgba(10,132,255,.1);border:1px solid rgba(10,132,255,.3);border-radius:7px;padding:5px 9px;margin:0 0 10px}
 
 /* Indicador de sincronização no topo */
 .hc-sync{pointer-events:auto;cursor:pointer;color:var(--gs-text-2,#9fb0c2);transition:color .15s;margin-top:3px}
