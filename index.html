@@ -12429,6 +12429,20 @@ body.is-mobile .ndt-add>.btn{width:100%}
 .xp-rgrp-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gs-blue-d,#0A84FF),var(--gs-blue-l,#35C6FF));transition:width .4s cubic-bezier(.2,.8,.2,1)}
 .xp-rgrp-rules{display:flex;flex-direction:column;gap:8px}
 .xp-rules-hint{font-family:var(--font-mono);font-size:10.5px;line-height:1.5;color:var(--gs-text-3);margin-top:12px}
+/* XP: ganho vs retirado + reset + penalidades + descrição de categoria */
+.xp-reset-btn{margin-left:auto;font-family:var(--font-hud);font-size:11px;font-weight:600;color:var(--gs-text-3);background:var(--gs-card);border:1px solid var(--gs-border);border-radius:100px;padding:5px 12px;cursor:pointer;transition:all .14s}
+.xp-reset-btn:hover{border-color:var(--gs-danger,#F0524B);color:var(--gs-danger,#F0524B)}
+.xp-net{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:13px;font-weight:700}
+.xp-net small{font-weight:400;font-size:10px;color:var(--gs-text-3)}
+.xp-net-gain{color:var(--gs-success,#10B981)}
+.xp-net-pen{color:var(--gs-danger,#F0524B)}
+.xp-net-since{margin-left:auto;font-weight:400;font-size:10px;color:var(--gs-text-3)}
+.xp-gr-bar{display:flex;height:7px;border-radius:100px;overflow:hidden;background:var(--gs-ink-2,#0a0f16);margin-top:8px;border:1px solid var(--gs-border)}
+.xp-gr-gain{background:linear-gradient(90deg,#0e9e6e,var(--gs-success,#10B981))}
+.xp-gr-pen{background:linear-gradient(90deg,var(--gs-danger,#F0524B),#c0392b)}
+.xp-rgrp-desc{font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);margin:-4px 0 9px;line-height:1.4}
+.xp-pen-it .xp-cfg-l{flex:1}
+.xp-pen-sum{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--gs-danger,#F0524B);min-width:70px;text-align:right}
 @media(max-width:760px){ .xp-grid{grid-template-columns:1fr} .xp-cfg{grid-template-columns:1fr} .xp-cat{grid-template-columns:96px 1fr auto} .xp-rulegrps{grid-template-columns:1fr} }
 </style>
 
@@ -12443,7 +12457,7 @@ body.is-mobile .ndt-add>.btn{width:100%}
   const fmtShort = iso => { try{ const p=iso.slice(0,10).split('-'); return `${+p[2]} ${MONTHS[(+p[1])-1]}`; }catch(e){ return iso; } };
 
   // ---- Config (sistema de XP explícito e configurável) ----
-  const CFG_DEF = { dailyTaskDefault:10, microDefault:5, goalComplete:100, treinoDay:10, dietDay:6, task100Done:8 };
+  const CFG_DEF = { dailyTaskDefault:10, microDefault:5, goalComplete:100, treinoDay:10, dietDay:6, task100Done:8, penDietUnder:5, penTaskLate:2 };
   // Presets de balanceamento (conjuntos de regras por ênfase)
   const XP_PRESETS = {
     equilibrado: { dailyTaskDefault:10, microDefault:5, treinoDay:10, dietDay:8,  goalComplete:80,  task100Done:10 },
@@ -12455,6 +12469,12 @@ body.is-mobile .ndt-add>.btn{width:100%}
     get(){ try{ return Object.assign({}, CFG_DEF, JSON.parse(localStorage.getItem('lo_xpconfig')||'{}')); }catch(e){ return Object.assign({},CFG_DEF); } },
     set(v){ localStorage.setItem('lo_xpconfig', JSON.stringify(v)); try{ pushSupa('xpConfig', v); }catch(e){} }
   };
+  // Estado do "zerar XP" (baseline por categoria do que já foi acumulado + data do recomeço)
+  if (!LS.xpBase) LS.xpBase = {
+    get(){ try{ const v=Object.assign({baseline:{},resetAt:''}, JSON.parse(localStorage.getItem('lo_xpbase')||'{}')); if(!v.baseline||typeof v.baseline!=='object') v.baseline={}; return v; }catch(e){ return {baseline:{},resetAt:''}; } },
+    set(v){ localStorage.setItem('lo_xpbase', JSON.stringify(v)); try{ pushSupa('xpBase', v); }catch(e){} }
+  };
+  const daysBetweenKeys = (a,b)=>{ try{ const d1=new Date(a+'T12:00:00'), d2=new Date(b+'T12:00:00'); return Math.round((d2-d1)/86400000); }catch(e){ return 0; } };
 
   // ---- Motor central de XP (fonte única) ----
   const XP = window.XP = {
@@ -12469,7 +12489,22 @@ body.is-mobile .ndt-add>.btn{width:100%}
     fromGoals(){ const c=XP.cfg(); try{ return (LS.goals.get()||[]).filter(g=>typeof isGoalDone==='function'&&isGoalDone(g)).length * c.goalComplete; }catch(e){ return 0; } },
     fromTasks100(){ const c=XP.cfg(); try{ return (LS.tasks100.get()||[]).filter(t=>t&&t.done).length * c.task100Done; }catch(e){ return 0; } },
     breakdown(){ return { tasks:XP.fromTasks(), health:XP.fromHealth(), goals:XP.fromGoals(), tasks100:XP.fromTasks100() }; },
-    total(){ const b=XP.breakdown(); return b.tasks+b.health+b.goals+b.tasks100; },
+    // Ganho por categoria descontando o baseline do recomeço ("zerar XP")
+    gainedBy(){ const b=XP.breakdown(); const base=(LS.xpBase.get().baseline)||{}; const g={}; ['tasks','health','goals','tasks100'].forEach(k=>g[k]=Math.max(0,(b[k]||0)-(parseInt(base[k])||0))); return g; },
+    gained(){ const g=XP.gainedBy(); return g.tasks+g.health+g.goals+g.tasks100; },
+    // XP negativo: dieta < limite por dia + tarefas atrasadas (por dia de atraso) — contados a partir do recomeço
+    penalties(){
+      const c=XP.cfg(); const cutoff=(LS.xpBase.get().resetAt||'').slice(0,10);
+      let diet=0, late=0, dietDays=0, lateTasks=0;
+      try{ const s=LS.saude.get()||{}; Object.keys(s).forEach(k=>{ if(cutoff && k<cutoff) return; const e=s[k]; const dp=e&&e.dietPct;
+        if(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)<DT){ diet+=Math.max(0,parseInt(c.penDietUnder)||0); dietDays++; } }); }catch(e){}
+      try{ const td=LS.daytasks.get()||{}; const today=keyOf(new Date()); Object.keys(td).forEach(k=>{ if(k>=today) return; if(cutoff && k<cutoff) return;
+        (td[k]||[]).forEach(t=>{ if(t&&!t.done){ const dl=daysBetweenKeys(k,today); if(dl>0){ late+=dl*Math.max(0,parseInt(c.penTaskLate)||0); lateTasks++; } } }); }); }catch(e){}
+      return { diet, late, total:diet+late, dietDays, lateTasks };
+    },
+    net(){ return XP.gained() - XP.penalties().total; },
+    hardReset(){ const b=XP.breakdown(); LS.xpBase.set({ baseline:{tasks:b.tasks,health:b.health,goals:b.goals,tasks100:b.tasks100}, resetAt:nowISO() }); refreshAll(); if(typeof toast==='function') toast('✓ XP zerado — começando de agora'); },
+    total(){ return Math.max(0, XP.net()); },
     level(){ return (typeof window.dashLevel==='function')?window.dashLevel(XP.total()):{level:1,into:0,need:100,pct:0}; },
     // Histórico derivado (traçável): eventos com data, ordenados desc
     history(limit){
@@ -12483,7 +12518,9 @@ body.is-mobile .ndt-add>.btn{width:100%}
         const dp=e&&e.dietPct; if(dp!==undefined&&dp!==''&&dp!==null&&parseFloat(dp)>=DT) ev.push({ts:k+'T12:00:00', xp:c.dietDay, label:'Dieta '+dp+'%', cat:'Dieta'});
       }); }catch(e){}
       ev.sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
-      return limit?ev.slice(0,limit):ev;
+      const cutoff=(LS.xpBase.get().resetAt||'');
+      const out = cutoff ? ev.filter(e=>(e.ts||'')>=cutoff) : ev;
+      return limit?out.slice(0,limit):out;
     },
     availableToday(){
       const out=[]; const k=keyOf(new Date());
@@ -12615,33 +12652,48 @@ body.is-mobile .ndt-add>.btn{width:100%}
   };
 
   // ---- Página XP ----
+  window.xpConfirmReset = function(){
+    document.getElementById('mc').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeMC()"><div class="modal" style="width:400px"><h3>Zerar XP e recomeçar?</h3><p style="font-family:var(--font-mono);font-size:12.5px;color:var(--gs-text-2);line-height:1.6">Seu XP volta a <b>0</b> e a contagem (ganhos e penalidades) passa a valer <b>a partir de agora</b>. Seus dados (tarefas, treinos, dietas, metas) não são apagados.</p><div class="mf"><button class="btn btn-g" onclick="closeMC()">Cancelar</button><button class="btn btn-p" onclick="XP.hardReset();closeMC()">Zerar e recomeçar</button></div></div></div>`;
+  };
   window.renderXPPage = function(){
     const host=document.getElementById('xp-root'); if(!host) return;
-    const L=XP.level(); const total=XP.total(); const b=XP.breakdown();
-    const maxCat=Math.max(1,b.tasks,b.health,b.goals,b.tasks100);
+    const L=XP.level(); const total=XP.total();
+    const gb=XP.gainedBy(); const gainedTotal=XP.gained(); const pen=XP.penalties();
+    const resetAt=(LS.xpBase.get().resetAt||'');
+    const maxCat=Math.max(1,gb.tasks,gb.health,gb.goals,gb.tasks100);
     const cat=(n,ic,v)=>`<div class="xp-cat"><div class="xp-cat-n">${ic} ${n}</div><div class="xp-cat-bar"><div class="xp-cat-fill" style="width:${Math.round(v/maxCat*100)}%"></div></div><div class="xp-cat-v">${v} XP</div></div>`;
     const av=XP.availableToday();
     const avHtml = av.length ? av.map(a=>`<div class="xp-av-it" onclick="${a.act};event.stopPropagation()"><span class="xp-av-ic">${a.ic}</span><div class="xp-av-main"><div class="xp-av-title" title="${esct(a.title)}">${esct(a.title)}</div><div class="xp-av-cat">${a.cat}</div></div><span class="xp-av-xp">+${a.xp}</span></div>`).join('') : `<div class="xp-empty">Tudo concluído por hoje. Adicione tarefas no Note Diário.</div>`;
     const hist=XP.history(40);
-    const histHtml = hist.length ? hist.map(e=>`<div class="xp-hrow"><span class="xp-hd">+${e.xp}</span><span class="xp-hl" title="${esct(e.label)}">${esct(e.label)}</span><span class="xp-ht">${e.cat} · ${fmtShort(e.ts)}</span></div>`).join('') : `<div class="xp-empty">Sem ganhos de XP ainda.</div>`;
+    const histHtml = hist.length ? hist.map(e=>`<div class="xp-hrow"><span class="xp-hd">+${e.xp}</span><span class="xp-hl" title="${esct(e.label)}">${esct(e.label)}</span><span class="xp-ht">${e.cat} · ${fmtShort(e.ts)}</span></div>`).join('') : `<div class="xp-empty">Sem ganhos de XP ainda${resetAt?' (desde o recomeço)':''}.</div>`;
     const c=XP.cfg();
     const cfgIt=(k,l)=>`<div class="xp-cfg-it"><span class="xp-cfg-l">${l}</span><input type="number" min="0" class="xp-cfg-in" value="${c[k]}" onchange="XP.setCfg('${k}',this.value)"></div>`;
-    const pctOf=v=> total>0 ? Math.round(v/total*100) : 0;
-    const ruleGrp=(ic,name,catXp,rules)=>`<div class="xp-rgrp">
-        <div class="xp-rgrp-hd"><span class="xp-rgrp-n">${ic} ${name}</span><span class="xp-rgrp-w" title="Peso desta categoria no seu XP total">${pctOf(catXp)}% · ${catXp} XP</span></div>
+    const pctOf=v=> gainedTotal>0 ? Math.round(v/gainedTotal*100) : 0;
+    const ruleGrp=(ic,name,catXp,desc,rules)=>`<div class="xp-rgrp">
+        <div class="xp-rgrp-hd"><span class="xp-rgrp-n">${ic} ${name}</span><span class="xp-rgrp-w" title="Peso desta categoria no seu XP ganho">${pctOf(catXp)}% · ${catXp} XP</span></div>
+        <div class="xp-rgrp-desc">${desc}</div>
         <div class="xp-rgrp-bar"><div class="xp-rgrp-fill" style="width:${pctOf(catXp)}%"></div></div>
         <div class="xp-rgrp-rules">${rules.map(r=>cfgIt(r[0],r[1])).join('')}</div>
       </div>`;
+    const penIt=(k,l,sum)=>`<div class="xp-cfg-it xp-pen-it"><span class="xp-cfg-l">${l}</span><input type="number" min="0" class="xp-cfg-in" value="${c[k]}" onchange="XP.setCfg('${k}',this.value)"><span class="xp-pen-sum">−${sum}</span></div>`;
+    const grPct = (gainedTotal+pen.total)>0 ? Math.round(gainedTotal/(gainedTotal+pen.total)*100) : 100;
     host.innerHTML = `
       <div class="xp-grid">
         <div class="xp-card wide">
-          <div class="xp-card-t">Player Status <span style="font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);font-weight:400">sincronizado com o HUD do Dashboard</span></div>
+          <div class="xp-card-t">Player Status <span style="font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);font-weight:400">XP líquido = ganho − retirado · sincronizado com o HUD</span>
+            <button class="xp-reset-btn" onclick="xpConfirmReset()" title="Zerar XP e recomeçar a contagem agora">↺ Zerar XP</button></div>
           <div class="xps">
             <div class="xps-lvl"><span class="xps-lvl-k">LEVEL</span><span class="xps-lvl-n">${L.level}</span></div>
             <div class="xps-main">
-              <div class="xps-tot">${total} <small>XP total</small></div>
+              <div class="xps-tot">${total} <small>XP líquido</small></div>
               <div class="xps-bar"><div class="xps-fill" style="width:${L.pct}%"></div></div>
               <div class="xps-sub">${L.into} / ${L.need} XP para o nível ${L.level+1} · faltam ${Math.max(0,L.need-L.into)} XP</div>
+              <div class="xp-net">
+                <span class="xp-net-gain">▲ +${gainedTotal} <small>ganho</small></span>
+                <span class="xp-net-pen">▼ −${pen.total} <small>retirado</small></span>
+                ${resetAt?`<span class="xp-net-since">desde ${fmtShort(resetAt)}</span>`:''}
+              </div>
+              <div class="xp-gr-bar" title="Proporção de XP ganho vs retirado"><div class="xp-gr-gain" style="width:${grPct}%"></div><div class="xp-gr-pen" style="width:${100-grPct}%"></div></div>
             </div>
           </div>
         </div>
@@ -12650,13 +12702,21 @@ body.is-mobile .ndt-add>.btn{width:100%}
           <div class="xp-av">${avHtml}</div>
         </div>
         <div class="xp-card">
-          <div class="xp-card-t">Categorias de Atividade</div>
+          <div class="xp-card-t">Categorias de Atividade <span style="font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);font-weight:400">ganho por fonte</span></div>
           <div class="xp-cats">
-            ${cat('Tarefas & Micro','📋',b.tasks)}
-            ${cat('Saúde','💪',b.health)}
-            ${cat('Metas','🎯',b.goals)}
-            ${cat('100 Tasks','💯',b.tasks100)}
+            ${cat('Tarefas · Note Diário','📋',gb.tasks)}
+            ${cat('Saúde · Treino e Dieta','💪',gb.health)}
+            ${cat('Missões · Goals','🎯',gb.goals)}
+            ${cat('100 Tasks','💯',gb.tasks100)}
           </div>
+        </div>
+        <div class="xp-card">
+          <div class="xp-card-t">⚠️ XP Negativo <span style="font-family:var(--font-mono);font-size:10px;color:var(--gs-text-3);font-weight:400">penalidades (já descontadas)</span></div>
+          <div class="xp-cfg" style="grid-template-columns:1fr">
+            ${penIt('penDietUnder','🥗 Dieta < '+DT+'% · por dia', pen.diet+(pen.dietDays?' ('+pen.dietDays+'d)':''))}
+            ${penIt('penTaskLate','⏰ Tarefa atrasada · por dia', pen.late+(pen.lateTasks?' ('+pen.lateTasks+' tarefa(s))':''))}
+          </div>
+          <div class="xp-rules-hint">Cada dia de dieta abaixo de ${DT}% e cada dia de atraso de uma tarefa retiram XP — já descontado do líquido acima.</div>
         </div>
         <div class="xp-card">
           <div class="xp-card-t">Histórico de XP</div>
@@ -12673,12 +12733,12 @@ body.is-mobile .ndt-add>.btn{width:100%}
             <button class="xp-preset xp-preset-g" onclick="XP.reset()">↺ Padrão</button>
           </div>
           <div class="xp-rulegrps">
-            ${ruleGrp('📋','Rotina & Tarefas', b.tasks, [['dailyTaskDefault','Tarefa diária (padrão)'],['microDefault','Micro-atividade (padrão)']])}
-            ${ruleGrp('💪','Saúde', b.health, [['treinoDay','Treino / dia'],['dietDay','Dieta ≥'+DT+'% / dia']])}
-            ${ruleGrp('🎯','Metas', b.goals, [['goalComplete','Missão concluída']])}
-            ${ruleGrp('💯','100 Tasks', b.tasks100, [['task100Done','Ficha concluída']])}
+            ${ruleGrp('📋','Rotina & Tarefas', gb.tasks, 'Tarefas e sub-tarefas concluídas no Note Diário', [['dailyTaskDefault','Tarefa concluída · Note Diário'],['microDefault','Sub-tarefa concluída · Note Diário']])}
+            ${ruleGrp('💪','Saúde', gb.health, 'Treino e dieta registrados em Treino e Dieta', [['treinoDay','Treino registrado · por dia'],['dietDay','Dieta ≥'+DT+'% · por dia']])}
+            ${ruleGrp('🎯','Metas', gb.goals, 'Missões concluídas em Goals', [['goalComplete','Missão concluída · Goals']])}
+            ${ruleGrp('💯','100 Tasks', gb.tasks100, 'Fichas concluídas em 100 Tasks', [['task100Done','Ficha concluída · 100 Tasks']])}
           </div>
-          <div class="xp-rules-hint">As barras mostram o <b>peso</b> de cada categoria no seu XP total — ajuste os valores ou use um preset para balancear.</div>
+          <div class="xp-rules-hint">As barras mostram o <b>peso</b> de cada categoria no seu XP ganho — ajuste os valores ou use um preset para balancear.</div>
         </div>
       </div>`;
   };
@@ -12891,6 +12951,20 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,.hub-block:focus
 .ocard-done-badge{color:var(--gs-success,#10B981);font-weight:700;border:1px solid var(--gs-success,#10B981);border-radius:100px;padding:2px 9px;white-space:nowrap}
 /* Vínculo missão → objetivo (badge no card de missão) */
 .gcard-objlink{font-family:var(--font-mono);font-size:10px;line-height:1.35;color:var(--gs-blue-l,#35C6FF);background:rgba(10,132,255,.1);border:1px solid rgba(10,132,255,.3);border-radius:7px;padding:5px 9px;margin:0 0 10px}
+
+/* Goals: contornos claros nos campos editáveis (menos poluição, mais escaneável) */
+#page-goals .gcard input, #page-goals .gcard select, #page-completed .gcard input, #page-completed .gcard select, #page-goals .obj-inp{
+  background:var(--gs-ink-2,#0a0f16) !important; border:1px solid var(--gs-border,#1c2733) !important; border-radius:7px !important; transition:border-color .14s, box-shadow .14s !important;
+}
+#page-goals .gcard input:hover, #page-goals .gcard select:hover, #page-goals .obj-inp:hover{ border-color:var(--gs-border-2,#26333f) !important; }
+#page-goals .gcard input:focus, #page-goals .gcard select:focus, #page-completed .gcard input:focus, #page-completed .gcard select:focus, #page-goals .obj-inp:focus{
+  border-color:var(--gs-blue,#0A84FF) !important; box-shadow:0 0 0 2px rgba(10,132,255,.18) !important; outline:none !important;
+}
+/* nome da missão: deixa evidente que é editável (sublinhado sutil sempre visível) */
+#page-goals .gcard-name, #page-completed .gcard-name{ border-bottom:1px dashed var(--gs-border-2,#26333f) !important; padding:3px 2px 5px !important; }
+#page-goals .gcard-name:focus, #page-completed .gcard-name:focus{ border-bottom-color:var(--gs-blue,#0A84FF) !important; }
+/* respiro entre linhas de campo */
+#page-goals .gcard-row{ margin-top:7px !important; }
 
 /* Indicador de sincronização no topo */
 .hc-sync{pointer-events:auto;cursor:pointer;color:var(--gs-text-2,#9fb0c2);transition:color .15s;margin-top:3px}
