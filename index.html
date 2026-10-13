@@ -4093,26 +4093,37 @@ const TOEFL_EXERCISES = {"reading":[{"id":"r1","cat":"reading","type":"mcq","opt
 
   // ═══════════════ Gráfico SVG (linha, escala automática, multi-série, gaps) ═══════════════
   function lineChart(dates, seriesArr, opts){
-    opts=opts||{}; const H=opts.height||210, W=720, P={l:44,r:14,t:14,b:26};
+    opts=opts||{}; const H=opts.height||210, W=720, P={l:46,r:16,t:16,b:28};
     const allY=[]; seriesArr.forEach(s=>s.data.forEach(v=>{ if(v!=null&&!isNaN(v)) allY.push(v); }));
     if(allY.length<1) return '<div class="fx-empty">Sem dados suficientes.</div>';
     let minY=Math.min(...allY), maxY=Math.max(...allY);
-    if(minY===maxY){ minY-=1; maxY+=1; } else { const pad=(maxY-minY)*0.14; minY-=pad; maxY+=pad; }
-    const n=dates.length;
+    if(minY===maxY){ minY-=1; maxY+=1; } else { const pad=(maxY-minY)*0.16; minY-=pad; maxY+=pad; }
+    const n=dates.length, baseY=H-P.b;
     const xAt=i=> P.l + (n<=1? (W-P.l-P.r)/2 : (i/(n-1))*(W-P.l-P.r));
-    const yAt=v=> P.t + (H-P.t-P.b) - ((v-minY)/(maxY-minY))*(H-P.t-P.b);
+    const yAt=v=> P.t + (baseY-P.t) - ((v-minY)/(maxY-minY))*(baseY-P.t);
     const ticks=[]; for(let i=0;i<=3;i++) ticks.push(minY+(maxY-minY)*i/3);
     const showEvery=Math.max(1,Math.ceil(n/6));
-    const defs=seriesArr.map((s,si)=>`<linearGradient id="fxg${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".20"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient>`).join('');
-    const grid=ticks.map(v=>`<line x1="${P.l}" x2="${W-P.r}" y1="${yAt(v).toFixed(1)}" y2="${yAt(v).toFixed(1)}" stroke="rgba(255,255,255,.06)"/><text x="${P.l-6}" y="${(yAt(v)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#6b7c8f" font-family="monospace">${(Math.round(v*10)/10)}</text>`).join('');
+    const gid=Math.random().toString(36).slice(2,6);
+    // suavização monotônica (Fritsch–Carlson) — curva elegante, sem overshoot
+    const smooth=pts=>{ const m=pts.length; if(m<2) return m?('M'+pts[0][0].toFixed(1)+','+pts[0][1].toFixed(1)):''; if(m===2) return 'M'+pts[0][0].toFixed(1)+','+pts[0][1].toFixed(1)+'L'+pts[1][0].toFixed(1)+','+pts[1][1].toFixed(1);
+      const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),dx=[],dd=[],sl=[]; for(let i=0;i<m-1;i++){ dx[i]=xs[i+1]-xs[i]; dd[i]=ys[i+1]-ys[i]; sl[i]=dd[i]/(dx[i]||1); }
+      const t=[]; t[0]=sl[0]; t[m-1]=sl[m-2]; for(let i=1;i<m-1;i++){ t[i]=(sl[i-1]*sl[i]<=0)?0:(sl[i-1]+sl[i])/2; }
+      for(let i=0;i<m-1;i++){ if(sl[i]===0){t[i]=0;t[i+1]=0;} else { const a=t[i]/sl[i],bb=t[i+1]/sl[i],h=Math.hypot(a,bb); if(h>3){ const s=3/h; t[i]=s*a*sl[i]; t[i+1]=s*bb*sl[i]; } } }
+      let d='M'+xs[0].toFixed(1)+','+ys[0].toFixed(1); for(let i=0;i<m-1;i++){ const x1=xs[i]+dx[i]/3,y1=ys[i]+t[i]*dx[i]/3,x2=xs[i+1]-dx[i]/3,y2=ys[i+1]-t[i+1]*dx[i]/3; d+='C'+x1.toFixed(1)+','+y1.toFixed(1)+' '+x2.toFixed(1)+','+y2.toFixed(1)+' '+xs[i+1].toFixed(1)+','+ys[i+1].toFixed(1); } return d; };
+    const defs=`<filter id="fxglow${gid}" x="-20%" y="-50%" width="140%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
+      + seriesArr.map((s,si)=>`<linearGradient id="fxg${gid}_${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".30"/><stop offset=".85" stop-color="${s.color}" stop-opacity="0"/></linearGradient>`).join('');
+    const grid=ticks.map((v,i)=>`<line x1="${P.l}" x2="${W-P.r}" y1="${yAt(v).toFixed(1)}" y2="${yAt(v).toFixed(1)}" stroke="rgba(255,255,255,${i===0?'.13':'.06'})" ${i>0?'stroke-dasharray="2 5"':''}/><text x="${P.l-8}" y="${(yAt(v)+3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="#8ba0b5" font-family="monospace">${(Math.round(v*10)/10)}</text>`).join('');
     const body=seriesArr.map((s,si)=>{
-      let dpath='',started=false; s.data.forEach((v,i)=>{ if(v==null||isNaN(v)){ started=false; return;} dpath+=(started?'L':'M')+xAt(i).toFixed(1)+','+yAt(v).toFixed(1)+' '; started=true; });
-      const pts=s.data.map((v,i)=> (v==null||isNaN(v))?null:[xAt(i),yAt(v)]).filter(Boolean);
-      let area=''; if(seriesArr.length===1 && pts.length>=2){ area='M'+pts[0][0].toFixed(1)+','+yAt(minY).toFixed(1)+' '; pts.forEach(pt=>area+='L'+pt[0].toFixed(1)+','+pt[1].toFixed(1)+' '); area+='L'+pts[pts.length-1][0].toFixed(1)+','+yAt(minY).toFixed(1)+' Z'; area=`<path d="${area}" fill="url(#fxg${si})"/>`; }
-      const dots=pts.map(pt=>`<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="3.2" fill="${s.color}" stroke="var(--gs-card,#0e141d)" stroke-width="1.5"/>`).join('');
-      return area+`<path d="${dpath}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`+dots;
+      const runs=[]; let cur=[]; s.data.forEach((v,i)=>{ if(v==null||isNaN(v)){ if(cur.length){runs.push(cur);cur=[];} return;} cur.push([xAt(i),yAt(v)]); }); if(cur.length) runs.push(cur);
+      let out='';
+      runs.forEach(run=>{ const dpath=smooth(run);
+        if(seriesArr.length===1 && run.length>=2){ out+=`<path d="${dpath} L${run[run.length-1][0].toFixed(1)},${baseY} L${run[0][0].toFixed(1)},${baseY} Z" fill="url(#fxg${gid}_${si})"/>`; }
+        out+=`<path d="${dpath}" fill="none" stroke="${s.color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" filter="url(#fxglow${gid})"/>`;
+        run.forEach((pt,k)=>{ const last=k===run.length-1; out+=`<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="${last?4:2.8}" fill="${last?s.color:'var(--gs-card,#0e141d)'}" stroke="${s.color}" stroke-width="${last?0:1.8}"${last?' filter="url(#fxglow'+gid+')"':''}/>`; });
+      });
+      return out;
     }).join('');
-    const xlab=dates.map((d,i)=> (i%showEvery===0||i===n-1)?`<text x="${xAt(i).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="9.5" fill="#6b7c8f" font-family="monospace">${fmtDateShort(d)}</text>`:'').join('');
+    const xlab=dates.map((d,i)=> (i%showEvery===0||i===n-1)?`<text x="${xAt(i).toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="10.5" fill="#8ba0b5" font-family="monospace">${fmtDateShort(d)}</text>`:'').join('');
     const legend=seriesArr.length>1?`<div class="fx-legend">${seriesArr.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.label)}${opts.unit?' ('+opts.unit+')':''}</span>`).join('')}</div>`:'';
     return legend+`<svg class="fx-chart" viewBox="0 0 ${W} ${H}" style="max-height:${H+30}px"><defs>${defs}</defs>${grid}${body}${xlab}</svg>`;
   }
@@ -12695,6 +12706,44 @@ img{ max-width:100%; }
 .pt-fallback{display:inline-block;margin-left:6px;font-family:var(--font-mono);font-size:8.5px;letter-spacing:.03em;color:var(--gs-warn,#E0A028);border:1px solid rgba(224,160,40,.35);border-radius:100px;padding:0 6px;vertical-align:middle}
 .port-row-fallback{background:repeating-linear-gradient(45deg,rgba(224,160,40,.03) 0 8px,transparent 8px 16px)}
 .port-fallback-note{margin-top:10px;font-family:var(--font-mono);font-size:10.5px;line-height:1.5;color:var(--gs-warn,#E0A028);background:rgba(224,160,40,.06);border:1px solid rgba(224,160,40,.25);border-radius:8px;padding:8px 11px}
+</style>
+<style id="epic-polish">
+/* ═══════════ EPIC POLISH — camada aditiva de refino (sem mudar estrutura) ═══════════ */
+/* Scrollbars finas e temáticas */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--gs-border-2,#26333f);border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--gs-blue,#0A84FF);background-clip:padding-box}
+*{scrollbar-color:var(--gs-border-2,#26333f) transparent;scrollbar-width:thin}
+
+/* Profundidade premium: brilho superior sutil + sombra macia nos cartões de componente */
+.fx-card,.db-kpi,.pl-active,.prg-card,.wo-day,.di-meal,.tf-card,.hub-block,.bd-hero,.ctrl-sum-hero,.ctrl-sum-it,.db-plan-card,.db-diff{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 14px rgba(0,0,0,.22);
+}
+/* Micro-interação de clique nos botões + transições suaves */
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, filter .15s ease, background .15s ease, border-color .15s ease !important}
+.btn:active{transform:translateY(1px)}
+.btn-p{box-shadow:0 2px 16px rgba(10,132,255,.26)}
+.btn-p:hover{box-shadow:0 5px 22px rgba(10,132,255,.42);filter:brightness(1.06)}
+
+/* Micro-lift nos cartões interativos pequenos (não nos painéis grandes) */
+.db-kpi,.prg-card,.tf-exc,.db-diff,.pl-hist-item{transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .18s ease,box-shadow .18s ease}
+.db-kpi:hover,.db-diff:hover{transform:translateY(-3px);border-color:var(--gs-border-2,#26333f)}
+
+/* Gráficos: leve realce e renderização limpa */
+.fx-chart{shape-rendering:geometricPrecision}
+.fx-chart text{letter-spacing:.02em}
+
+/* Foco visível (acessibilidade + acabamento) */
+.btn:focus-visible,.pm-in:focus-visible,.tf-in:focus-visible,.db-chip:focus-visible,.sd-subtab:focus-visible,.tf-tab:focus-visible,
+input:focus-visible,select:focus-visible,textarea:focus-visible,.hub-block:focus-visible{
+  outline:2px solid var(--gs-blue,#0A84FF);outline-offset:2px;border-radius:8px;
+}
+/* Chips e sub-tabs com transição suave */
+.db-chip,.tf-chip,.sd-subtab,.tf-tab,.hud-mini-btn{transition:all .14s ease}
+
+/* Seleção de texto temática */
+::selection{background:rgba(10,132,255,.32);color:#fff}
 </style>
 </body>
 </html>
