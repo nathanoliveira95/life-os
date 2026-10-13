@@ -4616,11 +4616,13 @@ window.enterModule=enterModule; window.showHub=showHub;
 </div>
 
 <!-- HUD Clock (top-right) -->
-<div class="hud-clock" id="hudClock" aria-hidden="true">
+<div class="hud-clock" id="hudClock">
   <div class="t" id="hcTime">--:--:--</div>
   <div class="d" id="hcDate">--.--.----</div>
-  <div class="s"><span class="d-dot"></span><span>SYS_OK</span></div>
+  <div class="s hc-sync" id="hcSync" onclick="openSyncConfig()" title="Configurar sincronização"><span class="sync-dot dot-off" id="hcSyncDot"></span><span id="hcSyncLabel">Sem sync</span></div>
 </div>
+<!-- Indicador de sincronização no topo (mobile — clock oculto) -->
+<div id="mobSync" onclick="openSyncConfig()" title="Configurar sincronização"><span class="sync-dot dot-off" id="mobSyncDot"></span><span id="mobSyncLabel">Sem sync</span></div>
 
 <!-- Coordenadas decorativas removidas para reduzir poluição visual -->
 
@@ -5183,10 +5185,16 @@ function refreshPage() {
 
 // Atualiza o indicador visual de status na sidebar
 function setSyncStatus(state, label) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = 'sync-dot ' + { ok:'dot-ok', err:'dot-err', busy:'dot-busy', off:'dot-off' }[state];
-  lbl.textContent = label;
+  const cls = ({ ok:'dot-ok', err:'dot-err', busy:'dot-busy', off:'dot-off' })[state] || 'dot-off';
+  // Rótulo curto para os indicadores do topo
+  const shortLbl = ({ ok:'Sincronizado', err:'Erro de sync', busy:'Sincronizando…', off:'Sem sync' })[state] || label;
+  const apply = (dotId, lblId, text) => {
+    const dot = document.getElementById(dotId); if (dot) dot.className = 'sync-dot ' + cls;
+    const lbl = document.getElementById(lblId); if (lbl) lbl.textContent = text;
+  };
+  apply('sync-dot',    'sync-label',    label);      // rodapé da sidebar (texto completo)
+  apply('hcSyncDot',   'hcSyncLabel',   shortLbl);   // relógio HUD (topo-direita, desktop)
+  apply('mobSyncDot',  'mobSyncLabel',  shortLbl);   // chip no topo (mobile)
 }
 
 // Exibe um toast temporário
@@ -12806,6 +12814,18 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,.hub-block:focus
 .ocard-txt{font-size:14px;font-weight:600;color:var(--gs-text,#e8eef7);line-height:1.45}
 .ocard-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;font-family:var(--font-mono);font-size:11px;color:var(--gs-text-3,#6b7c8f)}
 .ocard-done-badge{color:var(--gs-success,#10B981);font-weight:700;border:1px solid var(--gs-success,#10B981);border-radius:100px;padding:2px 9px;white-space:nowrap}
+
+/* Indicador de sincronização no topo */
+.hc-sync{pointer-events:auto;cursor:pointer;color:var(--gs-text-2,#9fb0c2);transition:color .15s;margin-top:3px}
+.hc-sync:hover{color:var(--gs-blue-l,#35C6FF)}
+#hcSyncLabel{letter-spacing:.1em;text-transform:uppercase;font-size:9.5px}
+.hc-sync .sync-dot{width:6px;height:6px;box-shadow:none}
+#mobSync{display:none}
+body.is-mobile #mobSync{display:flex;align-items:center;gap:7px;position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:1002;
+  background:var(--gs-glass,rgba(8,11,18,.78));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--gs-border-2,#26333f);border-radius:100px;padding:6px 13px;font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-text-2,#9fb0c2);box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer;max-width:62vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.is-mobile.mob-nav-open #mobSync,body.is-mobile.rb-open #mobSync{display:none}
+body.is-mobile #mobSync .sync-dot{width:7px;height:7px}
 </style>
 </body>
 </html>
