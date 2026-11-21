@@ -3283,32 +3283,51 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   color:var(--gs-text-3,#8d76a8);border:1px solid var(--gs-border-2,#382055);border-radius:100px;padding:2px 9px}
 /* Enquanto o hub está aberto, esconde os botões flutuantes do app */
 body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
+.hub-ico-car{height:52px;margin:-4px 0 12px -6px;display:flex;align-items:flex-end}
+.hub-ico-car img{height:52px;width:auto;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)) drop-shadow(0 0 14px rgba(255,63,210,.22));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.hub-block.active:hover .hub-ico-car img{transform:translateX(6px)}
+.hub-block-go{position:relative;align-self:flex-start;letter-spacing:.14em;text-transform:uppercase;font-size:11px}
+.hub-block-go::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:1.5px;border-radius:2px;
+  background:linear-gradient(90deg,#ff9f43,#ff3fd2,#b46bff);transform:scaleX(.28);transform-origin:left;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.hub-block.active:hover .hub-block-go::after,.hub-block.active:focus-visible .hub-block-go::after{transform:scaleX(1)}
+/* entrada: card acende, faixa de luz passa, o 911 arranca e a tela some */
+.hub-block.is-entering{overflow:hidden;animation:hubPulse .62s cubic-bezier(.2,.8,.2,1) forwards}
+.hub-block.is-entering::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,138,226,.35) 48%,rgba(255,179,92,.28) 54%,transparent 70%);animation:hubSweep .55s ease-out forwards}
+.hub-block.is-entering .hub-ico-car img{animation:hubDrive .58s cubic-bezier(.55,0,.75,.2) forwards}
+.hub-block.is-entering .hub-block-ico:not(.hub-ico-car){animation:hubPop .5s cubic-bezier(.2,.8,.2,1) forwards}
+.hub-block.is-entering .hub-block-go::after{transform:scaleX(1)}
+#hub-screen.hub-leaving .hub-inner{animation:hubOut .32s .3s ease-in forwards}
+@keyframes hubPulse{0%{transform:translateY(-4px)}35%{transform:translateY(-4px) scale(1.035);box-shadow:0 0 0 1px #ff3fd2,0 0 46px rgba(255,63,210,.55),0 0 90px rgba(255,159,67,.25)}100%{transform:translateY(-2px) scale(1.02);box-shadow:0 0 0 1px #ff3fd2,0 0 30px rgba(255,63,210,.4)}}
+@keyframes hubSweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+@keyframes hubDrive{0%{transform:translateX(0)}18%{transform:translateX(-7px) scaleX(.98)}100%{transform:translateX(320%);filter:blur(3px) drop-shadow(-26px 0 6px rgba(255,63,210,.5));opacity:.2}}
+@keyframes hubPop{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(-8deg)}100%{transform:scale(1.15) rotate(0)}}
+@keyframes hubOut{to{opacity:0;transform:scale(1.015) translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.hub-block.is-entering,.hub-block.is-entering *,#hub-screen.hub-leaving .hub-inner{animation:none !important}}
 @media(max-width:600px){#hub-screen{padding:26px 16px}.hub-title{font-size:23px;margin-top:26px}.hub-grid{grid-template-columns:1fr}.hub-block{min-height:150px}}
 </style>
 <div id="hub-screen" role="dialog" aria-label="Selecione um módulo">
   <div class="hub-inner">
-    <div class="hub-brand">◇ OLIVER</div>
-    <div class="hub-brandtag">Sistema Operacional Pessoal</div>
+    <div class="hub-brand">◇ OLIVER ◇</div>
     <h1 class="hub-title">Selecione um módulo</h1>
-    <p class="hub-sub">Cada módulo é um espaço completo. Comece pelo <b style="color:var(--gs-blue-l,#ff8ae2)">Lifestyle</b> — os demais chegam em breve.</p>
     <div class="hub-grid">
-      <button type="button" class="hub-block active" onclick="enterModule('lifestyle')" aria-label="Entrar no módulo Lifestyle">
-        <div class="hub-block-ico">🚗</div>
+      <button type="button" class="hub-block active" onclick="hubEnter(this,'lifestyle')" aria-label="Entrar no módulo Lifestyle">
+        <div class="hub-block-ico hub-ico-car"><img src="assets/911/icon-911.webp" alt="" width="220" height="89" decoding="async"></div>
         <div class="hub-block-name">Lifestyle</div>
-        <div class="hub-block-desc">Metas, saúde, finanças, rotina, entrevistas — tudo que você já construiu.</div>
-        <div class="hub-block-go">Entrar →</div>
+        <div class="hub-block-desc">Metas, finanças e trabalho</div>
+        <div class="hub-block-go">Entrar</div>
       </button>
-      <button type="button" class="hub-block active" onclick="enterModule('toefl')" aria-label="Entrar no módulo 100+ TOEFL">
+      <button type="button" class="hub-block active" onclick="hubEnter(this,'toefl')" aria-label="Entrar no módulo TOEFL Prepping">
         <div class="hub-block-ico">🎓</div>
-        <div class="hub-block-name">100+ TOEFL</div>
-        <div class="hub-block-desc">Seu espaço para bater 100+ no TOEFL — prática por seção, vocabulário e plano de estudo.</div>
-        <div class="hub-block-go">Entrar →</div>
+        <div class="hub-block-name">TOEFL Prepping</div>
+        <div class="hub-block-desc">Reading · Listening · Speaking · Writing</div>
+        <div class="hub-block-go">Entrar</div>
       </button>
       <div class="hub-block soon" aria-disabled="true">
         <div class="hub-block-tag">EM BREVE</div>
         <div class="hub-block-ico">✦</div>
         <div class="hub-block-name">Novo módulo</div>
-        <div class="hub-block-desc">Outros "sites dentro do site" serão adicionados aqui.</div>
       </div>
     </div>
   </div>
@@ -4472,7 +4491,16 @@ function showHub(){
   if(hub) hub.classList.remove('hub-hidden');
   document.body.classList.add('hub-open');
 }
-window.enterModule=enterModule; window.showHub=showHub;
+// Clique num bloco: pequena animação (o 911 arranca, o card acende) e depois entra no módulo
+function hubEnter(el,mod){
+  if(!el || el.classList.contains('is-entering')) return;
+  var hub=document.getElementById('hub-screen');
+  var calm=window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(calm){ enterModule(mod); return; }
+  el.classList.add('is-entering'); if(hub) hub.classList.add('hub-leaving');
+  setTimeout(function(){ enterModule(mod); el.classList.remove('is-entering'); if(hub) hub.classList.remove('hub-leaving'); },620);
+}
+window.enterModule=enterModule; window.showHub=showHub; window.hubEnter=hubEnter;
 // Estado inicial: já escolheu um módulo nesta sessão → entra direto; senão mostra o hub.
 (function initHub(){
   let mod=null; try{ mod=sessionStorage.getItem('oliver_module'); }catch(e){}
@@ -4616,7 +4644,7 @@ var PR=Math.min(window.devicePixelRatio||1, 1.5);
 renderer.setPixelRatio(PR);
 var scene=new THREE.Scene();
 scene.fog=new THREE.Fog(FOG, 16, 44);
-var camera=new THREE.PerspectiveCamera(23, 1, 0.1, 200);
+var camera=new THREE.PerspectiveCamera(23, 1, 1.0, 220);
 var clock0=performance.now();
 // mundo: tudo que aparece refletido no asfalto molhado (carro + céu + cidade)
 var world=new THREE.Group(); scene.add(world);
@@ -4725,7 +4753,7 @@ function palmTex(seed,lean){
   return texFrom(c);
 }
 function backdrop(tex,w,h,dist,side,lift){
-  var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,fog:false}));
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:0.5,depthWrite:true,fog:false}));
   var p=BACK.clone().multiplyScalar(dist).addScaledVector(RIGHT,side); m.position.set(p.x,h/2+(lift||0),p.z);
   m.lookAt(CAM.x*60,h/2+(lift||0),CAM.z*60); m.renderOrder=-2; world.add(m); return m;
 }
@@ -4767,15 +4795,15 @@ var puddle=(function(){ var n=256,c=document.createElement('canvas'); c.width=c.
     return (b(ix,iy)*(1-fx)+b(ix+1,iy)*fx)*(1-fy)+(b(ix,iy+1)*(1-fx)+b(ix+1,iy+1)*fx)*fy; }
   for(var y=0;y<n;y++) for(var x=0;x<n;x++){ var q=v(x,y,32)*0.6+v(x,y,16)*0.3+v(x,y,8)*0.1, k=(y*n+x)*4; q=Math.max(0,Math.min(1,(q-0.35)*2.2)); img.data[k]=img.data[k+1]=img.data[k+2]=q*255; img.data[k+3]=255; }
   g.putImageData(img,0,0); var t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; })();
-var floorMat=new THREE.MeshStandardMaterial({color:0x050308,roughness:0.5,metalness:0,envMapIntensity:0.05});
+var floorMat=new THREE.MeshStandardMaterial({color:0x050308,roughness:0.5,metalness:0,envMapIntensity:0.05,fog:false});
 floorMat.onBeforeCompile=function(sh){
   sh.uniforms.tRefl={value:reflRT.texture}; sh.uniforms.tMask={value:puddle}; sh.uniforms.uRes=resU; sh.uniforms.uRefl=reflU;
   sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;')
     .replace('#include <project_vertex>','#include <project_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;');
   sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform sampler2D tRefl;uniform sampler2D tMask;uniform vec2 uRes;uniform float uRefl;')
-    .replace('#include <opaque_fragment>','#include <opaque_fragment>\n{float m=texture2D(tMask,vWP.xz*0.07).r;vec3 rc=texture2D(tRefl,gl_FragCoord.xy/uRes).rgb;gl_FragColor.rgb+=rc*uRefl*mix(0.32,1.0,m);}');
+    .replace('#include <opaque_fragment>','#include <opaque_fragment>\n{float m=texture2D(tMask,vWP.xz*0.07).r;float fr=smoothstep(10.0,70.0,length(vWP.xz));vec3 rc=texture2D(tRefl,gl_FragCoord.xy/uRes).rgb;gl_FragColor.rgb=gl_FragColor.rgb*(1.0-fr)+rc*uRefl*mix(mix(0.32,1.0,m),1.35,fr);}');
 };
-var floor=new THREE.Mesh(new THREE.CircleGeometry(52,96).rotateX(-Math.PI/2),floorMat); scene.add(floor);
+var floor=new THREE.Mesh(new THREE.CircleGeometry(135,128).rotateX(-Math.PI/2),floorMat); scene.add(floor);
 
 /* ---------- sombra de contato (calculada no espaço do carro, gira junto) ---------- */
 var SHW=3.0, SHL=5.6, SHH=1.0;
@@ -4786,12 +4814,12 @@ var shDepth=new THREE.ShaderMaterial({uniforms:{uH:{value:SHH}},
   vertexShader:'varying float vY;void main(){vec4 wp=modelMatrix*vec4(position,1.0);vY=wp.y;gl_Position=projectionMatrix*viewMatrix*wp;}',
   fragmentShader:'varying float vY;uniform float uH;void main(){float a=1.0-clamp(vY/uH,0.0,1.0);gl_FragColor=vec4(0.0,0.0,0.0,a*a*a);}',
   side:THREE.DoubleSide});
-var shadow=new THREE.Mesh(new THREE.PlaneGeometry(SHW,SHL).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:shRT.texture,transparent:true,depthWrite:false,color:0x000000}));
-shadow.position.y=0.003; turn.add(shadow);
+var shadow=new THREE.Mesh(new THREE.PlaneGeometry(SHW,SHL).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:shRT.texture,transparent:true,depthWrite:false,color:0x000000,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}));
+shadow.position.y=0.012; turn.add(shadow);
 var ambShadow=(function(){ var c=document.createElement('canvas'); c.width=c.height=128; var g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);
   r.addColorStop(0,'rgba(0,0,0,.8)'); r.addColorStop(.55,'rgba(0,0,0,.42)'); r.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=r; g.fillRect(0,0,128,128);
-  var m=new THREE.Mesh(new THREE.PlaneGeometry(4.4,7.8).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,opacity:0.7}));
-  m.position.y=0.002; turn.add(m); return m; })();
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(4.4,7.8).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,opacity:0.7,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2}));
+  m.position.y=0.008; turn.add(m); return m; })();
 
 /* ---------- luz direta: só neon lateral (o contraluz do sol vem do céu refletido) ---------- */
 scene.add(new THREE.HemisphereLight(0x5a2dbf,0x0c0416,0.22));
@@ -4966,7 +4994,7 @@ function eOutCubic(t){ return 1-Math.pow(1-t,3); }
 function eOutExpo(t){ return t>=1?1:1-Math.pow(2,-10*t); }
 function eOutBack(t){ var c1=1.3,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
 function eInOut(t){ return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; }
-var END=7.0, T=reduce?END:0, orbit=0, lastHud='';
+var END=7.0, SPEED=1.6, T=reduce?END:0, orbit=0, lastHud='';
 var ZF=2.7, ZR=-2.75;
 function apply(t){
   parts.forEach(function(pt){
@@ -5011,7 +5039,7 @@ function renderReflection(){
   renderer.setRenderTarget(reflRT); renderer.clear(); renderer.render(scene,camera);
   world.scale.y=1; floor.visible=shadow.visible=ambShadow.visible=true;
   // esticado na vertical, como neon refletido em rua molhada
-  blur(reflRT,reflTmp,0.5,2.2); blur(reflRT,reflTmp,0.8,4.2);
+  blur(reflRT,reflTmp,0.9,2.0); blur(reflRT,reflTmp,1.3,3.6); blur(reflRT,reflTmp,1.0,2.4);
 }
 function renderShadow(){
   var hv=holoG.visible, ry=turn.rotation.y; holoG.visible=false; turn.rotation.y=0; floor.visible=shadow.visible=ambShadow.visible=false;
@@ -5040,7 +5068,7 @@ function frame(now){
   raf=requestAnimationFrame(frame);
   var raw=last?(now-last)/1000:0, dt=last?Math.min(raw,0.05):0.016; last=now;
   if(raw>0 && tier>0){ pt_+=raw; pn_++; if(pn_===45){ if(pt_/pn_>0.042) degrade(); pt_=0; pn_=0; } }
-  if(!reduce){ T+=dt; secs+=dt; orbit+=dt*(2*Math.PI/100); }
+  if(!reduce){ T+=dt*SPEED; secs+=dt; orbit+=dt*(2*Math.PI/100); }
   apply(Math.min(T,END+3));
   draw();
 }
