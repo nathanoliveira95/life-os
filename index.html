@@ -3283,10 +3283,12 @@ body.is-mobile .vg-totais{grid-template-columns:1fr 1fr}
   color:var(--gs-text-3,#8d76a8);border:1px solid var(--gs-border-2,#382055);border-radius:100px;padding:2px 9px}
 /* Enquanto o hub está aberto, esconde os botões flutuantes do app */
 body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
-.hub-ico-car{height:52px;margin:-4px 0 12px -6px;display:flex;align-items:flex-end}
-.hub-ico-car img{height:52px;width:auto;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)) drop-shadow(0 0 14px rgba(255,63,210,.22));
+.hub-ico-img{height:52px;margin:-4px 0 12px -6px;display:flex;align-items:flex-end}
+.hub-ico-img img{height:52px;width:auto;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)) drop-shadow(0 0 14px rgba(255,63,210,.22));
   transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .hub-block.active:hover .hub-ico-car img{transform:translateX(6px)}
+.hub-block.active:hover .hub-ico-city img{transform:translateY(-2px) scale(1.04);filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(255,63,210,.4))}
+.hub-ico-city img{transform-origin:50% 100%}
 .hub-block-go{position:relative;align-self:flex-start;letter-spacing:.14em;text-transform:uppercase;font-size:11px}
 .hub-block-go::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:1.5px;border-radius:2px;
   background:linear-gradient(90deg,#ff9f43,#ff3fd2,#b46bff);transform:scaleX(.28);transform-origin:left;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
@@ -3296,12 +3298,14 @@ body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
 .hub-block.is-entering::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
   background:linear-gradient(105deg,transparent 30%,rgba(255,138,226,.35) 48%,rgba(255,179,92,.28) 54%,transparent 70%);animation:hubSweep .55s ease-out forwards}
 .hub-block.is-entering .hub-ico-car img{animation:hubDrive .58s cubic-bezier(.55,0,.75,.2) forwards}
-.hub-block.is-entering .hub-block-ico:not(.hub-ico-car){animation:hubPop .5s cubic-bezier(.2,.8,.2,1) forwards}
+.hub-block.is-entering .hub-ico-city img{animation:hubCity .6s cubic-bezier(.3,.6,.4,1) forwards}
+.hub-block.is-entering .hub-block-ico:not(.hub-ico-img){animation:hubPop .5s cubic-bezier(.2,.8,.2,1) forwards}
 .hub-block.is-entering .hub-block-go::after{transform:scaleX(1)}
 #hub-screen.hub-leaving .hub-inner{animation:hubOut .32s .3s ease-in forwards}
 @keyframes hubPulse{0%{transform:translateY(-4px)}35%{transform:translateY(-4px) scale(1.035);box-shadow:0 0 0 1px #ff3fd2,0 0 46px rgba(255,63,210,.55),0 0 90px rgba(255,159,67,.25)}100%{transform:translateY(-2px) scale(1.02);box-shadow:0 0 0 1px #ff3fd2,0 0 30px rgba(255,63,210,.4)}}
 @keyframes hubSweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 @keyframes hubDrive{0%{transform:translateX(0)}18%{transform:translateX(-7px) scaleX(.98)}100%{transform:translateX(320%);filter:blur(3px) drop-shadow(-26px 0 6px rgba(255,63,210,.5));opacity:.2}}
+@keyframes hubCity{0%{transform:scale(1)}30%{transform:scale(1.08);filter:brightness(1.7) drop-shadow(0 0 22px rgba(255,63,210,.75))}100%{transform:scale(1.9) translateY(-6px);filter:brightness(2.2) blur(2px) drop-shadow(0 0 30px rgba(255,159,67,.6));opacity:0}}
 @keyframes hubPop{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(-8deg)}100%{transform:scale(1.15) rotate(0)}}
 @keyframes hubOut{to{opacity:0;transform:scale(1.015) translateY(-6px)}}
 @media(prefers-reduced-motion:reduce){.hub-block.is-entering,.hub-block.is-entering *,#hub-screen.hub-leaving .hub-inner{animation:none !important}}
@@ -3313,15 +3317,15 @@ body.hub-open .mob-nav-btn,body.hub-open #sb-reopen{display:none !important}
     <h1 class="hub-title">Selecione um módulo</h1>
     <div class="hub-grid">
       <button type="button" class="hub-block active" onclick="hubEnter(this,'lifestyle')" aria-label="Entrar no módulo Lifestyle">
-        <div class="hub-block-ico hub-ico-car"><img src="assets/911/icon-911.webp" alt="" width="220" height="89" decoding="async"></div>
+        <div class="hub-block-ico hub-ico-img hub-ico-car"><img src="assets/icons/icon-911.webp" alt="" width="220" height="89" decoding="async"></div>
         <div class="hub-block-name">Lifestyle</div>
         <div class="hub-block-desc">Metas, finanças e trabalho</div>
         <div class="hub-block-go">Entrar</div>
       </button>
       <button type="button" class="hub-block active" onclick="hubEnter(this,'toefl')" aria-label="Entrar no módulo TOEFL Prepping">
-        <div class="hub-block-ico">🎓</div>
+        <div class="hub-block-ico hub-ico-img hub-ico-city"><img src="assets/icons/icon-nyc.webp" alt="" width="161" height="104" decoding="async"></div>
         <div class="hub-block-name">TOEFL Prepping</div>
-        <div class="hub-block-desc">Reading · Listening · Speaking · Writing</div>
+        <div class="hub-block-desc">Reading, Listening, Speaking e Writing</div>
         <div class="hub-block-go">Entrar</div>
       </button>
       <div class="hub-block soon" aria-disabled="true">
