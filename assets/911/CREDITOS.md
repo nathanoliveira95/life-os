@@ -11,10 +11,10 @@ No site, o modelo é dividido em painéis para a animação de montagem e os mat
 (pintura preta, vidros fumê, pneus, luzes) são ajustados em tempo de execução. O arquivo do modelo
 continua distribuído sob a mesma licença CC BY-SA 4.0.
 
-## Ambiente de estúdio (HDRI)
+## Cenário
 
-- **Arquivo:** `studio_small_03_1k.hdr` — "Studio Small 03", Poly Haven (https://polyhaven.com)
-- **Licença:** CC0 (domínio público). Obtido via pmndrs/drei-assets.
+O cenário de Vice City (céu ao pôr do sol, sol retrô, nuvens, estrelas, skyline com neon,
+palmeiras e asfalto molhado) é gerado em código no próprio site — sem imagens de terceiros.
 
 Porsche e 911 são marcas da Dr. Ing. h.c. F. Porsche AG. Uso pessoal, sem fins comerciais
 e sem afiliação com a marca.
